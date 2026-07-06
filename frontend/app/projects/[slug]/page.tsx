@@ -1,3 +1,5 @@
+import LeadForm from "../../components/LeadForm";
+
 type ProjectCategory = {
   id: number;
   title: string;
@@ -232,6 +234,13 @@ export default async function ProjectPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+      </section>
+      <section className="container section">
+        <LeadForm
+            title="Заказать этот проект"
+            source="project_order"
+            projectSlug={project.slug}
+        />
       </section>
     </main>
   );

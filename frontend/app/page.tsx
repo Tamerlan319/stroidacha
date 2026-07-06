@@ -1,3 +1,5 @@
+import LeadForm from "./components/LeadForm";
+
 type ProjectCategory = {
   id: number;
   title: string;
@@ -113,6 +115,12 @@ export default async function HomePage() {
             </article>
           ))}
         </div>
+      </section>
+      <section className="container section">
+        <LeadForm
+            title="Получить консультацию"
+            source="callback"
+        />
       </section>
     </main>
   );

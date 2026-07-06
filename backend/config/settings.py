@@ -147,3 +147,18 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",
+)
+
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="no-reply@localhost",
+)
+
+LEAD_NOTIFICATION_EMAILS = env.list(
+    "LEAD_NOTIFICATION_EMAILS",
+    default=[],
+)

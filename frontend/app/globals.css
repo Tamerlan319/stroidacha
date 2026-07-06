@@ -328,3 +328,96 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+.leadForm {
+  border: 1px solid rgba(36, 24, 15, 0.12);
+  border-radius: 28px;
+  background: white;
+  padding: 28px;
+  box-shadow: 0 16px 40px rgba(36, 24, 15, 0.08);
+}
+
+.leadForm h3 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.leadForm p {
+  margin: 12px 0 22px;
+  color: #67584d;
+  line-height: 1.5;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.formGrid label {
+  display: grid;
+  gap: 8px;
+}
+
+.formGrid span {
+  color: #5a4636;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.formGrid input,
+.formGrid textarea {
+  width: 100%;
+  border: 1px solid #dccdbe;
+  border-radius: 16px;
+  background: #fbf8f3;
+  padding: 14px 16px;
+  color: #24180f;
+  font: inherit;
+  outline: none;
+}
+
+.formGrid input:focus,
+.formGrid textarea:focus {
+  border-color: #b98b57;
+  background: white;
+}
+
+.formFull {
+  grid-column: 1 / -1;
+}
+
+.formButton {
+  margin-top: 18px;
+  border: 0;
+  cursor: pointer;
+}
+
+.formButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.formSuccess,
+.formError {
+  margin-top: 16px;
+  border-radius: 16px;
+  padding: 14px 16px;
+  line-height: 1.4;
+}
+
+.formSuccess {
+  background: #e9f7ec;
+  color: #245c32;
+}
+
+.formError {
+  background: #fdeceb;
+  color: #8a2d24;
+}
+
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
