@@ -8,6 +8,7 @@ urlpatterns = [
     path("api/", include("catalog.urls")),
     path("api/", include("leads.urls")),
     path("api/", include("content.urls")),
+    path("api/", include("seo.urls")),
 ]
 
 if settings.DEBUG:

@@ -535,3 +535,28 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+.landingHero {
+  padding: 96px 0;
+  background: linear-gradient(135deg, #24180f, #6b4425);
+  color: white;
+}
+
+.textContent {
+  max-width: 880px;
+}
+
+.textContent h2 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.textBlock {
+  margin-top: 24px;
+  color: #67584d;
+  font-size: 18px;
+  line-height: 1.75;
+  white-space: pre-line;
+}
