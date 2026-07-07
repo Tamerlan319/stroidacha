@@ -41,6 +41,24 @@ type ProjectPackage = {
   sections: PackageSection[];
 };
 
+type ProjectImage = {
+  id: number;
+  image: string;
+  image_type: string;
+  caption: string;
+  alt_text: string;
+  sort_order: number;
+};
+
+type ProjectPlan = {
+  id: number;
+  title: string;
+  image: string;
+  floor: number | null;
+  alt_text: string;
+  sort_order: number;
+};
+
 type Project = {
   id: number;
   external_id: string | null;
@@ -57,6 +75,8 @@ type Project = {
   price_options: PriceOption[];
   addons: Addon[];
   packages: ProjectPackage[];
+  images: ProjectImage[];
+  plans: ProjectPlan[];
 };
 
 type PageProps = {
@@ -147,7 +167,29 @@ export default async function ProjectPage({ params }: PageProps) {
           </div>
         </div>
       </section>
+      {project.images?.length > 0 && (
+        <section className="container section">
+          <div className="sectionHeader">
+            <p className="eyebrow">Галерея</p>
+            <h2>Изображения проекта</h2>
+            <p>Внешний вид, детали и дополнительные изображения проекта.</p>
+          </div>
 
+          <div className="projectGallery">
+            {project.images.map((image) => (
+              <figure className="galleryItem" key={image.id}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={image.image}
+                  alt={image.alt_text || image.caption || project.title}
+                />
+
+                {image.caption && <figcaption>{image.caption}</figcaption>}
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="container section" id="prices">
         <div className="sectionHeader">
           <p className="eyebrow">Стоимость</p>

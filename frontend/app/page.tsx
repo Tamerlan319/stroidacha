@@ -55,6 +55,14 @@ type HomepageContent = {
   reviews: Review[];
 };
 
+type LandingPage = {
+  id: number;
+  title: string;
+  slug: string;
+  h1: string;
+  page_type: string;
+};
+
 async function getProjects(): Promise<Project[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -83,6 +91,20 @@ async function getHomepageContent(): Promise<HomepageContent> {
   return response.json();
 }
 
+async function getLandingPages(): Promise<LandingPage[]> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  const response = await fetch(`${apiUrl}/landing-pages/`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  return response.json();
+}
+
 function formatPrice(price: number | null) {
   if (!price) {
     return "Цена по запросу";
@@ -92,9 +114,10 @@ function formatPrice(price: number | null) {
 }
 
 export default async function HomePage() {
-  const [projects, homepageContent] = await Promise.all([
+  const [projects, homepageContent, landingPages] = await Promise.all([
     getProjects(),
     getHomepageContent(),
+    getLandingPages(),
   ]);
 
   return (
@@ -121,6 +144,24 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {landingPages.length > 0 && (
+        <section className="container section">
+          <div className="sectionHeader">
+            <p className="eyebrow">Популярные направления</p>
+            <h2>Что чаще всего выбирают заказчики</h2>
+          </div>
+
+          <div className="seoLinkGrid">
+            {landingPages.map((page) => (
+              <a className="seoLinkCard" href={`/${page.slug}`} key={page.id}>
+                <span>{page.page_type}</span>
+                <strong>{page.h1 || page.title}</strong>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {homepageContent.advantages.length > 0 && (
         <section className="container section">
