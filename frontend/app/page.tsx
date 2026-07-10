@@ -1,24 +1,7 @@
+import Link from "next/link";
+
 import LeadForm from "./components/LeadForm";
-
-type ProjectCategory = {
-  id: number;
-  title: string;
-  slug: string;
-};
-
-type Project = {
-  id: number;
-  external_id: string | null;
-  title: string;
-  slug: string;
-  category: ProjectCategory;
-  area: string | null;
-  floor_label: string;
-  size_text: string;
-  price_from: number | null;
-  short_description: string;
-  main_image: string | null;
-};
+import ProjectCatalog from "./components/ProjectCatalog";
 
 type Advantage = {
   id: number;
@@ -63,195 +46,243 @@ type LandingPage = {
   page_type: string;
 };
 
-async function getProjects(): Promise<Project[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const fallbackAdvantages = [
+  {
+    id: 1,
+    title: "84+ проекта",
+    description: "Готовые решения для домов, бань, срубов и гаражей.",
+    icon: "⌂",
+  },
+  {
+    id: 2,
+    title: "500+ построек",
+    description: "Помогаем подобрать комплектацию под задачу и бюджет.",
+    icon: "▣",
+  },
+  {
+    id: 3,
+    title: "Доставка по России",
+    description: "Считаем логистику и материалы до старта строительства.",
+    icon: "↗",
+  },
+  {
+    id: 4,
+    title: "Собственное производство",
+    description: "Контролируем качество древесины и комплектующих.",
+    icon: "♨",
+  },
+];
 
-  const response = await fetch(`${apiUrl}/projects/`, {
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error("Не удалось загрузить проекты из Django API");
-  }
-
-  return response.json();
-}
+const fallbackSteps = [
+  { id: 1, title: "Консультация", description: "Уточняем участок, пожелания, сроки и примерный бюджет." },
+  { id: 2, title: "Проектирование", description: "Подбираем готовый проект или адаптируем планировку." },
+  { id: 3, title: "Расчёт сметы", description: "Фиксируем комплектацию, материалы, доставку и работы." },
+  { id: 4, title: "Производство", description: "Готовим домокомплект и согласуем дату доставки." },
+  { id: 5, title: "Строительство", description: "Собираем объект на участке и ведём контроль этапов." },
+  { id: 6, title: "Сдача объекта", description: "Передаём результат и рекомендации по эксплуатации." },
+];
 
 async function getHomepageContent(): Promise<HomepageContent> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  const response = await fetch(`${apiUrl}/homepage/`, {
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(`${apiUrl}/homepage/`, {
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
-    throw new Error("Не удалось загрузить контент главной страницы");
+    if (!response.ok) {
+      throw new Error("Не удалось загрузить контент главной страницы");
+    }
+
+    return response.json();
+  } catch {
+    return {
+      advantages: fallbackAdvantages,
+      work_steps: fallbackSteps,
+      faqs: [],
+      reviews: [],
+    };
   }
-
-  return response.json();
 }
 
 async function getLandingPages(): Promise<LandingPage[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  const response = await fetch(`${apiUrl}/landing-pages/`, {
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(`${apiUrl}/landing-pages/`, {
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return [];
+    }
+
+    return response.json();
+  } catch {
     return [];
   }
-
-  return response.json();
-}
-
-function formatPrice(price: number | null) {
-  if (!price) {
-    return "Цена по запросу";
-  }
-
-  return `от ${price.toLocaleString("ru-RU")} ₽`;
 }
 
 export default async function HomePage() {
-  const [projects, homepageContent, landingPages] = await Promise.all([
-    getProjects(),
+  const [homepageContent, landingPages] = await Promise.all([
     getHomepageContent(),
     getLandingPages(),
   ]);
 
+  const advantages = homepageContent.advantages.length
+    ? homepageContent.advantages
+    : fallbackAdvantages;
+
+  const workSteps = homepageContent.work_steps.length
+    ? homepageContent.work_steps
+    : fallbackSteps;
+
   return (
     <main>
-      <section className="hero">
-        <div className="container">
-          <p className="eyebrow">Дома, бани и гаражи из бруса</p>
+      <section className="homeHero">
+        <div className="container homeHeroGrid">
+          <div className="homeHeroContent">
+            <p className="heroKicker">Собственное производство</p>
+            <h1>Дома и бани из бруса под ключ</h1>
+            <p className="heroText">
+              Подберём готовый проект, рассчитаем комплектацию и доставку.
+              Строим дома, бани, срубы и гаражи с понятной сметой до начала работ.
+            </p>
 
-          <h1>Строительство из дерева с собственного производства</h1>
+            <div className="heroActions">
+              <a href="#lead-form" className="buttonPrimary">
+                Рассчитать стоимость
+              </a>
+              <a href="#projects" className="buttonSecondary">
+                Смотреть проекты
+              </a>
+            </div>
 
-          <p className="heroText">
-            Проекты домов, бань и гаражей с понятными комплектациями,
-            сроками и ценами. Работаем по региону и организуем строительство
-            по России.
-          </p>
+            <div className="heroStats">
+              <span>
+                <strong>500+</strong>
+                построенных объектов
+              </span>
+              <span>
+                <strong>84+</strong>
+                готовых проекта
+              </span>
+              <span>
+                <strong>7 лет</strong>
+                опыта строительства
+              </span>
+            </div>
+          </div>
 
-          <div className="heroActions">
-            <a href="#projects" className="buttonPrimary">
-              Смотреть проекты
-            </a>
-            <a href="#lead-form" className="buttonSecondary">
-              Рассчитать стоимость
-            </a>
+          <div className="heroLeadCard">
+            <LeadForm title="Бесплатный расчёт стоимости" source="callback" />
           </div>
         </div>
       </section>
 
-      {landingPages.length > 0 && (
-        <section className="container section">
-          <div className="sectionHeader">
-            <p className="eyebrow">Популярные направления</p>
-            <h2>Что чаще всего выбирают заказчики</h2>
+      <section className="container trustStrip" aria-label="Преимущества">
+        {advantages.slice(0, 4).map((advantage) => (
+          <article className="trustItem" key={advantage.id}>
+            <span>{advantage.icon || "⌂"}</span>
+            <div>
+              <strong>{advantage.title}</strong>
+              <p>{advantage.description}</p>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <ProjectCatalog
+        showFilters={false}
+        maxItems={4}
+        eyebrow="Рекомендуемые проекты"
+        title="Готовые проекты домов"
+        description="Карточки подтягиваются из Django. На главной показываем только самые важные проекты без фильтров."
+      />
+
+      <section className="container section">
+        <div className="calcBanner">
+          <div>
+            <p className="eyebrow">Расчёт стоимости</p>
+            <h2>Поможем рассчитать дом под ваш участок</h2>
+            <p>
+              Уточним размер, материал, фундамент, кровлю и доставку. После этого
+              подготовим понятную смету по комплектации.
+            </p>
           </div>
 
-          <div className="seoLinkGrid">
-            {landingPages.map((page) => (
-              <a className="seoLinkCard" href={`/${page.slug}`} key={page.id}>
-                <span>{page.page_type}</span>
-                <strong>{page.h1 || page.title}</strong>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {homepageContent.advantages.length > 0 && (
-        <section className="container section">
-          <div className="sectionHeader">
-            <p className="eyebrow">Почему выбирают нас</p>
-            <h2>Собственное производство и понятная комплектация</h2>
+          <div className="calcOptions">
+            <span>Тип постройки</span>
+            <span>Размер дома</span>
+            <span>Фундамент</span>
+            <span>Материал</span>
           </div>
 
-          <div className="advantageGrid">
-            {homepageContent.advantages.map((advantage) => (
-              <article className="infoCard" key={advantage.id}>
-                <div className="iconBadge">{advantage.icon || "✓"}</div>
-                <h3>{advantage.title}</h3>
-                <p>{advantage.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+          <Link className="buttonPrimary" href="#lead-form">
+            Получить расчёт
+          </Link>
+        </div>
+      </section>
 
-      <section className="container section" id="projects">
+      <section className="container section">
         <div className="sectionHeader">
-          <p className="eyebrow">Каталог</p>
-          <h2>Популярные проекты</h2>
-          <p>
-            Выберите готовый проект или отправьте свой — менеджер поможет
-            рассчитать стоимость под нужную комплектацию.
-          </p>
+          <p className="eyebrow">Как мы работаем</p>
+          <h2>От консультации до сдачи объекта</h2>
         </div>
 
-        <div className="projectGrid">
-          {projects.map((project) => (
-            <article className="projectCard" key={project.id}>
-              <div className="projectImage">
-                {project.main_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={project.main_image} alt={project.title} />
-                ) : (
-                  <div className="imagePlaceholder">Фото проекта</div>
-                )}
-              </div>
-
-              <div className="projectBody">
-                <div className="projectTop">
-                  <span>{project.category.title}</span>
-                  <span>{project.size_text || "Размер уточняется"}</span>
-                </div>
-
-                <h3>{project.title}</h3>
-
-                <p>
-                  {project.short_description ||
-                    "Описание проекта скоро появится."}
-                </p>
-
-                <div className="projectSpecs">
-                  {project.area && <span>{project.area} м²</span>}
-                  {project.floor_label && <span>{project.floor_label}</span>}
-                </div>
-
-                <div className="projectFooter">
-                  <strong>{formatPrice(project.price_from)}</strong>
-                  <a href={`/projects/${project.slug}`}>Подробнее</a>
-                </div>
-              </div>
+        <div className="processLine">
+          {workSteps.slice(0, 6).map((step, index) => (
+            <article className="processStep" key={step.id}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
             </article>
           ))}
         </div>
       </section>
 
-      {homepageContent.work_steps.length > 0 && (
-        <section className="container section">
-          <div className="sectionHeader">
-            <p className="eyebrow">Как мы работаем</p>
-            <h2>Этапы строительства</h2>
+      {landingPages.length > 0 && (
+        <section className="container section sectionCompact">
+          <div className="sectionHeader sectionHeaderRow">
+            <div>
+              <p className="eyebrow">Разделы каталога</p>
+              <h2>Выберите направление строительства</h2>
+            </div>
+            <Link className="textLink" href="/doma-iz-brusa">
+              Перейти в каталог
+            </Link>
           </div>
 
-          <div className="stepList">
-            {homepageContent.work_steps.map((step, index) => (
-              <article className="stepCard" key={step.id}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <h3>{step.title}</h3>
-                  <p>{step.description}</p>
-                </div>
-              </article>
+          <div className="seoLinkGrid">
+            {landingPages.slice(0, 6).map((page) => (
+              <Link className="seoLinkCard" href={`/${page.slug}`} key={page.id}>
+                <span>{page.page_type}</span>
+                <strong>{page.h1 || page.title}</strong>
+              </Link>
             ))}
           </div>
         </section>
       )}
+
+      <section className="container section deliverySection">
+        <div className="deliveryMap">
+          <div className="mapCircle" />
+          <strong>Доставка по России</strong>
+          <span>маршрут и стоимость считаем отдельно</span>
+        </div>
+
+        <div className="deliveryText">
+          <p className="eyebrow">Логистика</p>
+          <h2>Бесплатная доставка материала по согласованным направлениям</h2>
+          <p>
+            Для каждого проекта заранее считаем объём материалов, транспорт и
+            условия разгрузки. Это помогает избежать сюрпризов в смете.
+          </p>
+          <Link className="buttonSecondary buttonSecondaryDark" href="#lead-form">
+            Узнать стоимость доставки
+          </Link>
+        </div>
+      </section>
 
       {homepageContent.reviews.length > 0 && (
         <section className="container section">
@@ -263,14 +294,9 @@ export default async function HomePage() {
           <div className="reviewGrid">
             {homepageContent.reviews.map((review) => (
               <article className="infoCard" key={review.id}>
-                <div className="reviewRating">
-                  {"★".repeat(review.rating)}
-                </div>
-
+                <div className="reviewRating">{"★".repeat(review.rating)}</div>
                 <p>{review.text}</p>
-
                 <strong>{review.author_name}</strong>
-
                 {(review.city || review.project_name) && (
                   <span className="reviewMeta">
                     {[review.city, review.project_name].filter(Boolean).join(" · ")}

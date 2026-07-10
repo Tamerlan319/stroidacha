@@ -31,23 +31,23 @@ export default async function SiteFooter() {
 
   return (
     <footer className="siteFooter">
-      <div className="container footerGrid">
+      <div className="container footerTop">
         <div className="footerBrand">
-          <Link className="logo footerLogo" href="/">
-            <span className="logoMark">СД</span>
-            <span>
+          <Link className="sdLogo footerLogo" href="/">
+            <span className="sdLogoMark">⌂</span>
+            <span className="sdLogoText">
               <strong>СтройДача</strong>
               <small>строительство из дерева</small>
             </span>
           </Link>
 
           <p>
-            Дома, бани и гаражи из бруса с понятными комплектациями,
-            расчётом стоимости и доставкой по России.
+            Проектируем и строим дома, бани и гаражи из бруса. Подбираем
+            комплектацию, считаем доставку и фиксируем смету до начала работ.
           </p>
 
           <Link className="buttonPrimary footerButton" href="/#lead-form">
-            Оставить заявку
+            Рассчитать стоимость
           </Link>
         </div>
 
@@ -72,7 +72,7 @@ export default async function SiteFooter() {
         <div>
           <h3>Направления</h3>
           <ul className="footerLinks">
-            {landingPages.slice(0, 8).map((page) => (
+            {landingPages.slice(0, 7).map((page) => (
               <li key={page.id}>
                 <Link href={`/${page.slug}`}>{page.h1 || page.title}</Link>
               </li>
@@ -89,13 +89,11 @@ export default async function SiteFooter() {
             </li>
             <li>
               <span>Email</span>
-              <a href="mailto:info@stroidacha.local">
-                info@stroidacha.local
-              </a>
+              <a href="mailto:info@stroidacha.local">info@stroidacha.local</a>
             </li>
             <li>
-              <span>Режим работы</span>
-              <strong>Пн–Сб, 9:00–19:00</strong>
+              <span>Время работы</span>
+              <strong>Ежедневно, 9:00–20:00</strong>
             </li>
           </ul>
         </div>

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import LeadForm from "../components/LeadForm";
+import ProjectCatalog from "../components/ProjectCatalog";
+
+import JsonLd from "../components/JsonLd";
 
 type ProjectCategory = {
   id: number;
@@ -67,12 +70,64 @@ async function getLandingPage(slug: string): Promise<LandingPage | null> {
   return response.json();
 }
 
-function formatPrice(price: number | null) {
-  if (!price) {
-    return "Цена по запросу";
+function buildLandingPageJsonLd(page: LandingPage) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const pageUrl = `${siteUrl}/${page.slug}`;
+
+  const graph: Record<string, unknown>[] = [
+    {
+      "@type": page.category ? "CollectionPage" : "WebPage",
+      "@id": `${pageUrl}#webpage`,
+      url: pageUrl,
+      name: page.seo_title || page.h1,
+      description: page.seo_description || page.intro_text,
+      inLanguage: "ru-RU",
+      isPartOf: {
+        "@type": "WebSite",
+        "@id": `${siteUrl}#website`,
+        url: siteUrl,
+        name: "СтройДача",
+      },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${pageUrl}#breadcrumbs`,
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Главная",
+          item: siteUrl,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: page.h1,
+          item: pageUrl,
+        },
+      ],
+    },
+  ];
+
+  if (page.faqs.length > 0) {
+    graph.push({
+      "@type": "FAQPage",
+      "@id": `${pageUrl}#faq`,
+      mainEntity: page.faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
+        },
+      })),
+    });
   }
 
-  return `от ${price.toLocaleString("ru-RU")} ₽`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": graph,
+  };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -83,9 +138,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {};
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const pageUrl = `${siteUrl}/${page.slug}`;
+
   return {
     title: page.seo_title || page.h1,
     description: page.seo_description || page.intro_text,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title: page.seo_title || page.h1,
+      description: page.seo_description || page.intro_text,
+      url: pageUrl,
+      type: "website",
+      locale: "ru_RU",
+      siteName: "СтройДача",
+    },
   };
 }
 
@@ -97,80 +166,51 @@ export default async function LandingPageRoute({ params }: PageProps) {
     notFound();
   }
 
+  const jsonLd = buildLandingPageJsonLd(page);
+
   return (
     <main>
+      <JsonLd data={jsonLd} />
       <section className="landingHero">
-        <div className="container">
-          <p className="eyebrow">
-            {page.category?.title || "Строительство из дерева"}
-          </p>
+        <div className="container landingHeroInner">
+          <div>
+            <p className="heroKicker">
+              {page.category?.title || "Строительство из дерева"}
+            </p>
 
-          <h1>{page.h1}</h1>
+            <h1>{page.h1}</h1>
 
-          {page.intro_text && <p className="heroText">{page.intro_text}</p>}
+            {page.intro_text && <p className="heroText">{page.intro_text}</p>}
 
-          <div className="heroActions">
-            <a href="#projects" className="buttonPrimary">
-              Смотреть проекты
-            </a>
-            <a href="#lead-form" className="buttonSecondary">
-              Получить расчёт
-            </a>
+            <div className="heroActions">
+              {page.category && (
+                <a href="#projects" className="buttonPrimary">
+                  Смотреть проекты
+                </a>
+              )}
+              <a href="#lead-form" className="buttonSecondary">
+                Получить расчёт
+              </a>
+            </div>
+          </div>
+
+          <div className="landingHeroPanel">
+            <strong>Бесплатный расчёт</strong>
+            <p>Подберём проект, комплектацию, фундамент и доставку.</p>
+            <a href="#lead-form">Оставить заявку →</a>
           </div>
         </div>
       </section>
 
-      {page.related_projects.length > 0 && (
-        <section className="container section" id="projects">
-          <div className="sectionHeader">
-            <p className="eyebrow">Подборка</p>
-            <h2>Проекты по теме</h2>
-            <p>
-              Ниже собраны проекты, подходящие под эту страницу. Стоимость может
-              меняться в зависимости от комплектации, фундамента, кровли и
-              региона строительства.
-            </p>
-          </div>
-
-          <div className="projectGrid">
-            {page.related_projects.map((project) => (
-              <article className="projectCard" key={project.id}>
-                <div className="projectImage">
-                  {project.main_image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={project.main_image} alt={project.title} />
-                  ) : (
-                    <div className="imagePlaceholder">Фото проекта</div>
-                  )}
-                </div>
-
-                <div className="projectBody">
-                  <div className="projectTop">
-                    <span>{project.category.title}</span>
-                    <span>{project.size_text || "Размер уточняется"}</span>
-                  </div>
-
-                  <h3>{project.title}</h3>
-
-                  <p>
-                    {project.short_description ||
-                      "Описание проекта скоро появится."}
-                  </p>
-
-                  <div className="projectSpecs">
-                    {project.area && <span>{project.area} м²</span>}
-                    {project.floor_label && <span>{project.floor_label}</span>}
-                  </div>
-
-                  <div className="projectFooter">
-                    <strong>{formatPrice(project.price_from)}</strong>
-                    <a href={`/projects/${project.slug}`}>Подробнее</a>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+      {page.category && (
+        <ProjectCatalog
+          initialCategory={page.category.slug}
+          showCategoryFilter={false}
+          showFilters={true}
+          eyebrow="Каталог"
+          title={`Проекты: ${page.h1}`}
+          description="Выберите подходящий проект и уточните параметры: площадь, тип строительства и ориентировочную стоимость."
+        />
       )}
 
       {page.main_text && (

@@ -6,9 +6,9 @@ import { useState } from "react";
 const menuItems = [
   { title: "Дома", href: "/doma-iz-brusa" },
   { title: "Бани", href: "/bani-iz-brusa" },
-  { title: "Гаражи", href: "/garazhi-pod-klyuch" },
-  { title: "Доставка", href: "/dostavka-po-rossii" },
-  { title: "Производство", href: "/proizvodstvo" },
+  { title: "Портфолио", href: "/#projects" },
+  { title: "О компании", href: "/proizvodstvo" },
+  { title: "Контакты", href: "/#lead-form" },
 ];
 
 export default function SiteHeader() {
@@ -22,10 +22,10 @@ export default function SiteHeader() {
     <header className="sdHeader">
       <div className="container sdHeaderInner">
         <Link className="sdLogo" href="/" onClick={closeMenu}>
-          <span className="sdLogoMark">СД</span>
+          <span className="sdLogoMark">⌂</span>
           <span className="sdLogoText">
             <strong>СтройДача</strong>
-            <small>дома, бани и гаражи из бруса</small>
+            <small>строим дома из бруса</small>
           </span>
         </Link>
 
@@ -37,12 +37,15 @@ export default function SiteHeader() {
           ))}
         </nav>
 
-        <a className="sdPhone" href="tel:+79999999999">
-          +7 999 999-99-99
-        </a>
+        <div className="sdHeaderContacts">
+          <a className="sdPhone" href="tel:+79999999999">
+            +7 999 999-99-99
+          </a>
+          <small>Ежедневно с 9:00 до 20:00</small>
+        </div>
 
         <Link className="sdHeaderCta" href="/#lead-form">
-          Получить расчёт
+          Заказать звонок
         </Link>
 
         <button
@@ -72,7 +75,7 @@ export default function SiteHeader() {
             </a>
 
             <Link className="sdMobileCta" href="/#lead-form" onClick={closeMenu}>
-              Получить расчёт
+              Заказать звонок
             </Link>
           </div>
         </nav>
