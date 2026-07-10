@@ -7,6 +7,8 @@ from .models import (
     Project,
     ProjectAddon,
     ProjectCategory,
+    ProjectContentSection,
+    ProjectIllustratedOption,
     ProjectImage,
     ProjectPackage,
     ProjectPackageItem,
@@ -104,6 +106,30 @@ class ProjectResource(resources.ModelResource):
         column_name="is_featured",
         attribute="is_featured",
         widget=RussianBooleanWidget(),
+    )
+
+class ProjectContentSectionInline(admin.TabularInline):
+    model = ProjectContentSection
+    extra = 1
+    fields = (
+        "title",
+        "body",
+        "is_active",
+        "sort_order",
+    )
+
+
+class ProjectIllustratedOptionInline(admin.TabularInline):
+    model = ProjectIllustratedOption
+    extra = 1
+    fields = (
+        "group_title",
+        "title",
+        "price",
+        "image",
+        "description",
+        "is_active",
+        "sort_order",
     )
 
     class Meta:
@@ -340,11 +366,13 @@ class ProjectAdmin(admin.ModelAdmin):
         )
 
     inlines = [
-        ProjectPriceOptionInline,
-        ProjectAddonInline,
         ProjectImageInline,
         ProjectPlanInline,
+        ProjectPriceOptionInline,
+        ProjectAddonInline,
         ProjectPackageInline,
+        ProjectContentSectionInline,
+        ProjectIllustratedOptionInline,
     ]
 
 

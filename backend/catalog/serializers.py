@@ -10,6 +10,8 @@ from .models import (
     ProjectPackageSection,
     ProjectPlan,
     ProjectPriceOption,
+    ProjectContentSection,
+    ProjectIllustratedOption,
 )
 
 
@@ -173,13 +175,46 @@ class ProjectListSerializer(AbsoluteImageUrlMixin, serializers.ModelSerializer):
     def get_main_image(self, obj):
         return self.get_absolute_image_url(obj, "main_image")
 
+class ProjectContentSectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectContentSection
+        fields = (
+            "id",
+            "title",
+            "body",
+            "sort_order",
+        )
 
+
+class ProjectIllustratedOptionSerializer(
+    AbsoluteImageUrlMixin,
+    serializers.ModelSerializer,
+):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectIllustratedOption
+        fields = (
+            "id",
+            "group_title",
+            "title",
+            "price",
+            "image",
+            "description",
+            "sort_order",
+        )
+
+    def get_image(self, obj):
+        return self.get_absolute_image_url(obj, "image")
+    
 class ProjectDetailSerializer(ProjectListSerializer):
     images = ProjectImageSerializer(many=True, read_only=True)
     plans = ProjectPlanSerializer(many=True, read_only=True)
     price_options = ProjectPriceOptionSerializer(many=True, read_only=True)
     addons = ProjectAddonSerializer(many=True, read_only=True)
     packages = ProjectPackageSerializer(many=True, read_only=True)
+    content_sections = ProjectContentSectionSerializer(many=True, read_only=True)
+    illustrated_options = ProjectIllustratedOptionSerializer(many=True, read_only=True)
 
     class Meta(ProjectListSerializer.Meta):
         fields = ProjectListSerializer.Meta.fields + (
@@ -191,4 +226,6 @@ class ProjectDetailSerializer(ProjectListSerializer):
             "price_options",
             "addons",
             "packages",
+            "content_sections",
+            "illustrated_options",
         )

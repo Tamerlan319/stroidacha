@@ -39,6 +39,8 @@ type ProjectCatalogProps = {
   eyebrow?: string;
   title?: string;
   description?: string;
+  moreHref?: string;
+  moreLabel?: string;
 };
 
 const constructionTypes = [
@@ -86,6 +88,8 @@ export default function ProjectCatalog({
   eyebrow = "Каталог",
   title = "Популярные проекты",
   description = "Выберите готовый проект или отправьте свой — менеджер поможет рассчитать стоимость под нужную комплектацию.",
+  moreHref,
+  moreLabel = "Смотреть больше",
 }: ProjectCatalogProps) {
   const initialFilters: Filters = {
     category: initialCategory,
@@ -360,6 +364,13 @@ export default function ProjectCatalog({
           )}
         </div>
       </div>
+      {moreHref && !isLoading && visibleProjects.length > 0 && (
+        <div className="catalogMore">
+            <Link className="buttonPrimary" href={moreHref}>
+            {moreLabel}
+            </Link>
+        </div>
+        )}
     </section>
   );
 }

@@ -4,6 +4,8 @@ import "./globals.css";
 import SiteFooter from "./components/SiteFooter";
 import SiteHeader from "./components/SiteHeader";
 
+import MobileHorizontalLock from "./components/MobileScrollFix";
+
 export const metadata: Metadata = {
   title: "СтройДача — дома, бани и гаражи из бруса",
   description:
@@ -18,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
+        <MobileHorizontalLock />
         <SiteHeader />
 
         {children}

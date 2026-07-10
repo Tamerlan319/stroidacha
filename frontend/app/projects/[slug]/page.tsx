@@ -85,12 +85,31 @@ type Project = {
   price_options: PriceOption[];
   addons: Addon[];
   packages: ProjectPackage[];
+  content_sections: ProjectContentSection[];
+  illustrated_options: ProjectIllustratedOption[];
 };
 
 type PageProps = {
   params: Promise<{
     slug: string;
   }>;
+};
+
+type ProjectContentSection = {
+  id: number;
+  title: string;
+  body: string;
+  sort_order: number;
+};
+
+type ProjectIllustratedOption = {
+  id: number;
+  group_title: string;
+  title: string;
+  price: string | number | null;
+  image: string | null;
+  description: string;
+  sort_order: number;
 };
 
 async function getProject(slug: string): Promise<Project | null> {
@@ -328,27 +347,25 @@ export default async function ProjectPage({ params }: PageProps) {
   const priceGroups = groupByTitle(project.price_options || []);
   const addonGroups = groupByTitle(project.addons || []);
 
-  const galleryImages = [
-  ...(project.main_image
-    ? [
-        {
-          id: "main",
-          src: project.main_image,
-          alt: project.title,
-          caption: "Главное изображение",
-        },
-      ]
-    : []),
-  ...(project.images || []).map((image) => ({
+  const galleryImages = (project.images || []).map((image) => ({
     id: image.id,
     src: image.image,
     alt: image.alt_text || image.caption || project.title,
     caption: image.caption,
-  })),
-];
+  }));
+
+  const planImages = (project.plans || []).map((plan) => ({
+  id: plan.id,
+  src: plan.image,
+  alt: plan.alt_text || plan.title || project.title,
+  caption: plan.title || `План ${plan.floor || ""}`,
+  }));
+
+  const contentSections = project.content_sections || [];
+  const illustratedOptionGroups = groupByTitle(project.illustrated_options || []);
 
   return (
-    <main>
+    <main className="projectPage">
       <JsonLd data={jsonLd} />
 
       <section
@@ -405,37 +422,27 @@ export default async function ProjectPage({ params }: PageProps) {
           <div className="sectionHeader">
             <p className="eyebrow">Галерея</p>
             <h2>Изображения проекта</h2>
-            <p>Нажмите на изображение, чтобы открыть его в полноэкранном просмотре.</p>
           </div>
 
-          <ImageLightbox images={galleryImages} />
+          <ImageLightbox images={galleryImages} previewLimit={5} />
         </section>
       )}
 
-      {project.plans?.length > 0 && (
-        <section className="container section">
-          <div className="sectionHeader">
+      {planImages.length > 0 && (
+        <section className="container section projectPlansSection">
+          <div className="sectionHeader sectionHeaderCompact">
             <p className="eyebrow">Планировки</p>
             <h2>Планы этажей</h2>
-            <p>Планировочные решения проекта. При необходимости их можно изменить.</p>
+            <p>
+              Нажмите на планировку, чтобы открыть её крупно и рассмотреть детали.
+            </p>
           </div>
 
-          <div className="planGrid">
-            {project.plans.map((plan) => (
-              <figure className="planCard" key={plan.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={plan.image}
-                  alt={plan.alt_text || plan.title || project.title}
-                />
-
-                <figcaption>
-                  <strong>{plan.title || `План ${plan.floor || ""}`}</strong>
-                  {plan.floor && <span>{plan.floor} этаж</span>}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          <ImageLightbox
+            images={planImages}
+            previewLimit={4}
+            className="projectGalleryPlans"
+          />
         </section>
       )}
 
@@ -501,24 +508,42 @@ export default async function ProjectPage({ params }: PageProps) {
         </section>
       )}
 
-      {Object.keys(addonGroups).length > 0 && (
+      {Object.keys(illustratedOptionGroups).length > 0 && (
         <section className="container section">
           <div className="sectionHeader">
-            <p className="eyebrow">Дополнительно</p>
-            <h2>Фундамент, кровля и опции</h2>
+            <p className="eyebrow">Материалы и решения</p>
+            <h2>Дополнительные варианты для проекта</h2>
+            <p>
+              Фундамент, кровля и другие решения, которые можно добавить или заменить
+              при расчёте проекта.
+            </p>
           </div>
 
-          <div className="priceGroupGrid">
-            {Object.entries(addonGroups).map(([groupTitle, items]) => (
-              <div className="infoCard" key={groupTitle}>
+          <div className="illustratedOptionGroups">
+            {Object.entries(illustratedOptionGroups).map(([groupTitle, items]) => (
+              <div className="illustratedOptionGroup" key={groupTitle}>
                 <h3>{groupTitle}</h3>
 
-                <div className="priceRows">
+                <div className="illustratedOptionGrid">
                   {items.map((item) => (
-                    <div className="priceRow" key={item.id}>
-                      <span>{item.title}</span>
-                      <strong>{formatPrice(item.price)}</strong>
-                    </div>
+                    <article className="illustratedOptionCard" key={item.id}>
+                      <div className="illustratedOptionImage">
+                        {item.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={item.image} alt={item.title} />
+                        ) : (
+                          <div className="imagePlaceholder">Изображение</div>
+                        )}
+                      </div>
+
+                      <div className="illustratedOptionBody">
+                        <h4>{item.title}</h4>
+
+                        {item.description && <p>{item.description}</p>}
+
+                        <strong>{formatPrice(item.price)}</strong>
+                      </div>
+                    </article>
                   ))}
                 </div>
               </div>
@@ -527,23 +552,33 @@ export default async function ProjectPage({ params }: PageProps) {
         </section>
       )}
 
-      {project.description && (
+      {contentSections.length > 0 ? (
         <section className="container section">
-          <div className="sectionHeader">
+          <div className="sectionHeader sectionHeaderCenter">
             <p className="eyebrow">Описание</p>
-            <h2>О проекте</h2>
-            <p>{project.description}</p>
+            <h2>Подробно о проекте</h2>
+          </div>
+
+          <div className="projectTextSections">
+            {contentSections.map((section) => (
+              <article className="projectTextSection" key={section.id}>
+                <h3>{section.title}</h3>
+                <p>{section.body}</p>
+              </article>
+            ))}
           </div>
         </section>
+      ) : (
+        project.description && (
+          <section className="container section">
+            <div className="sectionHeader sectionHeaderCenter">
+              <p className="eyebrow">Описание</p>
+              <h2>О проекте</h2>
+              <p>{project.description}</p>
+            </div>
+          </section>
+        )
       )}
-
-      <section className="container section" id="lead-form">
-        <LeadForm
-          title="Заказать этот проект"
-          source="project_order"
-          projectSlug={project.slug}
-        />
-      </section>
     </main>
   );
 }

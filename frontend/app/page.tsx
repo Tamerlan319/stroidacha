@@ -193,11 +193,25 @@ export default async function HomePage() {
       </section>
 
       <ProjectCatalog
+        initialCategory="houses"
         showFilters={false}
         maxItems={4}
         eyebrow="Рекомендуемые проекты"
         title="Готовые проекты домов"
-        description="Карточки подтягиваются из Django. На главной показываем только самые важные проекты без фильтров."
+        description="Популярные проекты домов из бруса для дачи и круглогодичного проживания."
+        moreHref="/doma-iz-brusa"
+        moreLabel="Смотреть все дома"
+      />
+
+      <ProjectCatalog
+        initialCategory="baths"
+        showFilters={false}
+        maxItems={4}
+        eyebrow="Рекомендуемые проекты"
+        title="Готовые проекты бань"
+        description="Готовые проекты бань из бруса с разными размерами, планировками и комплектациями."
+        moreHref="/bani-iz-brusa"
+        moreLabel="Смотреть все бани"
       />
 
       <section className="container section">

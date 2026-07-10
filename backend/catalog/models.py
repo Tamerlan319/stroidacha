@@ -355,3 +355,63 @@ class ProjectPackageItem(models.Model):
 
     def __str__(self):
         return f"{self.title}: {self.value[:50]}"
+    
+class ProjectContentSection(models.Model):
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="content_sections",
+        verbose_name="Проект",
+    )
+    title = models.CharField("Заголовок", max_length=255)
+    body = models.TextField("Текст")
+    is_active = models.BooleanField("Активен", default=True)
+    sort_order = models.PositiveIntegerField("Сортировка", default=0)
+
+    class Meta:
+        verbose_name = "Текстовый раздел проекта"
+        verbose_name_plural = "Текстовые разделы проекта"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.project.title} — {self.title}"
+
+
+class ProjectIllustratedOption(models.Model):
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="illustrated_options",
+        verbose_name="Проект",
+    )
+    group_title = models.CharField(
+        "Группа",
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Например: Фундамент, Кровля, Материалы",
+    )
+    title = models.CharField("Название", max_length=255)
+    price = models.DecimalField(
+        "Цена",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    image = models.ImageField(
+        "Изображение",
+        upload_to="catalog/project_options/",
+        blank=True,
+    )
+    description = models.TextField("Описание", blank=True)
+    is_active = models.BooleanField("Активна", default=True)
+    sort_order = models.PositiveIntegerField("Сортировка", default=0)
+
+    class Meta:
+        verbose_name = "Иллюстрированная опция проекта"
+        verbose_name_plural = "Иллюстрированные опции проекта"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.project.title} — {self.title}"
