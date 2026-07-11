@@ -7,7 +7,7 @@ import SiteHeader from "./components/SiteHeader";
 import MobileHorizontalLock from "./components/MobileScrollFix";
 
 export const metadata: Metadata = {
-  title: "СтройДача — дома, бани и гаражи из бруса",
+  title: "Домодел44 — дома, бани и гаражи из бруса",
   description:
     "Строительство домов, бань и гаражей из бруса. Готовые проекты, комплектации, расчёт стоимости и доставка по России.",
 };

@@ -224,7 +224,7 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
     image: images,
     brand: {
       "@type": "Brand",
-      name: "СтройДача",
+      name: "Домодел44",
     },
   };
 
@@ -250,7 +250,7 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
         "@type": "WebSite",
         "@id": `${siteUrl}#website`,
         url: siteUrl,
-        name: "СтройДача",
+        name: "Домодел44",
       },
     },
     {
@@ -322,7 +322,7 @@ export async function generateMetadata({
       url: pageUrl,
       type: "website",
       locale: "ru_RU",
-      siteName: "СтройДача",
+      siteName: "Домодел44",
       images: project.main_image
         ? [
             {

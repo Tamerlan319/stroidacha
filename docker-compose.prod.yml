@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16
+    container_name: domodel_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: domodel
+      POSTGRES_USER: domodel_user
+      POSTGRES_PASSWORD: domodel_password_change_me
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: domodel_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.prod
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: "https://domodel44.ru/api"
+        NEXT_PUBLIC_SITE_URL: "https://domodel44.ru"
+    container_name: domodel_frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "https://domodel44.ru/api"
+      NEXT_PUBLIC_SITE_URL: "https://domodel44.ru"
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: domodel_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - media_data:/var/www/media:ro
+      - static_data:/var/www/static:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:
+  caddy_data:
+  caddy_config:

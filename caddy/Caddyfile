@@ -1,0 +1,29 @@
+domodel44.ru, www.domodel44.ru {
+    encode gzip
+
+    request_body {
+        max_size 80MB
+    }
+
+    handle_path /static/* {
+        root * /var/www/static
+        file_server
+    }
+
+    handle_path /media/* {
+        root * /var/www/media
+        file_server
+    }
+
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /admin/* {
+        reverse_proxy backend:8000
+    }
+
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

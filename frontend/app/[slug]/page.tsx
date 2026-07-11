@@ -86,7 +86,7 @@ function buildLandingPageJsonLd(page: LandingPage) {
         "@type": "WebSite",
         "@id": `${siteUrl}#website`,
         url: siteUrl,
-        name: "СтройДача",
+        name: "Домодел44",
       },
     },
     {
@@ -153,7 +153,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: pageUrl,
       type: "website",
       locale: "ru_RU",
-      siteName: "СтройДача",
+      siteName: "Домодел44",
     },
   };
 }

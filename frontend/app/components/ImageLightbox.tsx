@@ -128,10 +128,7 @@ export default function ImageLightbox({
           aria-modal="true"
           onClick={closeImage}
         >
-          <div
-            className="lightboxContent"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <div className="lightboxContent">
             <button
               className="lightboxClose"
               type="button"
@@ -145,7 +142,10 @@ export default function ImageLightbox({
               <button
                 className="lightboxArrow lightboxArrowLeft"
                 type="button"
-                onClick={showPrevious}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  showPrevious();
+                }}
                 aria-label="Предыдущее изображение"
               >
                 ‹
@@ -157,20 +157,27 @@ export default function ImageLightbox({
               className="lightboxImage"
               src={activeImage.src}
               alt={activeImage.alt}
+              onClick={(event) => event.stopPropagation()}
             />
 
             {images.length > 1 && (
               <button
                 className="lightboxArrow lightboxArrowRight"
                 type="button"
-                onClick={showNext}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  showNext();
+                }}
                 aria-label="Следующее изображение"
               >
                 ›
               </button>
             )}
 
-            <div className="lightboxBottom">
+            <div
+              className="lightboxBottom"
+              onClick={(event) => event.stopPropagation()}
+            >
               <div>
                 {activeImage.caption && <strong>{activeImage.caption}</strong>}
                 <span>

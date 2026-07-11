@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 .venv/
 .env
+.env.*
+!backend/.env.prod.example
 
 # Django
 media/
@@ -14,8 +16,9 @@ node_modules/
 dist/
 .next/
 .env.local
+.env.production
 
-# Docker
+# Docker / logs
 *.log
 
 # IDE

@@ -6,9 +6,10 @@ import { useState } from "react";
 const menuItems = [
   { title: "Дома", href: "/doma-iz-brusa" },
   { title: "Бани", href: "/bani-iz-brusa" },
-  { title: "Портфолио", href: "/#projects" },
+  { title: "Портфолио", href: "/portfolio" },
   { title: "О компании", href: "/proizvodstvo" },
-  { title: "Контакты", href: "/#lead-form" },
+  { title: "Контакты", href: "/kontakty" },
+  { title: "Дополнительно", href: "/#" },
 ];
 
 export default function SiteHeader() {
@@ -24,7 +25,7 @@ export default function SiteHeader() {
         <Link className="sdLogo" href="/" onClick={closeMenu}>
           <span className="sdLogoMark">⌂</span>
           <span className="sdLogoText">
-            <strong>СтройДача</strong>
+            <strong>Домодел44</strong>
             <small>строим дома из бруса</small>
           </span>
         </Link>
@@ -39,7 +40,7 @@ export default function SiteHeader() {
 
         <div className="sdHeaderContacts">
           <a className="sdPhone" href="tel:+79999999999">
-            +7 999 999-99-99
+            +7 967 680-18-12
           </a>
           <small>Ежедневно с 9:00 до 20:00</small>
         </div>

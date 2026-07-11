@@ -278,25 +278,33 @@ export default async function HomePage() {
         </section>
       )}
 
-      <section className="container section deliverySection">
-        <div className="deliveryMap">
-          <div className="mapCircle" />
-          <strong>Доставка по России</strong>
-          <span>маршрут и стоимость считаем отдельно</span>
-        </div>
+        <section className="container section">
+          <div className="deliverySection">
+            <div className="deliveryMap deliveryMapReal">
+              <iframe
+                src="https://yandex.ru/map-widget/v1/?um=constructor%3Af2357c7eef2c0a4200a5244d74da6f5e737586274d8529dba014874e07929877&source=constructor"
+                title="Карта доставки Домодел44"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
 
-        <div className="deliveryText">
-          <p className="eyebrow">Логистика</p>
-          <h2>Бесплатная доставка материала по согласованным направлениям</h2>
-          <p>
-            Для каждого проекта заранее считаем объём материалов, транспорт и
-            условия разгрузки. Это помогает избежать сюрпризов в смете.
-          </p>
-          <Link className="buttonSecondary buttonSecondaryDark" href="#lead-form">
-            Узнать стоимость доставки
-          </Link>
-        </div>
-      </section>
+            <div className="deliveryText">
+              <p className="eyebrow">Логистика</p>
+
+              <h2>Бесплатная доставка материала по согласованным направлениям</h2>
+
+              <p>
+                Для каждого проекта заранее считаем объём материалов, транспорт и
+                условия разгрузки. Это помогает избежать сюрпризов в смете.
+              </p>
+
+              <a className="buttonGhost" href="#lead-form">
+                Узнать стоимость доставки
+              </a>
+            </div>
+          </div>
+        </section>
 
       {homepageContent.reviews.length > 0 && (
         <section className="container section">

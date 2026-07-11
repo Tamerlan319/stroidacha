@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Advantage, FAQ, Review, WorkStep
+from .models import Advantage, FAQ, Review, WorkStep, ContactLocation, PortfolioProject, PortfolioImage
 
 
 class AdvantageSerializer(serializers.ModelSerializer):
@@ -33,3 +33,92 @@ class ReviewSerializer(serializers.ModelSerializer):
             "rating",
             "sort_order",
         )
+
+class AbsoluteImageUrlMixin:
+    def get_absolute_image_url(self, obj, field_name):
+        image = getattr(obj, field_name)
+
+        if not image:
+            return None
+
+        request = self.context.get("request")
+        url = image.url
+
+        if request:
+            return request.build_absolute_uri(url)
+
+        return url
+
+
+class ContactLocationSerializer(serializers.ModelSerializer):
+    location_type_display = serializers.CharField(
+        source="get_location_type_display",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ContactLocation
+        fields = (
+            "id",
+            "title",
+            "location_type",
+            "location_type_display",
+            "address",
+            "short_description",
+            "phone",
+            "email",
+            "work_hours",
+            "map_embed_url",
+            "map_link_url",
+            "sort_order",
+        )
+
+
+class PortfolioImageSerializer(
+    AbsoluteImageUrlMixin,
+    serializers.ModelSerializer,
+):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PortfolioImage
+        fields = (
+            "id",
+            "image",
+            "caption",
+            "alt_text",
+            "sort_order",
+        )
+
+    def get_image(self, obj):
+        return self.get_absolute_image_url(obj, "image")
+
+
+class PortfolioProjectSerializer(
+    AbsoluteImageUrlMixin,
+    serializers.ModelSerializer,
+):
+    main_image = serializers.SerializerMethodField()
+    images = PortfolioImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = PortfolioProject
+        fields = (
+            "id",
+            "title",
+            "slug",
+            "location",
+            "area",
+            "size_text",
+            "material",
+            "price",
+            "short_description",
+            "description",
+            "main_image",
+            "images",
+            "sort_order",
+            "created_at",
+        )
+
+    def get_main_image(self, obj):
+        return self.get_absolute_image_url(obj, "main_image")

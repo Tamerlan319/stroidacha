@@ -36,7 +36,7 @@ export default async function SiteFooter() {
           <Link className="sdLogo footerLogo" href="/">
             <span className="sdLogoMark">⌂</span>
             <span className="sdLogoText">
-              <strong>СтройДача</strong>
+              <strong>Домодел44</strong>
               <small>строительство из дерева</small>
             </span>
           </Link>
@@ -100,7 +100,7 @@ export default async function SiteFooter() {
       </div>
 
       <div className="container footerBottom">
-        <span>© {new Date().getFullYear()} СтройДача</span>
+        <span>© {new Date().getFullYear()} Домодел44</span>
         <span>Информация на сайте не является публичной офертой.</span>
       </div>
     </footer>
