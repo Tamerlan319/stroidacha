@@ -7,6 +7,7 @@ const menuItems = [
   { title: "Дома", href: "/doma-iz-brusa" },
   { title: "Бани", href: "/bani-iz-brusa" },
   { title: "Портфолио", href: "/portfolio" },
+  { title: "Калькулятор", href: "/calculator" },
   { title: "О компании", href: "/proizvodstvo" },
   { title: "Контакты", href: "/kontakty" },
   { title: "Дополнительно", href: "/#" },

@@ -46,7 +46,7 @@ export default async function SiteFooter() {
             комплектацию, считаем доставку и фиксируем смету до начала работ.
           </p>
 
-          <Link className="buttonPrimary footerButton" href="/#lead-form">
+          <Link className="buttonPrimary footerButton" href="/calculator">
             Рассчитать стоимость
           </Link>
         </div>

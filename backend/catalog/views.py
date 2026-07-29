@@ -1,21 +1,28 @@
+from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 
-from .models import Project, ProjectCategory
-from .serializers import (
-    ProjectCategorySerializer,
-    ProjectDetailSerializer,
-    ProjectListSerializer,
+from .models import (
+    Project,
+    ProjectCategory,
+    ProjectContentSection,
+    ProjectExtraOption,
+    ProjectFoundation,
+    ProjectOffer,
+    ProjectRoofCovering,
 )
+from .pricing import PricingService
+from .serializers import ProjectCategorySerializer, ProjectDetailSerializer, ProjectListSerializer
+
+
+OFFER_LIST_QS = ProjectOffer.objects.select_related("material", "build_package")
+OFFER_DETAIL_QS = OFFER_LIST_QS.prefetch_related("build_package__sections__items")
 
 
 class ProjectCategoryListAPIView(ListAPIView):
     serializer_class = ProjectCategorySerializer
 
     def get_queryset(self):
-        return ProjectCategory.objects.filter(is_active=True).order_by(
-            "sort_order",
-            "title",
-        )
+        return ProjectCategory.objects.filter(is_active=True).order_by("sort_order", "title")
 
 
 class ProjectListAPIView(ListAPIView):
@@ -23,9 +30,9 @@ class ProjectListAPIView(ListAPIView):
 
     def get_queryset(self):
         queryset = (
-            Project.objects
-            .filter(is_active=True)
+            Project.objects.filter(is_active=True)
             .select_related("category")
+            .prefetch_related("images", Prefetch("offers", queryset=OFFER_LIST_QS))
             .order_by("sort_order", "-created_at")
         )
 
@@ -40,27 +47,39 @@ class ProjectListAPIView(ListAPIView):
 
         if category:
             queryset = queryset.filter(category__slug=category)
-
         if construction_type:
             queryset = queryset.filter(construction_type=construction_type)
-
         if featured in ("1", "true", "yes", "да"):
             queryset = queryset.filter(is_featured=True)
-
         if area_min:
             queryset = queryset.filter(area__gte=area_min)
-
         if area_max:
             queryset = queryset.filter(area__lte=area_max)
-
-        if price_min:
-            queryset = queryset.filter(price_from__gte=price_min)
-
-        if price_max:
-            queryset = queryset.filter(price_from__lte=price_max)
-
         if floors:
             queryset = queryset.filter(floors=floors)
+
+        # Эффективная цена зависит от нескольких коэффициентов и может быть
+        # вычислена только единым PricingService. Для текущего каталога (~сотни
+        # проектов) этот проход предсказуем и исключает рассинхрон с калькулятором.
+        if price_min or price_max:
+            try:
+                min_value = int(price_min) if price_min else None
+                max_value = int(price_max) if price_max else None
+            except (TypeError, ValueError):
+                return queryset
+
+            pricing = PricingService()
+            matching_ids = []
+            for project in queryset:
+                effective = pricing.get_project_price_from(project)
+                if effective is None:
+                    continue
+                if min_value is not None and effective < min_value:
+                    continue
+                if max_value is not None and effective > max_value:
+                    continue
+                matching_ids.append(project.pk)
+            queryset = queryset.filter(pk__in=matching_ids)
 
         return queryset
 
@@ -71,14 +90,28 @@ class ProjectDetailAPIView(RetrieveAPIView):
 
     def get_queryset(self):
         return (
-            Project.objects
-            .filter(is_active=True)
-            .select_related("category")
+            Project.objects.filter(is_active=True)
+            .select_related("category", "technical")
             .prefetch_related(
                 "images",
                 "plans",
-                "price_options",
-                "addons",
-                "packages__sections__items",
+                Prefetch("offers", queryset=OFFER_DETAIL_QS),
+                "package_overrides",
+                Prefetch(
+                    "foundations",
+                    queryset=ProjectFoundation.objects.select_related("foundation"),
+                ),
+                Prefetch(
+                    "roof_coverings",
+                    queryset=ProjectRoofCovering.objects.select_related("covering"),
+                ),
+                Prefetch(
+                    "extra_options",
+                    queryset=ProjectExtraOption.objects.select_related("option"),
+                ),
+                Prefetch(
+                    "content_sections",
+                    queryset=ProjectContentSection.objects.filter(is_active=True),
+                ),
             )
         )

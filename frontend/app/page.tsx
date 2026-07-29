@@ -232,8 +232,8 @@ export default async function HomePage() {
             <span>Материал</span>
           </div>
 
-          <Link className="buttonPrimary" href="#lead-form">
-            Получить расчёт
+          <Link className="buttonPrimary" href="/calculator">
+            Рассчитать самостоятельно
           </Link>
         </div>
       </section>

@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/", include("leads.urls")),
     path("api/", include("content.urls")),
     path("api/", include("seo.urls")),
+    path("api/", include("calculator.urls")),
 ]
 
 if settings.DEBUG:
