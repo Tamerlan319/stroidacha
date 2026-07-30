@@ -3,10 +3,30 @@ import type { Metadata } from "next";
 import LeadForm from "../components/LeadForm";
 import PortfolioList, { PortfolioItem } from "../components/PortfolioList";
 
+const description =
+  "Примеры построенных домов и бань из бруса: фото объектов, характеристики, материалы и стоимость строительства.";
+
 export const metadata: Metadata = {
-  title: "Портфолио построенных домов и бань | Брусотека",
-  description:
-    "Примеры построенных домов и бань из бруса: фото объектов, характеристики, материалы и стоимость строительства.",
+  title: "Портфолио построенных домов и бань",
+  description,
+  alternates: {
+    canonical: "/portfolio",
+  },
+  openGraph: {
+    title: "Портфолио построенных домов и бань | Брусотека",
+    description,
+    url: "/portfolio",
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Брусотека",
+    images: ["/images/banners/home-hero.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Портфолио построенных домов и бань | Брусотека",
+    description,
+    images: ["/images/banners/home-hero.jpg"],
+  },
 };
 
 type PortfolioApiImage = {

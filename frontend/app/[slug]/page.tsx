@@ -5,6 +5,7 @@ import LeadForm from "../components/LeadForm";
 import ProjectCatalog from "../components/ProjectCatalog";
 
 import JsonLd from "../components/JsonLd";
+import { SITE_NAME, SITE_URL } from "../lib/site";
 
 type ProjectCategory = {
   id: number;
@@ -71,8 +72,7 @@ async function getLandingPage(slug: string): Promise<LandingPage | null> {
 }
 
 function buildLandingPageJsonLd(page: LandingPage) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const pageUrl = `${siteUrl}/${page.slug}`;
+  const pageUrl = `${SITE_URL}/${page.slug}`;
 
   const graph: Record<string, unknown>[] = [
     {
@@ -84,9 +84,9 @@ function buildLandingPageJsonLd(page: LandingPage) {
       inLanguage: "ru-RU",
       isPartOf: {
         "@type": "WebSite",
-        "@id": `${siteUrl}#website`,
-        url: siteUrl,
-        name: "Брусотека",
+        "@id": `${SITE_URL}/#website`,
+        url: SITE_URL,
+        name: SITE_NAME,
       },
     },
     {
@@ -97,7 +97,7 @@ function buildLandingPageJsonLd(page: LandingPage) {
           "@type": "ListItem",
           position: 1,
           name: "Главная",
-          item: siteUrl,
+          item: SITE_URL,
         },
         {
           "@type": "ListItem",
@@ -138,22 +138,37 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {};
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const pageUrl = `${siteUrl}/${page.slug}`;
+  const pageUrl = `${SITE_URL}/${page.slug}`;
+  const title = page.seo_title || `${page.h1} | ${SITE_NAME}`;
+  const description = page.seo_description || page.intro_text;
 
   return {
-    title: page.seo_title || page.h1,
-    description: page.seo_description || page.intro_text,
+    title: {
+      absolute: title,
+    },
+    description,
     alternates: {
       canonical: pageUrl,
     },
     openGraph: {
-      title: page.seo_title || page.h1,
-      description: page.seo_description || page.intro_text,
+      title,
+      description,
       url: pageUrl,
       type: "website",
       locale: "ru_RU",
-      siteName: "Брусотека",
+      siteName: SITE_NAME,
+      images: [
+        {
+          url: "/images/banners/home-hero.jpg",
+          alt: page.h1,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/images/banners/home-hero.jpg"],
     },
   };
 }

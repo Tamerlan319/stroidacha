@@ -1,7 +1,45 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CATALOG_LINKS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
+import JsonLd from "./components/JsonLd";
 import LeadForm from "./components/LeadForm";
 import ProjectCatalog from "./components/ProjectCatalog";
+import SiteIcon from "./components/SiteIcon";
+
+const HOME_TITLE = "Дома и бани из бруса под ключ — Брусотека";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: HOME_TITLE,
+  },
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: HOME_TITLE,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    type: "website",
+    locale: "ru_RU",
+    siteName: SITE_NAME,
+    images: [
+      {
+        url: "/images/banners/home-hero.jpg",
+        width: 1600,
+        height: 1067,
+        alt: "Дом из бруса, построенный компанией Брусотека",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: HOME_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ["/images/banners/home-hero.jpg"],
+  },
+};
 
 type Advantage = {
   id: number;
@@ -51,25 +89,25 @@ const fallbackAdvantages = [
     id: 1,
     title: "84+ проекта",
     description: "Готовые решения для домов, бань, срубов и гаражей.",
-    icon: "⌂",
+    icon: "blueprint",
   },
   {
     id: 2,
     title: "500+ построек",
     description: "Помогаем подобрать комплектацию под задачу и бюджет.",
-    icon: "▣",
+    icon: "house",
   },
   {
     id: 3,
     title: "Доставка по России",
     description: "Считаем логистику и материалы до старта строительства.",
-    icon: "↗",
+    icon: "truck",
   },
   {
     id: 4,
     title: "Собственное производство",
     description: "Контролируем качество древесины и комплектующих.",
-    icon: "♨",
+    icon: "factory",
   },
 ];
 
@@ -123,6 +161,59 @@ async function getLandingPages(): Promise<LandingPage[]> {
   }
 }
 
+function buildHomeJsonLd(): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${SITE_URL}/#webpage`,
+        url: SITE_URL,
+        name: HOME_TITLE,
+        description: SITE_DESCRIPTION,
+        inLanguage: "ru-RU",
+        isPartOf: {
+          "@id": `${SITE_URL}/#website`,
+        },
+        about: {
+          "@id": `${SITE_URL}/#organization`,
+        },
+        primaryImageOfPage: {
+          "@type": "ImageObject",
+          url: `${SITE_URL}/images/banners/home-hero.jpg`,
+        },
+      },
+      {
+        "@type": "Service",
+        "@id": `${SITE_URL}/#construction-service`,
+        name: "Строительство домов и бань из бруса под ключ",
+        serviceType: "Строительство деревянных домов и бань",
+        description: SITE_DESCRIPTION,
+        provider: {
+          "@id": `${SITE_URL}/#organization`,
+        },
+        areaServed: {
+          "@type": "Country",
+          name: "Россия",
+        },
+        hasOfferCatalog: {
+          "@type": "OfferCatalog",
+          name: "Каталог строительства",
+          itemListElement: CATALOG_LINKS.map((item) => ({
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: item.title,
+              description: item.description,
+              url: `${SITE_URL}${item.href}`,
+            },
+          })),
+        },
+      },
+    ],
+  };
+}
+
 export default async function HomePage() {
   const [homepageContent, landingPages] = await Promise.all([
     getHomepageContent(),
@@ -139,6 +230,8 @@ export default async function HomePage() {
 
   return (
     <main>
+      <JsonLd data={buildHomeJsonLd()} />
+
       <section className="homeHero">
         <div className="container homeHeroGrid">
           <div className="homeHeroContent">
@@ -183,7 +276,9 @@ export default async function HomePage() {
       <section className="container trustStrip" aria-label="Преимущества">
         {advantages.slice(0, 4).map((advantage) => (
           <article className="trustItem" key={advantage.id}>
-            <span>{advantage.icon || "⌂"}</span>
+            <span className="trustIcon">
+              <SiteIcon name={advantage.icon} />
+            </span>
             <div>
               <strong>{advantage.title}</strong>
               <p>{advantage.description}</p>

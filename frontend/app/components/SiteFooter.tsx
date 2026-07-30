@@ -1,5 +1,13 @@
 import Link from "next/link";
 
+import {
+  CATALOG_LINKS,
+  SITE_EMAIL,
+  SITE_PHONE,
+  SITE_PHONE_HREF,
+} from "../lib/site";
+import BrandMark from "./BrandMark";
+
 type LandingPage = {
   id: number;
   title: string;
@@ -34,7 +42,9 @@ export default async function SiteFooter() {
       <div className="container footerTop">
         <div className="footerBrand">
           <Link className="sdLogo footerLogo" href="/">
-            <span className="sdLogoMark">⌂</span>
+            <span className="sdLogoMark">
+              <BrandMark />
+            </span>
             <span className="sdLogoText">
               <strong>Брусотека</strong>
               <small>строительство из дерева</small>
@@ -54,18 +64,11 @@ export default async function SiteFooter() {
         <div>
           <h3>Каталог</h3>
           <ul className="footerLinks">
-            <li>
-              <Link href="/doma-iz-brusa">Дома из бруса</Link>
-            </li>
-            <li>
-              <Link href="/bani-iz-brusa">Бани из бруса</Link>
-            </li>
-            <li>
-              <Link href="/garazhi-pod-klyuch">Гаражи</Link>
-            </li>
-            <li>
-              <Link href="/doma-iz-brusa-pod-usadku">Дома под усадку</Link>
-            </li>
+            {CATALOG_LINKS.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href}>{item.title}</Link>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -85,11 +88,11 @@ export default async function SiteFooter() {
           <ul className="footerContacts">
             <li>
               <span>Телефон</span>
-              <a href="tel:+79676801812">+7 967 680-18-12</a>
+              <a href={`tel:${SITE_PHONE_HREF}`}>{SITE_PHONE}</a>
             </li>
             <li>
               <span>Email</span>
-              <a href="mailto:info@brusoteka.ru">info@brusoteka.ru</a>
+              <a href={`mailto:${SITE_EMAIL}`}>{SITE_EMAIL}</a>
             </li>
             <li>
               <span>Время работы</span>

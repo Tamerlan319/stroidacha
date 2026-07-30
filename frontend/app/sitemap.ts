@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+import { SITE_URL } from "./lib/site";
+
 type Project = {
   slug: string;
 };
@@ -45,8 +47,6 @@ async function getLandingPages(): Promise<LandingPage[]> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-
   const [projects, landingPages] = await Promise.all([
     getProjects(),
     getLandingPages(),
@@ -54,28 +54,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: siteUrl,
+      url: SITE_URL,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${siteUrl}/calculator`,
+      url: `${SITE_URL}/calculator`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${SITE_URL}/portfolio`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/kontakty`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
   ];
 
   const projectPages: MetadataRoute.Sitemap = projects.map((project) => ({
-    url: `${siteUrl}/projects/${project.slug}`,
+    url: `${SITE_URL}/projects/${project.slug}`,
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 0.8,
   }));
 
   const seoPages: MetadataRoute.Sitemap = landingPages.map((page) => ({
-    url: `${siteUrl}/${page.slug}`,
+    url: `${SITE_URL}/${page.slug}`,
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 0.9,

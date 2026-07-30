@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import JsonLd from "../../components/JsonLd";
 import LeadForm from "../../components/LeadForm";
-import ImageLightbox from "../../components/ImageLightbox"
+import ImageLightbox from "../../components/ImageLightbox";
+import { SITE_NAME, SITE_URL } from "../../lib/site";
 
 type ProjectCategory = {
   id: number;
@@ -130,13 +131,6 @@ async function getProject(slug: string): Promise<Project | null> {
   return response.json();
 }
 
-function getSiteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(
-    /\/$/,
-    ""
-  );
-}
-
 function getCategoryPageSlug(categorySlug: string) {
   const map: Record<string, string> = {
     houses: "doma-iz-brusa",
@@ -204,9 +198,8 @@ function groupByTitle<T extends { group_title: string }>(items: T[]) {
 }
 
 function buildProjectJsonLd(project: Project): Record<string, unknown> {
-  const siteUrl = getSiteUrl();
-  const pageUrl = `${siteUrl}/projects/${project.slug}`;
-  const categoryPageUrl = `${siteUrl}/${getCategoryPageSlug(
+  const pageUrl = `${SITE_URL}/projects/${project.slug}`;
+  const categoryPageUrl = `${SITE_URL}/${getCategoryPageSlug(
     project.category.slug
   )}`;
 
@@ -224,7 +217,7 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
     image: images,
     brand: {
       "@type": "Brand",
-      name: "Брусотека",
+      name: SITE_NAME,
     },
   };
 
@@ -248,9 +241,9 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
       inLanguage: "ru-RU",
       isPartOf: {
         "@type": "WebSite",
-        "@id": `${siteUrl}#website`,
-        url: siteUrl,
-        name: "Брусотека",
+        "@id": `${SITE_URL}/#website`,
+        url: SITE_URL,
+        name: SITE_NAME,
       },
     },
     {
@@ -261,7 +254,7 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
           "@type": "ListItem",
           position: 1,
           name: "Главная",
-          item: siteUrl,
+          item: SITE_URL,
         },
         {
           "@type": "ListItem",
@@ -306,31 +299,35 @@ export async function generateMetadata({
     return {};
   }
 
-  const siteUrl = getSiteUrl();
-  const pageUrl = `${siteUrl}/projects/${project.slug}`;
+  const pageUrl = `${SITE_URL}/projects/${project.slug}`;
   const description = getProjectDescription(project);
+  const title = project.seo_title || `${project.title} | ${SITE_NAME}`;
+  const images = project.main_image
+    ? [{ url: project.main_image, alt: project.title }]
+    : [{ url: "/images/banners/home-hero.jpg", alt: project.title }];
 
   return {
-    title: project.seo_title || project.title,
+    title: {
+      absolute: title,
+    },
     description,
     alternates: {
       canonical: pageUrl,
     },
     openGraph: {
-      title: project.seo_title || project.title,
+      title,
       description,
       url: pageUrl,
       type: "website",
       locale: "ru_RU",
-      siteName: "Брусотека",
-      images: project.main_image
-        ? [
-            {
-              url: project.main_image,
-              alt: project.title,
-            },
-          ]
-        : [],
+      siteName: SITE_NAME,
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: images.map((image) => image.url),
     },
   };
 }
