@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import YandexMetrika from "./components/YandexMetrika";
 import "./globals.css";
 
 import JsonLd from "./components/JsonLd";
@@ -111,6 +112,7 @@ export default function RootLayout({
 
         <SiteFooter />
       </body>
+      <YandexMetrika />
     </html>
   );
 }
