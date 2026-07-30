@@ -211,6 +211,7 @@ class CalculatorV4ApiTests(TestCase):
     def test_historical_rate_date_is_used(self):
         current = CostRate.objects.get(component=CostRate.Component.WALL_MATERIAL, material=self.material)
         old_day = self.today - timedelta(days=30)
+        CostRate.objects.exclude(pk=current.pk).update(valid_from=old_day)
         current.valid_from = self.today
         current.save(update_fields=["valid_from"])
         CostRate.objects.create(

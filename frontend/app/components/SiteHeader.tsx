@@ -26,7 +26,7 @@ export default function SiteHeader() {
         <Link className="sdLogo" href="/" onClick={closeMenu}>
           <span className="sdLogoMark">⌂</span>
           <span className="sdLogoText">
-            <strong>Домодел44</strong>
+            <strong>Брусотека</strong>
             <small>строим дома из бруса</small>
           </span>
         </Link>
@@ -40,7 +40,7 @@ export default function SiteHeader() {
         </nav>
 
         <div className="sdHeaderContacts">
-          <a className="sdPhone" href="tel:+79999999999">
+          <a className="sdPhone" href="tel:+79676801812">
             +7 967 680-18-12
           </a>
           <small>Ежедневно с 9:00 до 20:00</small>
@@ -72,8 +72,8 @@ export default function SiteHeader() {
               </Link>
             ))}
 
-            <a href="tel:+79999999999" onClick={closeMenu}>
-              +7 999 999-99-99
+            <a href="tel:+79676801812" onClick={closeMenu}>
+              +7 967 680-18-12
             </a>
 
             <Link className="sdMobileCta" href="/#lead-form" onClick={closeMenu}>

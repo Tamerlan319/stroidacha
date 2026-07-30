@@ -1,8 +1,20 @@
-domodel44.ru, www.domodel44.ru {
-    encode gzip
+brusoteka.ru, www.brusoteka.ru {
+    encode zstd gzip
+
+    @www host www.brusoteka.ru
+    redir @www https://brusoteka.ru{uri} permanent
 
     request_body {
         max_size 80MB
+    }
+
+    header {
+        -Server
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
     }
 
     handle_path /static/* {

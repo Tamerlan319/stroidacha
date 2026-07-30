@@ -4,7 +4,7 @@ import LeadForm from "../components/LeadForm";
 import PortfolioList, { PortfolioItem } from "../components/PortfolioList";
 
 export const metadata: Metadata = {
-  title: "Портфолио построенных домов и бань | Домодел44",
+  title: "Портфолио построенных домов и бань | Брусотека",
   description:
     "Примеры построенных домов и бань из бруса: фото объектов, характеристики, материалы и стоимость строительства.",
 };
