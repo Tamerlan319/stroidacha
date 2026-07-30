@@ -7,9 +7,12 @@ import SiteHeader from "./components/SiteHeader";
 import MobileHorizontalLock from "./components/MobileScrollFix";
 
 export const metadata: Metadata = {
-  title: "Домодел44 — дома, бани и гаражи из бруса",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://brusoteka.ru",
+  ),
+  title: "Брусотека — строительство домов из бруса под ключ",
   description:
-    "Строительство домов, бань и гаражей из бруса. Готовые проекты, комплектации, расчёт стоимости и доставка по России.",
+    "Строительство домов, бань и гаражей из бруса под ключ в России. Готовые проекты, комплектации и расчёт стоимости.",
 };
 
 export default function RootLayout({

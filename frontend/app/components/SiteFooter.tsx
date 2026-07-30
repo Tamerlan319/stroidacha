@@ -36,7 +36,7 @@ export default async function SiteFooter() {
           <Link className="sdLogo footerLogo" href="/">
             <span className="sdLogoMark">⌂</span>
             <span className="sdLogoText">
-              <strong>Домодел44</strong>
+              <strong>Брусотека</strong>
               <small>строительство из дерева</small>
             </span>
           </Link>
@@ -85,11 +85,11 @@ export default async function SiteFooter() {
           <ul className="footerContacts">
             <li>
               <span>Телефон</span>
-              <a href="tel:+79999999999">+7 999 999-99-99</a>
+              <a href="tel:+79676801812">+7 967 680-18-12</a>
             </li>
             <li>
               <span>Email</span>
-              <a href="mailto:info@stroidacha.local">info@stroidacha.local</a>
+              <a href="mailto:info@brusoteka.ru">info@brusoteka.ru</a>
             </li>
             <li>
               <span>Время работы</span>
@@ -100,7 +100,7 @@ export default async function SiteFooter() {
       </div>
 
       <div className="container footerBottom">
-        <span>© {new Date().getFullYear()} Домодел44</span>
+        <span>© {new Date().getFullYear()} Брусотека</span>
         <span>Информация на сайте не является публичной офертой.</span>
       </div>
     </footer>

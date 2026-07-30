@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import LeadForm from "../components/LeadForm";
 
 export const metadata: Metadata = {
-  title: "Контакты | Домодел44",
+  title: "Контакты | Брусотека",
   description:
-    "Контакты компании Домодел44: офис, производство, телефон, email, режим работы и карта проезда.",
+    "Контакты компании Брусотека: офис, производство, телефон, email, режим работы и карта проезда.",
 };
 
 type ContactLocation = {

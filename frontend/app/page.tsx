@@ -283,7 +283,7 @@ export default async function HomePage() {
             <div className="deliveryMap deliveryMapReal">
               <iframe
                 src="https://yandex.ru/map-widget/v1/?um=constructor%3Af2357c7eef2c0a4200a5244d74da6f5e737586274d8529dba014874e07929877&source=constructor"
-                title="Карта доставки Домодел44"
+                title="Карта доставки Брусотека"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
