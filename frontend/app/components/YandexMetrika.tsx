@@ -1,6 +1,12 @@
 import Script from "next/script";
 
 export default function YandexMetrika() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+
+  if (siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1")) {
+    return null;
+  }
+
   return (
     <>
       <Script id="yandex-metrika" strategy="afterInteractive">

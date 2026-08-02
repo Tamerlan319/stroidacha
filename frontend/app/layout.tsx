@@ -111,8 +111,8 @@ export default function RootLayout({
         {children}
 
         <SiteFooter />
+        <YandexMetrika />
       </body>
-      <YandexMetrika />
     </html>
   );
 }
