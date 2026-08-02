@@ -1,22 +1,20 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
-import { CATALOG_LINKS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
+import HomePortfolioShowcase from "./components/HomePortfolioShowcase";
 import JsonLd from "./components/JsonLd";
 import LeadForm from "./components/LeadForm";
 import ProjectCatalog from "./components/ProjectCatalog";
 import SiteIcon from "./components/SiteIcon";
+import { CATALOG_LINKS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
 
 const HOME_TITLE = "Дома и бани из бруса под ключ — Брусотека";
 
 export const metadata: Metadata = {
-  title: {
-    absolute: HOME_TITLE,
-  },
+  title: { absolute: HOME_TITLE },
   description: SITE_DESCRIPTION,
-  alternates: {
-    canonical: "/",
-  },
+  alternates: { canonical: "/" },
   openGraph: {
     title: HOME_TITLE,
     description: SITE_DESCRIPTION,
@@ -24,14 +22,12 @@ export const metadata: Metadata = {
     type: "website",
     locale: "ru_RU",
     siteName: SITE_NAME,
-    images: [
-      {
-        url: "/images/banners/home-hero.jpg",
-        width: 1600,
-        height: 1067,
-        alt: "Дом из бруса, построенный компанией Брусотека",
-      },
-    ],
+    images: [{
+      url: "/images/banners/home-hero.jpg",
+      width: 1672,
+      height: 941,
+      alt: "Строительство дома из бруса компанией Брусотека",
+    }],
   },
   twitter: {
     card: "summary_large_image",
@@ -41,123 +37,74 @@ export const metadata: Metadata = {
   },
 };
 
-type Advantage = {
-  id: number;
-  title: string;
-  description: string;
-  icon: string;
-};
+type FAQ = { id: number; question: string; answer: string };
 
-type WorkStep = {
-  id: number;
-  title: string;
-  description: string;
-};
-
-type FAQ = {
-  id: number;
-  question: string;
-  answer: string;
-};
-
-type Review = {
-  id: number;
-  author_name: string;
-  city: string;
-  text: string;
-  project_name: string;
-  rating: number;
-};
-
-type HomepageContent = {
-  advantages: Advantage[];
-  work_steps: WorkStep[];
-  faqs: FAQ[];
-  reviews: Review[];
-};
-
-type LandingPage = {
-  id: number;
-  title: string;
-  slug: string;
-  h1: string;
-  page_type: string;
-};
-
-const fallbackAdvantages = [
+const defaultFaqs: FAQ[] = [
   {
     id: 1,
-    title: "84+ проекта",
-    description: "Готовые решения для домов, бань, срубов и гаражей.",
-    icon: "blueprint",
+    question: "Сколько времени занимает строительство?",
+    answer: "Небольшой объект можно собрать от 8 дней. Точный срок зависит от площади, комплектации и условий на участке и указывается в договоре.",
   },
   {
     id: 2,
-    title: "500+ построек",
-    description: "Помогаем подобрать комплектацию под задачу и бюджет.",
-    icon: "house",
+    question: "Можно ли изменить готовый проект?",
+    answer: "Да. Скорректируем планировку типового проекта или рассчитаем строительство по вашему эскизу, плану или фотографии.",
   },
   {
     id: 3,
-    title: "Доставка по России",
-    description: "Считаем логистику и материалы до старта строительства.",
-    icon: "truck",
+    question: "Как проходит оплата?",
+    answer: "Цена и этапы оплаты фиксируются в договоре. Основной платёж производится после доставки материала и бригады на участок.",
   },
   {
     id: 4,
-    title: "Собственное производство",
-    description: "Контролируем качество древесины и комплектующих.",
-    icon: "factory",
+    question: "Можно ли приехать на производство?",
+    answer: "Да, визит можно согласовать с менеджером заранее. Покажем материал, оборудование и этапы подготовки домокомплекта.",
   },
 ];
 
-const fallbackSteps = [
-  { id: 1, title: "Консультация", description: "Уточняем участок, пожелания, сроки и примерный бюджет." },
-  { id: 2, title: "Проектирование", description: "Подбираем готовый проект или адаптируем планировку." },
-  { id: 3, title: "Расчёт сметы", description: "Фиксируем комплектацию, материалы, доставку и работы." },
-  { id: 4, title: "Производство", description: "Готовим домокомплект и согласуем дату доставки." },
-  { id: 5, title: "Строительство", description: "Собираем объект на участке и ведём контроль этапов." },
-  { id: 6, title: "Сдача объекта", description: "Передаём результат и рекомендации по эксплуатации." },
-];
+const productionSteps = [
+  {
+    number: "1",
+    title: "Собственное производство",
+    text: "Заготавливаем древесину, сушим, профилируем и подготавливаем каждый брус.",
+    image: "/images/home-v2/timber-yard.webp",
+    alt: "Подготовленный строительный брус на производстве",
+  },
+  {
+    number: "2",
+    title: "Комплектуем домокомплект",
+    text: "Точно размечаем и упаковываем элементы — каждая деталь готова к сборке.",
+    image: "/images/home-v2/house-kit.webp",
+    alt: "Профилированный брус для домокомплекта",
+  },
+  {
+    number: "3",
+    title: "Собираем на участке",
+    text: "Опытная бригада работает аккуратно, соблюдает технологию и порядок на участке.",
+    image: "/images/home-v2/house-assembly.webp",
+    alt: "Сборка деревянного дома на участке",
+  },
+] as const;
 
-async function getHomepageContent(): Promise<HomepageContent> {
+const workSteps = [
+  { icon: "blueprint", title: "Согласовываем проект", text: "Выберите готовый проект или пришлите свой эскиз." },
+  { icon: "price", title: "Подписываем договор", text: "Фиксируем комплектацию, стоимость и сроки работ." },
+  { icon: "truck", title: "Доставляем материалы", text: "Привозим домокомплект и бригаду на ваш участок." },
+  { icon: "house", title: "Строим объект", text: "Собираем дом или баню с соблюдением технологии." },
+  { icon: "shield", title: "Принимаете работу", text: "Проверяете результат и подписываете акт приёмки." },
+] as const;
+
+async function getFaqs(): Promise<FAQ[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!apiUrl) return defaultFaqs;
 
   try {
-    const response = await fetch(`${apiUrl}/homepage/`, {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      throw new Error("Не удалось загрузить контент главной страницы");
-    }
-
-    return response.json();
+    const response = await fetch(`${apiUrl}/homepage/`, { cache: "no-store" });
+    if (!response.ok) return defaultFaqs;
+    const data = await response.json();
+    return data.faqs?.length ? data.faqs : defaultFaqs;
   } catch {
-    return {
-      advantages: fallbackAdvantages,
-      work_steps: fallbackSteps,
-      faqs: [],
-      reviews: [],
-    };
-  }
-}
-
-async function getLandingPages(): Promise<LandingPage[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-  try {
-    const response = await fetch(`${apiUrl}/landing-pages/`, {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return [];
-    }
-
-    return response.json();
-  } catch {
-    return [];
+    return defaultFaqs;
   }
 }
 
@@ -172,16 +119,8 @@ function buildHomeJsonLd(): Record<string, unknown> {
         name: HOME_TITLE,
         description: SITE_DESCRIPTION,
         inLanguage: "ru-RU",
-        isPartOf: {
-          "@id": `${SITE_URL}/#website`,
-        },
-        about: {
-          "@id": `${SITE_URL}/#organization`,
-        },
-        primaryImageOfPage: {
-          "@type": "ImageObject",
-          url: `${SITE_URL}/images/banners/home-hero.jpg`,
-        },
+        isPartOf: { "@id": `${SITE_URL}/#website` },
+        about: { "@id": `${SITE_URL}/#organization` },
       },
       {
         "@type": "Service",
@@ -189,13 +128,8 @@ function buildHomeJsonLd(): Record<string, unknown> {
         name: "Строительство домов и бань из бруса под ключ",
         serviceType: "Строительство деревянных домов и бань",
         description: SITE_DESCRIPTION,
-        provider: {
-          "@id": `${SITE_URL}/#organization`,
-        },
-        areaServed: {
-          "@type": "Country",
-          name: "Россия",
-        },
+        provider: { "@id": `${SITE_URL}/#organization` },
+        areaServed: { "@type": "Country", name: "Россия" },
         hasOfferCatalog: {
           "@type": "OfferCatalog",
           name: "Каталог строительства",
@@ -215,236 +149,184 @@ function buildHomeJsonLd(): Record<string, unknown> {
 }
 
 export default async function HomePage() {
-  const [homepageContent, landingPages] = await Promise.all([
-    getHomepageContent(),
-    getLandingPages(),
-  ]);
-
-  const advantages = homepageContent.advantages.length
-    ? homepageContent.advantages
-    : fallbackAdvantages;
-
-  const workSteps = homepageContent.work_steps.length
-    ? homepageContent.work_steps
-    : fallbackSteps;
+  const faqs = await getFaqs();
 
   return (
-    <main>
+    <main className="homeEditorial">
       <JsonLd data={buildHomeJsonLd()} />
 
       <section className="homeHero">
         <div className="container homeHeroGrid">
           <div className="homeHeroContent">
-            <p className="heroKicker">Собственное производство</p>
-            <h1>Дома и бани из бруса под ключ</h1>
-            <p className="heroText">
-              Подберём готовый проект, рассчитаем комплектацию и доставку.
-              Строим дома, бани, срубы и гаражи с понятной сметой до начала работ.
-            </p>
-
+            <h1>Строим дома,<br />в которых остаются<br />надолго</h1>
+            <p className="heroText">Дома и бани из собственного бруса<br />от производителя</p>
             <div className="heroActions">
-              <a href="#lead-form" className="buttonPrimary">
-                Рассчитать стоимость
-              </a>
-              <a href="#projects" className="buttonSecondary">
-                Смотреть проекты
-              </a>
+              <a href="#projects" className="buttonPrimary">Выбрать проект</a>
+              <Link href="/calculator" className="buttonSecondary">Рассчитать стоимость</Link>
             </div>
-
-            <div className="heroStats">
-              <span>
-                <strong>500+</strong>
-                построенных объектов
-              </span>
-              <span>
-                <strong>84+</strong>
-                готовых проекта
-              </span>
-              <span>
-                <strong>7 лет</strong>
-                опыта строительства
-              </span>
-            </div>
-          </div>
-
-          <div className="heroLeadCard">
-            <LeadForm title="Бесплатный расчёт стоимости" source="callback" />
           </div>
         </div>
       </section>
 
-      <section className="container trustStrip" aria-label="Преимущества">
-        {advantages.slice(0, 4).map((advantage) => (
-          <article className="trustItem" key={advantage.id}>
-            <span className="trustIcon">
-              <SiteIcon name={advantage.icon} />
-            </span>
-            <div>
-              <strong>{advantage.title}</strong>
-              <p>{advantage.description}</p>
-            </div>
-          </article>
-        ))}
+      <section className="homeTrust" aria-label="О компании">
+        <div className="container homeTrustGrid">
+          <article><SiteIcon name="house" /><div><strong>С 1999 года</strong><span>Строим из бруса<br />для жизни</span></div></article>
+          <article><SiteIcon name="factory" /><div><strong>Производство<br />в Чухломе</strong><span>Собственный профилированный брус</span></div></article>
+          <article><SiteIcon name="blueprint" /><div><strong>Российские<br />плотники</strong><span>Опытные бригады из Костромской области</span></div></article>
+          <article><SiteIcon name="shield" /><div><strong>Гарантия<br />3 года</strong><span>На работы и конструкцию</span></div></article>
+        </div>
+      </section>
+
+      <section className="container homeSection homeDirections">
+        <h2 className="homeTitle">Выберите направление</h2>
+        <div className="homeDirectionGrid">
+          <Link className="homeDirectionCard homeDirectionHouse" href="/doma-iz-brusa">
+            <span className="directionImage" />
+            <div><h3>Дома из бруса</h3><p>Для круглогодичного проживания</p><span className="roundArrow">→</span></div>
+          </Link>
+          <Link className="homeDirectionCard homeDirectionBath" href="/bani-iz-brusa">
+            <span className="directionImage" />
+            <div><h3>Бани из бруса</h3><p>Тёплые, уютные, надёжные</p><span className="roundArrow">→</span></div>
+          </Link>
+          <Link className="homeDirectionCard homeDirectionCustom" href="/calculator">
+            <div><h3>Индивидуальный<br />проект</h3><p>Спроектируем дом или баню по вашим размерам и пожеланиям</p><span className="buttonOutline">Подробнее</span></div>
+            <SiteIcon name="blueprint" className="customBlueprint" />
+          </Link>
+        </div>
       </section>
 
       <ProjectCatalog
         initialCategory="houses"
         showFilters={false}
-        maxItems={4}
-        eyebrow="Рекомендуемые проекты"
-        title="Готовые проекты домов"
-        description="Популярные проекты домов из бруса для дачи и круглогодичного проживания."
+        maxItems={3}
+        eyebrow=""
+        title="Проекты, которые выбирают"
+        description=""
         moreHref="/doma-iz-brusa"
-        moreLabel="Смотреть все дома"
+        moreLabel="Смотреть все проекты"
       />
 
-      <ProjectCatalog
-        initialCategory="baths"
-        showFilters={false}
-        maxItems={4}
-        eyebrow="Рекомендуемые проекты"
-        title="Готовые проекты бань"
-        description="Готовые проекты бань из бруса с разными размерами, планировками и комплектациями."
-        moreHref="/bani-iz-brusa"
-        moreLabel="Смотреть все бани"
-      />
-
-      <section className="container section">
-        <div className="calcBanner">
-          <div>
-            <p className="eyebrow">Расчёт стоимости</p>
-            <h2>Поможем рассчитать дом под ваш участок</h2>
-            <p>
-              Уточним размер, материал, фундамент, кровлю и доставку. После этого
-              подготовим понятную смету по комплектации.
-            </p>
-          </div>
-
-          <div className="calcOptions">
-            <span>Тип постройки</span>
-            <span>Размер дома</span>
-            <span>Фундамент</span>
-            <span>Материал</span>
-          </div>
-
-          <Link className="buttonPrimary" href="/calculator">
-            Рассчитать самостоятельно
-          </Link>
-        </div>
-      </section>
-
-      <section className="container section">
-        <div className="sectionHeader">
-          <p className="eyebrow">Как мы работаем</p>
-          <h2>От консультации до сдачи объекта</h2>
-        </div>
-
-        <div className="processLine">
-          {workSteps.slice(0, 6).map((step, index) => (
-            <article className="processStep" key={step.id}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <h3>{step.title}</h3>
-              <p>{step.description}</p>
+      <section className="container homeSection homeProductionSteps">
+        <h2 className="homeTitle">От леса до готового дома</h2>
+        <div className="productionStepGrid">
+          {productionSteps.map((step) => (
+            <article className="productionStepCard" key={step.number}>
+              <div className="productionStepImage">
+                <Image src={step.image} alt={step.alt} fill sizes="(max-width: 680px) 100vw, 33vw" />
+              </div>
+              <div><h3>{step.number}. {step.title}</h3><p>{step.text}</p></div>
             </article>
           ))}
         </div>
       </section>
 
-      {landingPages.length > 0 && (
-        <section className="container section sectionCompact">
-          <div className="sectionHeader sectionHeaderRow">
-            <div>
-              <p className="eyebrow">Разделы каталога</p>
-              <h2>Выберите направление строительства</h2>
+      <section className="homePortfolioBand">
+        <div className="container homeSection builtProject">
+          <div className="homeSectionHeading">
+            <h2 className="homeTitle">Реализованный объект</h2>
+            <Link href="/portfolio">Все объекты →</Link>
+          </div>
+          <HomePortfolioShowcase />
+        </div>
+      </section>
+
+      <section className="container homeSection homePackages">
+        <h2 className="homeTitle">Два варианта —<br />выбирайте свой</h2>
+        <div className="packageGrid">
+          <article className="packageCard packageShrink">
+            <div><h3>Под усадку</h3><p>Дом из бруса с естественной усадкой. Оптимальный выбор для тех, кто планирует отделку позже.</p>
+              <ul><li>Профилированный брус камерной сушки</li><li>Сборка на деревянные нагели</li><li>Черновой пол и кровля</li><li>Доставка и сборка</li></ul>
+              <Link href="/doma-iz-brusa-pod-usadku" className="buttonOutline">Подробнее</Link>
             </div>
-            <Link className="textLink" href="/doma-iz-brusa">
-              Перейти в каталог
-            </Link>
-          </div>
-
-          <div className="seoLinkGrid">
-            {landingPages.slice(0, 6).map((page) => (
-              <Link className="seoLinkCard" href={`/${page.slug}`} key={page.id}>
-                <span>{page.page_type}</span>
-                <strong>{page.h1 || page.title}</strong>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-        <section className="container section">
-          <div className="deliverySection">
-            <div className="deliveryMap deliveryMapReal">
-              <iframe
-                src="https://yandex.ru/map-widget/v1/?um=constructor%3Af2357c7eef2c0a4200a5244d74da6f5e737586274d8529dba014874e07929877&source=constructor"
-                title="Карта доставки Брусотека"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+          </article>
+          <article className="packageCard packageTurnkey">
+            <div><h3>Под ключ</h3><p>Готовый дом с отделкой и коммуникациями. Заезжайте и живите.</p>
+              <ul><li>Всё из пакета «Под усадку»</li><li>Кровля из металлочерепицы</li><li>Окна и двери</li><li>Утепление, полы и потолки</li></ul>
+              <Link href="/calculator" className="buttonOutline">Рассчитать</Link>
             </div>
+          </article>
+        </div>
+      </section>
 
-            <div className="deliveryText">
-              <p className="eyebrow">Логистика</p>
-
-              <h2>Бесплатная доставка материала по согласованным направлениям</h2>
-
-              <p>
-                Для каждого проекта заранее считаем объём материалов, транспорт и
-                условия разгрузки. Это помогает избежать сюрпризов в смете.
-              </p>
-
-              <a className="buttonGhost" href="#lead-form">
-                Узнать стоимость доставки
-              </a>
-            </div>
+      <section className="homeReliability">
+        <div className="container homeSection">
+          <h2 className="homeTitle">С нами — надёжно и просто</h2>
+          <div className="reliabilityGrid">
+            <article><SiteIcon name="price" /><div><h3>Фиксируем стоимость в договоре</h3><p>Цена не изменится в процессе строительства.</p></div></article>
+            <article><SiteIcon name="shield" /><div><h3>Поэтапная оплата</h3><p>Платите по факту выполненных этапов работ.</p></div></article>
+            <article><SiteIcon name="truck" /><div><h3>Доставляем по России</h3><p>Заранее рассчитываем маршрут и стоимость доставки.</p></div></article>
           </div>
-        </section>
+        </div>
+      </section>
 
-      {homepageContent.reviews.length > 0 && (
-        <section className="container section">
-          <div className="sectionHeader">
-            <p className="eyebrow">Отзывы</p>
-            <h2>Что говорят клиенты</h2>
+      <section className="container homeSection homeWorkSteps">
+        <div className="homeSectionHeading">
+          <h2 className="homeTitle">Этапы работы</h2>
+          <p>Понятный процесс от первого разговора до сдачи объекта</p>
+        </div>
+        <div className="editorialStepsGrid">
+          {workSteps.map((step, index) => (
+            <article className="editorialStep" key={step.title}>
+              <div className="editorialStepTop">
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <SiteIcon name={step.icon} />
+              </div>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="container homeSection homeDelivery">
+        <div className="homeDeliveryMap deliveryMapReal">
+          <iframe
+            src="https://yandex.ru/map-widget/v1/?um=constructor%3Af2357c7eef2c0a4200a5244d74da6f5e737586274d8529dba014874e07929877&source=constructor"
+            title="Карта доставки Брусотека"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+        <div className="homeDeliveryCopy">
+          <p className="homeLabel">Логистика</p>
+          <h2>Бесплатная доставка материала по согласованным направлениям</h2>
+          <p>Для каждого проекта заранее считаем объём материалов, транспорт и условия разгрузки. Маршрут и стоимость доставки фиксируем до начала строительства.</p>
+          <a className="buttonOutline" href="#consultation-form">Узнать стоимость доставки</a>
+        </div>
+      </section>
+
+      <section className="homeConsultation" id="consultation-form">
+        <div className="container homeSection homeConsultationGrid">
+          <div className="homeConsultationCopy">
+            <p className="homeLabel">Бесплатная консультация</p>
+            <h2>Обсудим ваш проект по телефону и подготовим расчёт</h2>
+            <p>Менеджер уточнит размеры, комплектацию и регион строительства. После разговора вы получите ориентировочную стоимость и ответы на вопросы.</p>
+            <ul>
+              <li>Перезвоним в удобное рабочее время</li>
+              <li>Подберём проект под участок и бюджет</li>
+              <li>Предварительно рассчитаем строительство и доставку</li>
+            </ul>
           </div>
-
-          <div className="reviewGrid">
-            {homepageContent.reviews.map((review) => (
-              <article className="infoCard" key={review.id}>
-                <div className="reviewRating">{"★".repeat(review.rating)}</div>
-                <p>{review.text}</p>
-                <strong>{review.author_name}</strong>
-                {(review.city || review.project_name) && (
-                  <span className="reviewMeta">
-                    {[review.city, review.project_name].filter(Boolean).join(" · ")}
-                  </span>
-                )}
-              </article>
-            ))}
+          <div className="homeConsultationForm">
+            <LeadForm title="Записаться на консультацию и расчёт" source="home_phone_consultation" />
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {homepageContent.faqs.length > 0 && (
-        <section className="container section">
-          <div className="sectionHeader">
-            <p className="eyebrow">FAQ</p>
-            <h2>Частые вопросы</h2>
-          </div>
-
+      <section className="container homeSection homeFinal" id="lead-form">
+        <div className="homeFaq">
+          <h2 className="homeTitle">Ответы на частые вопросы</h2>
           <div className="faqList">
-            {homepageContent.faqs.map((faq) => (
-              <details className="faqItem" key={faq.id}>
-                <summary>{faq.question}</summary>
-                <p>{faq.answer}</p>
-              </details>
+            {faqs.slice(0, 4).map((faq) => (
+              <details className="faqItem" key={faq.id}><summary>{faq.question}</summary><p>{faq.answer}</p></details>
             ))}
           </div>
-        </section>
-      )}
-
-      <section className="container section" id="lead-form">
-        <LeadForm title="Получить консультацию" source="callback" />
+        </div>
+        <div className="homeFinalCta">
+          <h2>Готовы построить дом мечты?</h2>
+          <p>Выберите проект или получите предварительный расчёт стоимости.</p>
+          <div><a className="buttonPrimary" href="#projects">Выбрать проект</a><Link className="buttonSecondary" href="/calculator">Рассчитать стоимость</Link></div>
+        </div>
       </section>
     </main>
   );

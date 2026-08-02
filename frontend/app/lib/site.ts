@@ -4,7 +4,7 @@ export const SITE_URL = (
 ).replace(/\/$/, "");
 
 export const SITE_DESCRIPTION =
-  "Строим дома, бани и гаражи из бруса под ключ по России. Готовые проекты, собственное производство, понятные комплектации и расчёт стоимости.";
+  "Строим дома и бани из бруса под ключ по России. Готовые проекты, собственное производство, понятные комплектации и расчёт стоимости.";
 
 export const SITE_PHONE = "+7 967 680-18-12";
 export const SITE_PHONE_HREF = "+79676801812";
@@ -22,12 +22,6 @@ export const CATALOG_LINKS = [
     description: "Готовые проекты разных размеров",
     href: "/bani-iz-brusa",
     icon: "factory",
-  },
-  {
-    title: "Гаражи",
-    description: "Отдельные и комбинированные постройки",
-    href: "/garazhi-pod-klyuch",
-    icon: "blueprint",
   },
   {
     title: "Дома под усадку",
