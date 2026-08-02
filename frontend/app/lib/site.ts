@@ -23,10 +23,4 @@ export const CATALOG_LINKS = [
     href: "/bani-iz-brusa",
     icon: "factory",
   },
-  {
-    title: "Дома под усадку",
-    description: "Практичная поэтапная комплектация",
-    href: "/doma-iz-brusa-pod-usadku",
-    icon: "shield",
-  },
 ] as const;
