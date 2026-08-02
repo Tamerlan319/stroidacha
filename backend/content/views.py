@@ -38,6 +38,16 @@ class ContactLocationListAPIView(ListAPIView):
         )
 
 
+class ReviewListAPIView(ListAPIView):
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        return Review.objects.filter(is_active=True).order_by(
+            "sort_order",
+            "-created_at",
+        )
+
+
 class PortfolioProjectListAPIView(ListAPIView):
     serializer_class = PortfolioProjectSerializer
 

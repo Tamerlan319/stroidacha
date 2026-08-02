@@ -7,27 +7,74 @@ import { CATALOG_LINKS, SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
 import BrandMark from "./BrandMark";
 import SiteIcon from "./SiteIcon";
 
-const menuItems = [
-  { title: "Портфолио", href: "/portfolio" },
-  { title: "Калькулятор", href: "/calculator" },
+type HeaderLink = {
+  title: string;
+  href: string;
+};
+
+type LandingPageListItem = {
+  title: string;
+  slug: string;
+  page_type: string;
+  sort_order: number;
+};
+
+const companyLinks: HeaderLink[] = [
+  { title: "О директоре", href: "/o-direktore" },
+  { title: "Выписка из ЕГРЮЛ", href: "/vypiska-iz-egryul" },
   { title: "Производство", href: "/proizvodstvo" },
-  { title: "Контакты", href: "/kontakty" },
+  { title: "Доставка", href: "/dostavka" },
+  { title: "Маткапитал", href: "/materinskij-kapital" },
+  { title: "Ипотека", href: "/ipoteka" },
 ];
 
 const socialLinks = [
+  {
+    title: "ВКонтакте",
+    href: process.env.NEXT_PUBLIC_VK_URL || "https://vk.com/",
+    icon: "vk",
+  },
   {
     title: "WhatsApp",
     href: "https://api.whatsapp.com/send?phone=79676801812",
     icon: "whatsapp",
   },
   {
+    title: "Telegram",
+    href: process.env.NEXT_PUBLIC_TELEGRAM_URL || "https://t.me/+79676801812",
+    icon: "telegram",
+  },
+  {
     title: "Viber",
     href: "viber://chat?number=79676801812",
     icon: "viber",
   },
+  {
+    title: "Одноклассники",
+    href: process.env.NEXT_PUBLIC_OK_URL || "https://ok.ru/",
+    icon: "ok",
+  },
 ] as const;
 
-function SocialIcon({ name }: { name: "whatsapp" | "viber" }) {
+type SocialName = (typeof socialLinks)[number]["icon"];
+
+function SocialIcon({ name }: { name: SocialName }) {
+  if (name === "vk" || name === "ok") {
+    return (
+      <span className="sdSocialMonogram" aria-hidden="true">
+        {name === "vk" ? "VK" : "OK"}
+      </span>
+    );
+  }
+
+  if (name === "telegram") {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="m3.2 11.2 16.1-6.3c.8-.3 1.5.2 1.2 1.5l-2.7 12.7c-.2.9-.8 1.1-1.6.7l-4.1-3-2 1.9c-.2.2-.4.4-.8.4l.3-4.2 7.7-7c.3-.3-.1-.5-.5-.2L7.3 13.7l-4.1-1.3c-.9-.3-.9-.9 0-1.2Z" />
+      </svg>
+    );
+  }
+
   if (name === "whatsapp") {
     return (
       <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -55,7 +102,7 @@ function SocialLinks({ className = "" }: { className?: string }) {
           href={item.href}
           key={item.title}
           rel="noopener noreferrer"
-          target={item.icon === "whatsapp" ? "_blank" : undefined}
+          target={item.href.startsWith("http") ? "_blank" : undefined}
           title={item.title}
         >
           <SocialIcon name={item.icon} />
@@ -67,26 +114,27 @@ function SocialLinks({ className = "" }: { className?: string }) {
 
 export default function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<
+    "catalog" | "company" | "guide" | null
+  >(null);
+  const [guideLinks, setGuideLinks] = useState<HeaderLink[]>([
+    { title: "Все статьи", href: "/spravochnik" },
+  ]);
   const [phone, setPhone] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const catalogRef = useRef<HTMLDivElement>(null);
-  const mobileMenuRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
-      const isInsideDesktopCatalog = catalogRef.current?.contains(target);
-      const isInsideMobileMenu = mobileMenuRef.current?.contains(target);
-
-      if (!isInsideDesktopCatalog && !isInsideMobileMenu) {
-        setIsCatalogOpen(false);
+      if (!headerRef.current?.contains(target)) {
+        setOpenDropdown(null);
       }
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setIsCatalogOpen(false);
+        setOpenDropdown(null);
         setIsOpen(false);
       }
     }
@@ -100,14 +148,46 @@ export default function SiteHeader() {
     };
   }, []);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadGuideLinks() {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/landing-pages/`
+        );
+        if (!response.ok) return;
+        const pages = (await response.json()) as LandingPageListItem[];
+        const articles = pages
+          .filter((page) => page.page_type === "guide")
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((page) => ({ title: page.title, href: `/${page.slug}` }));
+
+        if (!isCancelled) {
+          setGuideLinks([
+            { title: "Все статьи", href: "/spravochnik" },
+            ...articles,
+          ]);
+        }
+      } catch {
+        // Справочник остаётся доступен даже при временной недоступности API.
+      }
+    }
+
+    loadGuideLinks();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
   function closeMenu() {
     setIsOpen(false);
-    setIsCatalogOpen(false);
+    setOpenDropdown(null);
   }
 
   function toggleMobileMenu() {
     setIsOpen((current) => {
-      if (current) setIsCatalogOpen(false);
+      if (current) setOpenDropdown(null);
       return !current;
     });
   }
@@ -169,7 +249,7 @@ export default function SiteHeader() {
   }
 
   return (
-    <header className="sdHeader">
+    <header className="sdHeader" ref={headerRef}>
       <div className="sdHeaderMain">
         <div className="container sdHeaderInner">
           <Link className="sdLogo" href="/" onClick={closeMenu}>
@@ -208,36 +288,102 @@ export default function SiteHeader() {
         <div className="container sdHeaderNavInner">
           <nav className="sdDesktopNav" aria-label="Основное меню">
             <div
-              className={`sdNavDropdown ${isCatalogOpen ? "isOpen" : ""}`}
-              onMouseEnter={() => setIsCatalogOpen(true)}
-              onMouseLeave={() => setIsCatalogOpen(false)}
-              ref={catalogRef}
+              className={`sdNavDropdown ${openDropdown === "catalog" ? "isOpen" : ""}`}
+              onMouseEnter={() => setOpenDropdown("catalog")}
+              onMouseLeave={() => setOpenDropdown(null)}
             >
               <button
-                aria-expanded={isCatalogOpen}
+                aria-expanded={openDropdown === "catalog"}
                 className="sdNavDropdownTrigger"
-                onClick={() => setIsCatalogOpen((current) => !current)}
+                onClick={() =>
+                  setOpenDropdown((current) =>
+                    current === "catalog" ? null : "catalog"
+                  )
+                }
                 type="button"
               >
-                Каталог проектов
+                Каталог
                 <SiteIcon className="sdNavChevron" name="chevron" />
               </button>
 
-              {isCatalogOpen && (
-                <div className="sdNavDropdownMenu">
+              {openDropdown === "catalog" && (
+                <div className="sdNavDropdownMenu sdNavDropdownMenuText">
                   {CATALOG_LINKS.map((item) => (
                     <Link href={item.href} key={item.href} onClick={closeMenu}>
-                      <span className="sdNavDropdownIcon"><SiteIcon name={item.icon} /></span>
-                      <span><strong>{item.title}</strong><small>{item.description}</small></span>
+                      <strong>{item.title}</strong>
                     </Link>
                   ))}
                 </div>
               )}
             </div>
 
-            {menuItems.map((item) => (
-              <Link href={item.href} key={item.href} onClick={closeMenu}>{item.title}</Link>
-            ))}
+            <Link href="/calculator" onClick={closeMenu}>Калькулятор</Link>
+            <Link href="/portfolio" onClick={closeMenu}>Портфолио</Link>
+
+            <div
+              className={`sdNavDropdown ${openDropdown === "company" ? "isOpen" : ""}`}
+              onMouseEnter={() => setOpenDropdown("company")}
+              onMouseLeave={() => setOpenDropdown(null)}
+            >
+              <button
+                aria-expanded={openDropdown === "company"}
+                className="sdNavDropdownTrigger"
+                onClick={() =>
+                  setOpenDropdown((current) =>
+                    current === "company" ? null : "company"
+                  )
+                }
+                type="button"
+              >
+                О компании
+                <SiteIcon className="sdNavChevron" name="chevron" />
+              </button>
+
+              {openDropdown === "company" && (
+                <div className="sdNavDropdownMenu sdNavDropdownMenuText">
+                  {companyLinks.map((item) => (
+                    <Link href={item.href} key={item.href} onClick={closeMenu}>
+                      <strong>{item.title}</strong>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Link href="/kontakty" onClick={closeMenu}>Контакты</Link>
+
+            <div
+              className={`sdNavDropdown ${openDropdown === "guide" ? "isOpen" : ""}`}
+              onMouseEnter={() => setOpenDropdown("guide")}
+              onMouseLeave={() => setOpenDropdown(null)}
+            >
+              <button
+                aria-expanded={openDropdown === "guide"}
+                className="sdNavDropdownTrigger"
+                onClick={() =>
+                  setOpenDropdown((current) =>
+                    current === "guide" ? null : "guide"
+                  )
+                }
+                type="button"
+              >
+                Справочник
+                <SiteIcon className="sdNavChevron" name="chevron" />
+              </button>
+
+              {openDropdown === "guide" && (
+                <div className="sdNavDropdownMenu sdNavDropdownMenuText sdGuideDropdownMenu">
+                  {guideLinks.map((item) => (
+                    <Link href={item.href} key={item.href} onClick={closeMenu}>
+                      <strong>{item.title}</strong>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Link href="/faq" onClick={closeMenu}>FAQ</Link>
+            <Link href="/otzyvy" onClick={closeMenu}>Отзывы</Link>
           </nav>
 
           <Link className="sdHeaderCalc" href="/calculator">Рассчитать стоимость</Link>
@@ -245,33 +391,95 @@ export default function SiteHeader() {
       </div>
 
       {isOpen && (
-        <nav className="sdMobileMenu" aria-label="Мобильное меню" ref={mobileMenuRef}>
+        <nav className="sdMobileMenu" aria-label="Мобильное меню">
           <div className="container sdMobileMenuInner">
             <button
-              aria-expanded={isCatalogOpen}
+              aria-expanded={openDropdown === "catalog"}
               className="sdMobileCatalogToggle"
-              onClick={() => setIsCatalogOpen((current) => !current)}
+              onClick={() =>
+                setOpenDropdown((current) =>
+                  current === "catalog" ? null : "catalog"
+                )
+              }
               type="button"
             >
-              Каталог проектов
+              Каталог
               <SiteIcon className="sdNavChevron" name="chevron" />
             </button>
 
-            {isCatalogOpen && (
-              <div className="sdMobileCatalogLinks">
+            {openDropdown === "catalog" && (
+              <div className="sdMobileSubmenuLinks">
                 {CATALOG_LINKS.map((item) => (
                   <Link href={item.href} key={item.href} onClick={closeMenu}>
-                    <SiteIcon name={item.icon} />
-                    <span><strong>{item.title}</strong><small>{item.description}</small></span>
+                    {item.title}
                   </Link>
                 ))}
               </div>
             )}
 
             <div className="sdMobilePrimaryLinks">
-              {menuItems.map((item) => (
-                <Link href={item.href} key={item.href} onClick={closeMenu}>{item.title}</Link>
-              ))}
+              <Link href="/calculator" onClick={closeMenu}>Калькулятор</Link>
+              <Link href="/portfolio" onClick={closeMenu}>Портфолио</Link>
+            </div>
+
+            <button
+              aria-expanded={openDropdown === "company"}
+              className="sdMobileCatalogToggle"
+              onClick={() =>
+                setOpenDropdown((current) =>
+                  current === "company" ? null : "company"
+                )
+              }
+              type="button"
+            >
+              О компании
+              <SiteIcon className="sdNavChevron" name="chevron" />
+            </button>
+
+            {openDropdown === "company" && (
+              <div className="sdMobileSubmenuLinks">
+                {companyLinks.map((item) => (
+                  <Link href={item.href} key={item.href} onClick={closeMenu}>
+                    {item.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <div className="sdMobilePrimaryLinks sdMobileSingleLink">
+              <Link href="/kontakty" onClick={closeMenu}>Контакты</Link>
+            </div>
+
+            <button
+              aria-expanded={openDropdown === "guide"}
+              className="sdMobileCatalogToggle"
+              onClick={() =>
+                setOpenDropdown((current) =>
+                  current === "guide" ? null : "guide"
+                )
+              }
+              type="button"
+            >
+              Справочник
+              <SiteIcon className="sdNavChevron" name="chevron" />
+            </button>
+
+            {openDropdown === "guide" && (
+              <div className="sdMobileSubmenuLinks">
+                {guideLinks.map((item) => (
+                  <Link href={item.href} key={item.href} onClick={closeMenu}>
+                    {item.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <div className="sdMobilePrimaryLinks sdMobileSingleLink">
+              <Link href="/faq" onClick={closeMenu}>FAQ</Link>
+            </div>
+
+            <div className="sdMobilePrimaryLinks sdMobileSingleLink">
+              <Link href="/otzyvy" onClick={closeMenu}>Отзывы</Link>
             </div>
 
             <div className="sdMobileContactRow">

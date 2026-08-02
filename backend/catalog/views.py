@@ -1,5 +1,6 @@
-from django.db.models import Prefetch
+from django.db.models import Case, IntegerField, Prefetch, When
 from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.pagination import PageNumberPagination
 
 from .models import (
     Project,
@@ -18,6 +19,19 @@ OFFER_LIST_QS = ProjectOffer.objects.select_related("material", "build_package")
 OFFER_DETAIL_QS = OFFER_LIST_QS.prefetch_related("build_package__sections__items")
 
 
+class OptionalProjectPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+    def paginate_queryset(self, queryset, request, view=None):
+        # Старые внутренние запросы продолжают получать обычный массив.
+        # Пагинация включается явно каталогом через page/page_size.
+        if "page" not in request.query_params and "page_size" not in request.query_params:
+            return None
+        return super().paginate_queryset(queryset, request, view)
+
+
 class ProjectCategoryListAPIView(ListAPIView):
     serializer_class = ProjectCategorySerializer
 
@@ -27,6 +41,7 @@ class ProjectCategoryListAPIView(ListAPIView):
 
 class ProjectListAPIView(ListAPIView):
     serializer_class = ProjectListSerializer
+    pagination_class = OptionalProjectPagination
 
     def get_queryset(self):
         queryset = (
@@ -44,6 +59,7 @@ class ProjectListAPIView(ListAPIView):
         price_min = self.request.query_params.get("price_min")
         price_max = self.request.query_params.get("price_max")
         floors = self.request.query_params.get("floors")
+        ordering = self.request.query_params.get("ordering", "default")
 
         if category:
             queryset = queryset.filter(category__slug=category)
@@ -80,6 +96,41 @@ class ProjectListAPIView(ListAPIView):
                     continue
                 matching_ids.append(project.pk)
             queryset = queryset.filter(pk__in=matching_ids)
+
+        ordering_fields = {
+            "default": ("sort_order", "-created_at"),
+            "newest": ("-created_at", "id"),
+            "area_asc": ("area", "sort_order"),
+            "area_desc": ("-area", "sort_order"),
+            "title": ("title", "id"),
+        }
+        if ordering in {"price_asc", "price_desc"}:
+            pricing = PricingService()
+            priced_projects = [
+                (project.pk, pricing.get_project_price_from(project))
+                for project in queryset
+            ]
+            available_prices = [item for item in priced_projects if item[1] is not None]
+            unavailable_prices = [item for item in priced_projects if item[1] is None]
+            available_prices.sort(
+                key=lambda item: item[1],
+                reverse=ordering == "price_desc",
+            )
+            priced_projects = available_prices + unavailable_prices
+            ordered_ids = [project_id for project_id, _ in priced_projects]
+            if ordered_ids:
+                preserved_order = Case(
+                    *[
+                        When(pk=project_id, then=position)
+                        for position, project_id in enumerate(ordered_ids)
+                    ],
+                    output_field=IntegerField(),
+                )
+                queryset = queryset.filter(pk__in=ordered_ids).order_by(preserved_order)
+            else:
+                queryset = queryset.none()
+        else:
+            queryset = queryset.order_by(*ordering_fields.get(ordering, ordering_fields["default"]))
 
         return queryset
 
