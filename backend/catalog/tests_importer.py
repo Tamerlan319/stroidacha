@@ -75,3 +75,39 @@ class OldSiteImporterTests(SimpleTestCase):
             promotions[0].image_url,
             "https://stroydacha.online/media/delivery.jpg",
         )
+
+    def test_bath_importer_recognizes_bath_codes_and_category(self):
+        importer = OldSiteHouseImporter(project_kind="baths", pause=0)
+
+        self.assertEqual(
+            importer._external_id(
+                "https://stroydacha.online/proekt/banya-bb-07/"
+            ),
+            "BB-07",
+        )
+        self.assertEqual(importer._external_id("", "Баня ББ-10"), "BB-10")
+        self.assertEqual(importer.source.category_slug, "baths")
+
+    def test_gallery_uses_original_bath_photos_and_marks_plans(self):
+        importer = OldSiteHouseImporter(project_kind="baths", pause=0)
+        soup = BeautifulSoup(
+            """
+            <div class="woocommerce-product-gallery">
+              <a href="/media/banya-bb-01.jpg">
+                <img src="/media/banya-bb-01-300x200.jpg" alt="Баня ББ-01">
+              </a>
+              <img data-large_image="/media/plan-bb-01.jpg" alt="Планировка бани">
+            </div>
+            """,
+            "html.parser",
+        )
+
+        media = importer._extract_gallery(soup)
+
+        self.assertEqual(len(media), 2)
+        self.assertEqual(
+            media[0].url,
+            "https://stroydacha.online/media/banya-bb-01.jpg",
+        )
+        self.assertFalse(media[0].is_plan)
+        self.assertTrue(media[1].is_plan)

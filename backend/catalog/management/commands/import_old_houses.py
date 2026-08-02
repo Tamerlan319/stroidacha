@@ -9,6 +9,9 @@ from catalog.old_site_importer import (
 
 
 class Command(BaseCommand):
+    project_kind = "houses"
+    project_label_genitive = "домов"
+    external_prefix = "DB"
     help = (
         "Импортирует проекты домов из бруса со старого сайта stroydacha.online "
         "в текущий каталог Django. Обновление выполняется по external_id (DB-XX)."
@@ -51,8 +54,17 @@ class Command(BaseCommand):
         parser.add_argument(
             "--only",
             default="",
-            help="Импортировать только перечисленные коды, например DB-01,DB-02,DB-03.",
+            help=(
+                "Импортировать только перечисленные коды, например "
+                f"{self.external_prefix}-01,{self.external_prefix}-02."
+            ),
         )
+
+    def normalize_external_id(self, value):
+        return value.strip().upper().replace("ДБ-", "DB-")
+
+    def after_import(self):
+        """Hook for category-specific post-processing."""
 
     def handle(self, *args, **options):
         try:
@@ -61,10 +73,11 @@ class Command(BaseCommand):
                 timeout=options["timeout"],
                 pause=options["pause"],
                 stdout=self.stdout,
+                project_kind=self.project_kind,
             )
 
             only = {
-                item.strip().upper().replace("ДБ-", "DB-")
+                self.normalize_external_id(item)
                 for item in options["only"].split(",")
                 if item.strip()
             }
@@ -77,7 +90,9 @@ class Command(BaseCommand):
                 projects = [item for item in projects if item.external_id in only]
 
             if not projects:
-                raise CommandError("На старом сайте не найдено ни одного проекта дома.")
+                raise CommandError(
+                    f"На старом сайте не найдено ни одного проекта {self.project_label_genitive}."
+                )
 
             self.stdout.write(self.style.SUCCESS(f"Найдено проектов: {len(projects)}"))
 
@@ -120,6 +135,7 @@ class Command(BaseCommand):
             if options["dry_run"]:
                 self.stdout.write(self.style.SUCCESS("\nDry-run завершён: база данных не изменялась."))
             else:
+                self.after_import()
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"\nИмпорт завершён. Создано: {created_count}; "

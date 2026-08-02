@@ -53,6 +53,11 @@ type PageProps = {
   }>;
 };
 
+const landingCategoryBySlug: Record<string, ProjectCategory> = {
+  "doma-iz-brusa": { id: 0, slug: "houses", title: "Дома" },
+  "bani-iz-brusa": { id: 0, slug: "baths", title: "Бани" },
+};
+
 async function getLandingPage(slug: string): Promise<LandingPage | null> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -181,6 +186,9 @@ export default async function LandingPageRoute({ params }: PageProps) {
     notFound();
   }
 
+  // Для главных страниц каталогов URL — источник истины. Даже если редактор
+  // случайно привязал страницу бань к категории домов, посетитель увидит бани.
+  const catalogCategory = landingCategoryBySlug[slug] || page.category;
   const jsonLd = buildLandingPageJsonLd(page);
 
   return (
@@ -190,7 +198,7 @@ export default async function LandingPageRoute({ params }: PageProps) {
         <div className="container landingHeroInner">
           <div>
             <p className="heroKicker">
-              {page.category?.title || "Строительство из дерева"}
+              {catalogCategory?.title || "Строительство из дерева"}
             </p>
 
             <h1>{page.h1}</h1>
@@ -198,7 +206,7 @@ export default async function LandingPageRoute({ params }: PageProps) {
             {page.intro_text && <p className="heroText">{page.intro_text}</p>}
 
             <div className="heroActions">
-              {page.category && (
+              {catalogCategory && (
                 <a href="#projects" className="buttonPrimary">
                   Смотреть проекты
                 </a>
@@ -217,9 +225,9 @@ export default async function LandingPageRoute({ params }: PageProps) {
         </div>
       </section>
 
-      {page.category && (
+      {catalogCategory && (
         <ProjectCatalog
-          initialCategory={page.category.slug}
+          initialCategory={catalogCategory.slug}
           showCategoryFilter={false}
           showFilters={true}
           eyebrow="Каталог"
