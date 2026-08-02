@@ -134,6 +134,8 @@ def _stable_code(prefix, title):
         "свайный фундамент": "screw-piles",
         "свайно-винтовой фундамент": "screw-piles",
         "жб сваи (гост)": "reinforced-piles",
+        "жб сваи гост": "reinforced-piles",
+        "железобетонные сваи гост": "reinforced-piles",
         "металлочерепица": "metal-tile",
         "ондулин": "ondulin",
         "гибкая черепица": "flexible-shingles",
@@ -182,8 +184,15 @@ def get_or_create_build_package(title="Под усадку"):
 
 
 def get_or_create_foundation(title):
+    code = _stable_code("foundation", title)
+    existing = FoundationType.objects.filter(code=code).first()
+    if existing:
+        if existing.title != title and code != "reinforced-piles":
+            existing.title = title
+            existing.save(update_fields=["title"])
+        return existing
     obj, _ = FoundationType.objects.update_or_create(
-        code=_stable_code("foundation", title), defaults={"title": title, "is_active": True}
+        code=code, defaults={"title": title, "is_active": True}
     )
     return obj
 

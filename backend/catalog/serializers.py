@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from .models import (
     BuildPackage,
+    ConstructionStep,
     Project,
     ProjectCategory,
     ProjectContentSection,
@@ -14,6 +15,7 @@ from .models import (
     ProjectPlan,
     ProjectRoofCovering,
     ProjectTechnicalData,
+    SitePromotion,
 )
 from .pricing import PricingService
 
@@ -126,6 +128,23 @@ class ProjectContentSectionSerializer(serializers.ModelSerializer):
         fields = ("id", "title", "body", "sort_order")
 
 
+class SitePromotionSerializer(AbsoluteImageUrlMixin, serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SitePromotion
+        fields = ("id", "code", "title", "description", "image", "button_label", "sort_order")
+
+    def get_image(self, obj):
+        return self.absolute_file_url(obj.image)
+
+
+class ConstructionStepSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConstructionStep
+        fields = ("id", "code", "title", "description", "icon", "sort_order")
+
+
 class ProjectListSerializer(PricingSerializerMixin, AbsoluteImageUrlMixin, serializers.ModelSerializer):
     category = ProjectCategorySerializer(read_only=True)
     main_image = serializers.SerializerMethodField()
@@ -198,6 +217,8 @@ class ProjectDetailSerializer(ProjectListSerializer):
     content_sections = ProjectContentSectionSerializer(many=True, read_only=True)
     illustrated_options = serializers.SerializerMethodField()
     technical = serializers.SerializerMethodField()
+    promotions = serializers.SerializerMethodField()
+    work_steps = serializers.SerializerMethodField()
 
     class Meta(ProjectListSerializer.Meta):
         fields = ProjectListSerializer.Meta.fields + (
@@ -212,6 +233,8 @@ class ProjectDetailSerializer(ProjectListSerializer):
             "content_sections",
             "illustrated_options",
             "technical",
+            "promotions",
+            "work_steps",
         )
 
     def get_images(self, obj):
@@ -225,6 +248,14 @@ class ProjectDetailSerializer(ProjectListSerializer):
         except ProjectTechnicalData.DoesNotExist:
             return None
         return ProjectTechnicalDataSerializer(technical).data
+
+    def get_promotions(self, obj):
+        items = SitePromotion.objects.filter(is_active=True).order_by("sort_order", "id")
+        return SitePromotionSerializer(items, many=True, context=self.context).data
+
+    def get_work_steps(self, obj):
+        items = ConstructionStep.objects.filter(is_active=True).order_by("sort_order", "id")
+        return ConstructionStepSerializer(items, many=True).data
 
     def _foundation_payload(self, item: ProjectFoundation, *, illustrated=False):
         pricing = self.get_pricing_service()
@@ -281,7 +312,6 @@ class ProjectDetailSerializer(ProjectListSerializer):
         items = []
         items.extend(self._foundation_payload(item) for item in obj.foundations.all())
         items.extend(self._roof_payload(item) for item in obj.roof_coverings.all())
-        items.extend(self._extra_payload(item) for item in obj.extra_options.all())
         return sorted(items, key=lambda item: (item["group_title"], item["sort_order"], item["id"]))
 
     def get_illustrated_options(self, obj):
@@ -292,10 +322,6 @@ class ProjectDetailSerializer(ProjectListSerializer):
                 items.append(payload)
         for item in obj.roof_coverings.all():
             payload = self._roof_payload(item, illustrated=True)
-            if payload["image"] or payload["description"]:
-                items.append(payload)
-        for item in obj.extra_options.all():
-            payload = self._extra_payload(item, illustrated=True)
             if payload["image"] or payload["description"]:
                 items.append(payload)
         return sorted(items, key=lambda item: (item["group_title"], item["sort_order"], item["id"]))

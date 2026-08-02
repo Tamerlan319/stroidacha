@@ -36,6 +36,14 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
+            "--overwrite-content",
+            action="store_true",
+            help=(
+                "Заново импортировать описание и текстовые разделы. Без этого флага "
+                "тексты, отредактированные вручную в Django Admin, не перезаписываются."
+            ),
+        )
+        parser.add_argument(
             "--prune-related",
             action="store_true",
             help="Удалять старые цены/опции/текстовые блоки, которых нет в импортируемых данных.",
@@ -97,6 +105,7 @@ class Command(BaseCommand):
                         prune_related=options["prune_related"],
                         replace_media=options["replace_media"],
                         clean_imported_text=options["clean_imported_text"],
+                        overwrite_content=options["overwrite_content"],
                     )
                     if created:
                         created_count += 1
