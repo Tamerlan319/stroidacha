@@ -27,6 +27,7 @@ class LandingPageDetailAPIView(RetrieveAPIView):
             .select_related("category")
             .prefetch_related(
                 "faqs",
+                "images",
                 "related_projects__category",
             )
         )

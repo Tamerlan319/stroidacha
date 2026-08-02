@@ -3,7 +3,21 @@ from rest_framework import serializers
 from catalog.models import Project
 from catalog.serializers import ProjectCategorySerializer, ProjectListSerializer
 
-from .models import LandingPage, LandingPageFAQ
+from .models import LandingPage, LandingPageFAQ, LandingPageImage
+
+
+class LandingPageImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LandingPageImage
+        fields = ("id", "image", "alt_text", "caption", "sort_order")
+
+    def get_image(self, obj):
+        if not obj.image:
+            return None
+        request = self.context.get("request")
+        return request.build_absolute_uri(obj.image.url) if request else obj.image.url
 
 
 class LandingPageFAQSerializer(serializers.ModelSerializer):
@@ -39,6 +53,7 @@ class LandingPageDetailSerializer(serializers.ModelSerializer):
     category = ProjectCategorySerializer(read_only=True)
     faqs = LandingPageFAQSerializer(many=True, read_only=True)
     related_projects = serializers.SerializerMethodField()
+    images = LandingPageImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = LandingPage
@@ -53,6 +68,7 @@ class LandingPageDetailSerializer(serializers.ModelSerializer):
             "category",
             "related_projects",
             "faqs",
+            "images",
             "seo_title",
             "seo_description",
             "sort_order",

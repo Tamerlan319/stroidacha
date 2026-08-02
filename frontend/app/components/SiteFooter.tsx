@@ -75,6 +75,10 @@ export default async function SiteFooter() {
         <div>
           <h3>Направления</h3>
           <ul className="footerLinks">
+            <li><Link href="/portfolio">Портфолио</Link></li>
+            <li><Link href="/otzyvy">Отзывы</Link></li>
+            <li><Link href="/faq">FAQ</Link></li>
+            <li><Link href="/spravochnik">Справочник</Link></li>
             {landingPages.slice(0, 7).map((page) => (
               <li key={page.id}>
                 <Link href={`/${page.slug}`}>{page.h1 || page.title}</Link>
