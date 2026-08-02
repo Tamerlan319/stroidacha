@@ -180,6 +180,14 @@ export default function SiteHeader() {
     };
   }, []);
 
+  useEffect(() => {
+    document.body.classList.toggle("sdMobileMenuOpen", isOpen);
+
+    return () => {
+      document.body.classList.remove("sdMobileMenuOpen");
+    };
+  }, [isOpen]);
+
   function closeMenu() {
     setIsOpen(false);
     setOpenDropdown(null);
@@ -393,104 +401,145 @@ export default function SiteHeader() {
       {isOpen && (
         <nav className="sdMobileMenu" aria-label="Мобильное меню">
           <div className="container sdMobileMenuInner">
-            <button
-              aria-expanded={openDropdown === "catalog"}
-              className="sdMobileCatalogToggle"
-              onClick={() =>
-                setOpenDropdown((current) =>
-                  current === "catalog" ? null : "catalog"
-                )
-              }
-              type="button"
-            >
-              Каталог
-              <SiteIcon className="sdNavChevron" name="chevron" />
-            </button>
+            <div className="sdMobileMenuIntro">
+              <span>Меню</span>
+              <small>Проекты, услуги и полезная информация</small>
+            </div>
 
-            {openDropdown === "catalog" && (
-              <div className="sdMobileSubmenuLinks">
-                {CATALOG_LINKS.map((item) => (
-                  <Link href={item.href} key={item.href} onClick={closeMenu}>
-                    {item.title}
-                  </Link>
-                ))}
+            <div className="sdMobileNavPanel">
+              <div className="sdMobileMenuSection">
+                <button
+                  aria-expanded={openDropdown === "catalog"}
+                  className="sdMobileCatalogToggle"
+                  onClick={() =>
+                    setOpenDropdown((current) =>
+                      current === "catalog" ? null : "catalog"
+                    )
+                  }
+                  type="button"
+                >
+                  <span className="sdMobileNavLabel">
+                    <span className="sdMobileNavIcon"><SiteIcon name="house" /></span>
+                    <span><strong>Каталог проектов</strong><small>Дома и бани из бруса</small></span>
+                  </span>
+                  <SiteIcon className="sdNavChevron" name="chevron" />
+                </button>
+
+                {openDropdown === "catalog" && (
+                  <div className="sdMobileSubmenuLinks sdMobileCatalogSubmenu">
+                    {CATALOG_LINKS.map((item) => (
+                      <Link href={item.href} key={item.href} onClick={closeMenu}>
+                        <span className="sdMobileSubmenuIcon"><SiteIcon name={item.icon} /></span>
+                        <span><strong>{item.title}</strong><small>{item.description}</small></span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="sdMobilePrimaryLinks">
-              <Link href="/calculator" onClick={closeMenu}>Калькулятор</Link>
-              <Link href="/portfolio" onClick={closeMenu}>Портфолио</Link>
-            </div>
+              <Link className="sdMobileDirectLink" href="/calculator" onClick={closeMenu}>
+                <span className="sdMobileNavIcon"><SiteIcon name="price" /></span>
+                <span><strong>Калькулятор</strong><small>Предварительный расчёт</small></span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              </Link>
 
-            <button
-              aria-expanded={openDropdown === "company"}
-              className="sdMobileCatalogToggle"
-              onClick={() =>
-                setOpenDropdown((current) =>
-                  current === "company" ? null : "company"
-                )
-              }
-              type="button"
-            >
-              О компании
-              <SiteIcon className="sdNavChevron" name="chevron" />
-            </button>
+              <Link className="sdMobileDirectLink" href="/portfolio" onClick={closeMenu}>
+                <span className="sdMobileNavIcon"><SiteIcon name="blueprint" /></span>
+                <span><strong>Портфолио</strong><small>Построенные объекты</small></span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              </Link>
 
-            {openDropdown === "company" && (
-              <div className="sdMobileSubmenuLinks">
-                {companyLinks.map((item) => (
-                  <Link href={item.href} key={item.href} onClick={closeMenu}>
-                    {item.title}
-                  </Link>
-                ))}
+              <div className="sdMobileMenuSection">
+                <button
+                  aria-expanded={openDropdown === "company"}
+                  className="sdMobileCatalogToggle"
+                  onClick={() =>
+                    setOpenDropdown((current) =>
+                      current === "company" ? null : "company"
+                    )
+                  }
+                  type="button"
+                >
+                  <span className="sdMobileNavLabel">
+                    <span className="sdMobileNavIcon"><SiteIcon name="factory" /></span>
+                    <span><strong>О компании</strong><small>Производство и условия</small></span>
+                  </span>
+                  <SiteIcon className="sdNavChevron" name="chevron" />
+                </button>
+
+                {openDropdown === "company" && (
+                  <div className="sdMobileSubmenuLinks">
+                    {companyLinks.map((item) => (
+                      <Link href={item.href} key={item.href} onClick={closeMenu}>
+                        <strong>{item.title}</strong>
+                        <span aria-hidden="true">→</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="sdMobilePrimaryLinks sdMobileSingleLink">
-              <Link href="/kontakty" onClick={closeMenu}>Контакты</Link>
-            </div>
+              <Link className="sdMobileDirectLink" href="/kontakty" onClick={closeMenu}>
+                <span className="sdMobileNavIcon"><SiteIcon name="contract" /></span>
+                <span><strong>Контакты</strong><small>Телефон, адрес и реквизиты</small></span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              </Link>
 
-            <button
-              aria-expanded={openDropdown === "guide"}
-              className="sdMobileCatalogToggle"
-              onClick={() =>
-                setOpenDropdown((current) =>
-                  current === "guide" ? null : "guide"
-                )
-              }
-              type="button"
-            >
-              Справочник
-              <SiteIcon className="sdNavChevron" name="chevron" />
-            </button>
+              <div className="sdMobileMenuSection">
+                <button
+                  aria-expanded={openDropdown === "guide"}
+                  className="sdMobileCatalogToggle"
+                  onClick={() =>
+                    setOpenDropdown((current) =>
+                      current === "guide" ? null : "guide"
+                    )
+                  }
+                  type="button"
+                >
+                  <span className="sdMobileNavLabel">
+                    <span className="sdMobileNavIcon"><SiteIcon name="blueprint" /></span>
+                    <span><strong>Справочник</strong><small>Статьи о строительстве</small></span>
+                  </span>
+                  <SiteIcon className="sdNavChevron" name="chevron" />
+                </button>
 
-            {openDropdown === "guide" && (
-              <div className="sdMobileSubmenuLinks">
-                {guideLinks.map((item) => (
-                  <Link href={item.href} key={item.href} onClick={closeMenu}>
-                    {item.title}
-                  </Link>
-                ))}
+                {openDropdown === "guide" && (
+                  <div className="sdMobileSubmenuLinks">
+                    {guideLinks.map((item) => (
+                      <Link href={item.href} key={item.href} onClick={closeMenu}>
+                        <strong>{item.title}</strong>
+                        <span aria-hidden="true">→</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="sdMobilePrimaryLinks sdMobileSingleLink">
-              <Link href="/faq" onClick={closeMenu}>FAQ</Link>
+              <Link className="sdMobileDirectLink" href="/faq" onClick={closeMenu}>
+                <span className="sdMobileNavIcon"><SiteIcon name="shield" /></span>
+                <span><strong>Частые вопросы</strong><small>Коротко о важном</small></span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              </Link>
+
+              <Link className="sdMobileDirectLink" href="/otzyvy" onClick={closeMenu}>
+                <span className="sdMobileNavIcon"><SiteIcon name="gift" /></span>
+                <span><strong>Отзывы</strong><small>Опыт наших заказчиков</small></span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              </Link>
             </div>
 
-            <div className="sdMobilePrimaryLinks sdMobileSingleLink">
-              <Link href="/otzyvy" onClick={closeMenu}>Отзывы</Link>
-            </div>
-
-            <div className="sdMobileContactRow">
-              <div>
-                <a href={`tel:${SITE_PHONE_HREF}`} onClick={closeMenu}>{SITE_PHONE}</a>
-                <small>Ежедневно с 9:00 до 20:00</small>
+            <div className="sdMobileContactCard">
+              <div className="sdMobileContactRow">
+                <div>
+                  <small>Звоните — поможем с выбором</small>
+                  <a href={`tel:${SITE_PHONE_HREF}`} onClick={closeMenu}>{SITE_PHONE}</a>
+                  <span>Ежедневно с 9:00 до 20:00</span>
+                </div>
+                <SocialLinks />
               </div>
-              <SocialLinks />
-            </div>
 
-            {renderQuickForm("sdMobileQuickForm")}
+              {renderQuickForm("sdMobileQuickForm")}
+            </div>
           </div>
         </nav>
       )}
