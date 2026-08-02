@@ -198,7 +198,7 @@ export default async function HomePage() {
       <ProjectCatalog
         initialCategory="houses"
         showFilters={false}
-        maxItems={3}
+        maxItems={6}
         eyebrow=""
         title="Проекты, которые выбирают"
         description=""
@@ -231,21 +231,28 @@ export default async function HomePage() {
       </section>
 
       <section className="container homeSection homePackages">
-        <h2 className="homeTitle">Два варианта —<br />выбирайте свой</h2>
-        <div className="packageGrid">
-          <article className="packageCard packageShrink">
-            <div><h3>Под усадку</h3><p>Дом из бруса с естественной усадкой. Оптимальный выбор для тех, кто планирует отделку позже.</p>
-              <ul><li>Профилированный брус камерной сушки</li><li>Сборка на деревянные нагели</li><li>Черновой пол и кровля</li><li>Доставка и сборка</li></ul>
-              <Link href="/doma-iz-brusa-pod-usadku" className="buttonOutline">Подробнее</Link>
-            </div>
-          </article>
-          <article className="packageCard packageTurnkey">
-            <div><h3>Под ключ</h3><p>Готовый дом с отделкой и коммуникациями. Заезжайте и живите.</p>
-              <ul><li>Всё из пакета «Под усадку»</li><li>Кровля из металлочерепицы</li><li>Окна и двери</li><li>Утепление, полы и потолки</li></ul>
-              <Link href="/calculator" className="buttonOutline">Рассчитать</Link>
-            </div>
-          </article>
+        <div className="homeSectionHeading packageHeading">
+          <div>
+            <span className="homeEyebrow">Готовое решение</span>
+            <h2 className="homeTitle">Строительство под ключ</h2>
+          </div>
+          <p>Берём на себя весь цикл работ — от производства домокомплекта до тёплого дома, готового к жизни.</p>
         </div>
+        <article className="packageCard packageTurnkey packageSingle">
+          <div>
+            <h3>Дом, в который можно заезжать</h3>
+            <p>Фиксируем состав работ и материалов в договоре, организуем доставку и собираем объект на вашем участке.</p>
+            <ul>
+              <li>Профилированный брус камерной сушки</li>
+              <li>Сборка на деревянные нагели</li>
+              <li>Кровля из металлочерепицы</li>
+              <li>Окна и двери</li>
+              <li>Утепление, полы и потолки</li>
+              <li>Доставка и монтаж</li>
+            </ul>
+            <Link href="/calculator" className="buttonOutline">Рассчитать стоимость</Link>
+          </div>
+        </article>
       </section>
 
       <section className="homeReliability">

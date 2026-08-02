@@ -5432,3 +5432,460 @@ main {
     padding: 21px;
   }
 }
+
+/* Refined two-level header and single turnkey package */
+
+.sdHeader {
+  border-bottom: 0;
+  background: #fff;
+  box-shadow: 0 5px 24px rgba(27, 49, 34, 0.07);
+}
+
+.sdHeaderMain {
+  background: #fff;
+}
+
+.sdHeaderInner {
+  min-height: 78px;
+  gap: 20px;
+}
+
+.sdLogoMark {
+  width: 46px;
+  height: 46px;
+  border-radius: 11px;
+}
+
+.sdLogoText strong {
+  font-size: 19px;
+  letter-spacing: 0.015em;
+}
+
+.sdHeaderPromise {
+  margin: 0;
+  border-left: 1px solid #dfe4de;
+  color: #647066;
+  padding-left: 20px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.sdSocialLinks {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.sdSocialLinks a {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #d8ded8;
+  border-radius: 50%;
+  background: #fbfcf9;
+  color: #24563a;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.sdSocialLinks a:hover {
+  border-color: #24563a;
+  background: #24563a;
+  color: #fff;
+}
+
+.sdSocialLinks svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.65;
+}
+
+.sdHeaderContacts {
+  margin-left: auto;
+}
+
+.sdHeaderQuickForm {
+  position: relative;
+  display: grid;
+  grid-template-columns: 154px auto;
+  gap: 7px;
+  align-items: end;
+}
+
+.sdHeaderQuickForm label {
+  display: grid;
+  gap: 3px;
+}
+
+.sdHeaderQuickForm label > span {
+  color: #6e776f;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sdHeaderQuickForm input,
+.sdHeaderQuickForm button {
+  min-height: 36px;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.sdHeaderQuickForm input {
+  width: 100%;
+  border: 1px solid #d8ded8;
+  background: #fbfcf9;
+  color: #203426;
+  padding: 0 10px;
+  font-size: 11px;
+  outline: none;
+}
+
+.sdHeaderQuickForm input:focus {
+  border-color: #c28a42;
+  box-shadow: 0 0 0 2px rgba(194, 138, 66, 0.12);
+}
+
+.sdHeaderQuickForm button {
+  border: 1px solid #c88739;
+  background: #c88739;
+  color: #fff;
+  padding: 0 13px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sdHeaderQuickForm button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.sdHeaderQuickForm > small {
+  position: absolute;
+  top: calc(100% + 3px);
+  right: 0;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.sdHeaderQuickForm .isSuccess { color: #287048; }
+.sdHeaderQuickForm .isError { color: #a53c2d; }
+
+.sdHeaderNavBar {
+  border-top: 1px solid #edf0eb;
+  border-bottom: 1px solid #e4e8e2;
+  background: #fafbf8;
+}
+
+.sdHeaderNavInner {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+}
+
+.sdHeaderNavInner .sdDesktopNav {
+  min-height: 46px;
+  margin-left: 0;
+  gap: 30px;
+}
+
+.sdHeaderNavInner .sdDesktopNav > a,
+.sdHeaderNavInner .sdNavDropdownTrigger {
+  color: #34483a;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.sdHeaderCalc {
+  display: inline-flex;
+  min-height: 31px;
+  align-items: center;
+  margin-left: auto;
+  border-bottom: 1px solid #c88739;
+  color: #9c5c1b;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.sdNavDropdownMenu {
+  left: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-radius: 10px;
+  transform: none;
+}
+
+.packageHeading {
+  margin-bottom: 20px;
+}
+
+.packageHeading > p {
+  max-width: 470px;
+}
+
+.homeEditorial .packageSingle {
+  min-height: 430px;
+  background-position: center 58%;
+}
+
+.homeEditorial .packageSingle > div {
+  max-width: 56%;
+  padding: 44px;
+}
+
+.homeEditorial .packageSingle h3 {
+  max-width: 500px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(30px, 3.3vw, 46px);
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.homeEditorial .packageSingle p {
+  max-width: 520px;
+  font-size: 14px;
+}
+
+.homeEditorial .packageSingle ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px 24px;
+  font-size: 12px;
+}
+
+@media (max-width: 1180px) {
+  .sdHeaderPromise {
+    display: none;
+  }
+
+  .sdHeaderInner {
+    gap: 14px;
+  }
+
+  .sdHeaderQuickForm {
+    grid-template-columns: 142px auto;
+  }
+
+  .sdHeaderNavInner .sdDesktopNav {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 960px) {
+  body {
+    padding-top: 72px;
+  }
+
+  .sdHeaderMain {
+    border-bottom: 1px solid #e1e6df;
+  }
+
+  .sdHeaderInner,
+  .siteHeaderInner {
+    min-height: 72px;
+  }
+
+  .sdHeaderNavBar,
+  .sdHeaderPromise,
+  .sdHeaderInner > .sdHeaderSocials,
+  .sdHeaderInner > .sdHeaderContacts,
+  .sdHeaderInner > .sdHeaderQuickForm {
+    display: none;
+  }
+
+  .sdLogoMark {
+    width: 44px;
+    height: 44px;
+  }
+
+  .sdLogoText strong {
+    font-size: 18px;
+  }
+
+  .sdLogoText small {
+    margin-top: 4px;
+    font-size: 10px;
+  }
+
+  .sdBurger {
+    display: block;
+    width: 46px;
+    height: 46px;
+    border-color: #d5ddd5;
+    border-radius: 9px;
+  }
+
+  .sdBurger span {
+    left: 12px;
+    width: 22px;
+  }
+
+  .sdMobileMenu {
+    top: 72px;
+    display: block;
+    max-height: calc(100dvh - 72px);
+    border-top: 0;
+    background: #fff;
+    box-shadow: 0 18px 38px rgba(22, 44, 29, 0.16);
+  }
+
+  .sdMobileMenuInner {
+    gap: 12px;
+    padding: 18px 16px 24px;
+  }
+
+  .sdMobileCatalogToggle {
+    min-height: 54px;
+    border: 1px solid #e7e6df;
+    border-radius: 8px;
+    background: #f8f5ed;
+    padding: 0 16px;
+    font-size: 15px;
+  }
+
+  .sdMobileCatalogLinks {
+    gap: 4px;
+    margin: -4px 0 2px 12px;
+    padding: 3px 0 3px 11px;
+  }
+
+  .sdMobileMenuInner .sdMobileCatalogLinks a {
+    min-height: 57px;
+    gap: 12px;
+    padding: 7px 10px;
+  }
+
+  .sdMobileCatalogLinks a > svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sdMobileCatalogLinks a span {
+    display: grid;
+    gap: 3px;
+  }
+
+  .sdMobileCatalogLinks a strong {
+    font-size: 14px;
+  }
+
+  .sdMobileCatalogLinks a small {
+    color: #778078;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .sdMobilePrimaryLinks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 8px;
+    padding: 4px 0 10px;
+    border-bottom: 1px solid #e7ebe5;
+  }
+
+  .sdMobileMenuInner .sdMobilePrimaryLinks a {
+    min-height: 42px;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .sdMobileContactRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .sdMobileContactRow > div:first-child {
+    display: grid;
+    gap: 3px;
+  }
+
+  .sdMobileMenuInner .sdMobileContactRow > div:first-child > a {
+    min-height: 0;
+    padding: 0;
+    font-size: 17px;
+  }
+
+  .sdMobileContactRow small {
+    color: #727b73;
+    font-size: 10px;
+  }
+
+  .sdMobileMenuInner .sdSocialLinks a {
+    width: 38px;
+    min-height: 38px;
+    height: 38px;
+    padding: 0;
+  }
+
+  .sdMobileQuickForm {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    margin-top: 2px;
+    border-radius: 9px;
+    background: #1d4d33;
+    padding: 15px;
+  }
+
+  .sdMobileQuickForm label > span {
+    color: rgba(255,255,255,0.72);
+  }
+
+  .sdMobileQuickForm input {
+    min-height: 42px;
+    border-color: rgba(255,255,255,0.3);
+    background: #fff;
+  }
+
+  .sdMobileQuickForm button {
+    min-height: 42px;
+    padding: 0 12px;
+  }
+
+  .sdMobileQuickForm > small {
+    top: calc(100% + 2px);
+    color: #fff;
+  }
+}
+
+@media (max-width: 680px) {
+  .homeEditorial .packageSingle {
+    min-height: 560px;
+    background-image:
+      linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.94) 56%, rgba(255,255,255,0.05) 80%),
+      url("/images/banners/home-hero1.jpg");
+    background-position: 60% bottom;
+  }
+
+  .homeEditorial .packageSingle > div {
+    max-width: 100%;
+    padding: 26px 22px;
+  }
+
+  .homeEditorial .packageSingle ul {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 430px) {
+  .sdLogoText small {
+    display: none;
+  }
+
+  .sdMobileQuickForm {
+    grid-template-columns: 1fr;
+  }
+
+  .sdMobileQuickForm button {
+    width: 100%;
+  }
+}
