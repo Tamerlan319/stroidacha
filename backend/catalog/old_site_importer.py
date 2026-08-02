@@ -50,6 +50,7 @@ else:
 
 DEFAULT_BASE_URL = "https://stroydacha.online"
 DEFAULT_HOUSES_PATH = "/doma-iz-brusa/"
+DEFAULT_BATHS_PATH = "/bani-iz-brusa/"
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 "
@@ -126,6 +127,45 @@ class IndexProject:
     floors: Decimal | None = None
 
 
+@dataclass(frozen=True)
+class ProjectSource:
+    key: str
+    catalog_path: str
+    link_pattern: str
+    url_id_pattern: str
+    text_id_pattern: str
+    external_prefix: str
+    category_slug: str
+    category_title: str
+    category_sort_order: int
+
+
+PROJECT_SOURCES = {
+    "houses": ProjectSource(
+        key="houses",
+        catalog_path=DEFAULT_HOUSES_PATH,
+        link_pattern=r"/proekt/dom-db-\d+/?",
+        url_id_pattern=r"dom-db-(\d+)",
+        text_id_pattern=r"(?:ДБ|DB)[-\s]?(\d+)",
+        external_prefix="DB",
+        category_slug="houses",
+        category_title="Дома",
+        category_sort_order=10,
+    ),
+    "baths": ProjectSource(
+        key="baths",
+        catalog_path=DEFAULT_BATHS_PATH,
+        link_pattern=r"/proekt/banya-bb-\d+/?",
+        url_id_pattern=r"banya-bb-(\d+)",
+        text_id_pattern=r"(?:ББ|BB)[-\s]?(\d+)",
+        external_prefix="BB",
+        category_slug="baths",
+        category_title="Бани",
+        category_sort_order=20,
+    ),
+}
+
+
 @dataclass
 class MediaItem:
     url: str
@@ -148,6 +188,9 @@ class ParsedProject:
     source_slug: str
     external_id: str
     title: str
+    category_slug: str
+    category_title: str
+    category_sort_order: int
     area: Decimal | None
     floors: Decimal | None
     floor_label: str
@@ -182,6 +225,7 @@ class OldSiteHouseImporter:
         timeout: int = 30,
         pause: float = 0.15,
         stdout=None,
+        project_kind: str = "houses",
     ):
         if BeautifulSoup is None:
             raise OldSiteImportError(
@@ -193,6 +237,13 @@ class OldSiteHouseImporter:
         self.timeout = timeout
         self.pause = max(pause, 0)
         self.stdout = stdout
+        try:
+            self.source = PROJECT_SOURCES[project_kind]
+        except KeyError as exc:
+            choices = ", ".join(sorted(PROJECT_SOURCES))
+            raise OldSiteImportError(
+                f"Неизвестный раздел проектов: {project_kind}. Доступно: {choices}."
+            ) from exc
 
     def _log(self, message: str):
         if self.stdout:
@@ -239,14 +290,13 @@ class OldSiteHouseImporter:
         except InvalidOperation:
             return None
 
-    @staticmethod
-    def _external_id(url: str, text: str = "") -> str | None:
-        match = re.search(r"dom-db-(\d+)", url, flags=re.IGNORECASE)
+    def _external_id(self, url: str, text: str = "") -> str | None:
+        match = re.search(self.source.url_id_pattern, url, flags=re.IGNORECASE)
         if not match:
-            match = re.search(r"(?:ДБ|DB)[-\s]?(\d+)", text, flags=re.IGNORECASE)
+            match = re.search(self.source.text_id_pattern, text, flags=re.IGNORECASE)
         if not match:
             return None
-        return f"DB-{int(match.group(1)):02d}"
+        return f"{self.source.external_prefix}-{int(match.group(1)):02d}"
 
     @staticmethod
     def _sort_order(external_id: str) -> int:
@@ -257,7 +307,8 @@ class OldSiteHouseImporter:
         discovered: dict[str, IndexProject] = {}
 
         for page_number in range(1, max_pages + 1):
-            path = DEFAULT_HOUSES_PATH if page_number == 1 else f"{DEFAULT_HOUSES_PATH}page/{page_number}/"
+            catalog_path = self.source.catalog_path
+            path = catalog_path if page_number == 1 else f"{catalog_path}page/{page_number}/"
             url = urljoin(f"{self.base_url}/", path.lstrip("/"))
             self._log(f"Каталог, страница {page_number}: {url}")
             try:
@@ -274,7 +325,7 @@ class OldSiteHouseImporter:
             page_items: list[IndexProject] = []
 
             for card in cards:
-                link = card.find("a", href=re.compile(r"/proekt/dom-db-\d+/?", re.IGNORECASE))
+                link = card.find("a", href=re.compile(self.source.link_pattern, re.IGNORECASE))
                 if not link:
                     continue
                 href = urljoin(self.base_url, link.get("href"))
@@ -301,7 +352,7 @@ class OldSiteHouseImporter:
 
             # Fallback for themes where WooCommerce cards do not use li.product.
             if not page_items:
-                for link in soup.find_all("a", href=re.compile(r"/proekt/dom-db-\d+/?", re.IGNORECASE)):
+                for link in soup.find_all("a", href=re.compile(self.source.link_pattern, re.IGNORECASE)):
                     href = urljoin(self.base_url, link.get("href"))
                     external_id = self._external_id(href, link.get_text(" ", strip=True))
                     if external_id:
@@ -408,6 +459,9 @@ class OldSiteHouseImporter:
             source_slug=source_slug,
             external_id=index.external_id,
             title=title,
+            category_slug=self.source.category_slug,
+            category_title=self.source.category_title,
+            category_sort_order=self.source.category_sort_order,
             area=area,
             floors=floors,
             floor_label=floor_label,
@@ -573,7 +627,8 @@ class OldSiteHouseImporter:
                 if row not in rows:
                     rows.append(row)
 
-        package_title = 'Комплектация дома из бруса "ПОД УСАДКУ"'
+        # Одна глобальная комплектация используется и домами, и банями.
+        package_title = "Под усадку"
         return package_title, "", rows
 
     def _text_until_heading(self, heading, stop_heading) -> str:
@@ -645,7 +700,15 @@ class OldSiteHouseImporter:
     def _compact_short_description(self, data: ParsedProject) -> str:
         parts: list[str] = []
         floor_word = self._floor_word(data.floors, data.floor_label)
-        parts.append(f"{floor_word} дом из бруса")
+        if data.category_slug == "baths":
+            bath_floor_word = {
+                "Полутораэтажный": "Полутораэтажная",
+                "Двухэтажный": "Двухэтажная",
+                "Одноэтажный": "Одноэтажная",
+            }.get(floor_word, "Деревянная")
+            parts.append(f"{bath_floor_word} баня из бруса")
+        else:
+            parts.append(f"{floor_word} дом из бруса")
         if data.size_text:
             parts.append(f"размером {data.size_text} м")
         if data.area is not None:
@@ -679,13 +742,22 @@ class OldSiteHouseImporter:
         overwrite_content: bool = False,
     ) -> tuple[Project, bool]:
         category, _ = ProjectCategory.objects.get_or_create(
-            slug="houses",
+            slug=data.category_slug,
             defaults={
-                "title": "Дома",
-                "sort_order": 10,
+                "title": data.category_title,
+                "sort_order": data.category_sort_order,
                 "is_active": True,
             },
         )
+        category_updates = []
+        if category.title != data.category_title:
+            category.title = data.category_title
+            category_updates.append("title")
+        if not category.is_active:
+            category.is_active = True
+            category_updates.append("is_active")
+        if category_updates:
+            category.save(update_fields=category_updates)
 
         existing = Project.objects.filter(external_id=data.external_id).first()
         created = existing is None
@@ -869,7 +941,7 @@ class OldSiteHouseImporter:
         obj.image.save(filename, content, save=True)
 
     def _sync_package(self, project: Project, data: ParsedProject, *, prune: bool):
-        title = data.package_title or 'Комплектация дома из бруса "ПОД УСАДКУ"'
+        title = data.package_title or "Под усадку"
         package = get_or_create_build_package(title)
 
         spec = []
