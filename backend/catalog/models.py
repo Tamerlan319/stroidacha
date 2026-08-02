@@ -788,6 +788,55 @@ class ProjectContentSection(models.Model):
         return f"{self.project.title} — {self.title}"
 
 
+class SitePromotion(models.Model):
+    """Акция, показываемая на карточках проектов.
+
+    Акции общие для каталога и редактируются один раз в Django Admin.
+    """
+
+    code = models.SlugField("Код", max_length=80, unique=True)
+    title = models.CharField("Название", max_length=255)
+    description = models.TextField("Условия", blank=True)
+    image = models.ImageField("Изображение", upload_to="catalog/promotions/", blank=True)
+    button_label = models.CharField("Текст кнопки", max_length=80, blank=True, default="Узнать подробнее")
+    is_active = models.BooleanField("Активна", default=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Акция на странице проекта"
+        verbose_name_plural = "Акции на страницах проектов"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return self.title
+
+
+class ConstructionStep(models.Model):
+    """Редактируемый этап работы, общий для карточек проектов."""
+
+    class Icon(models.TextChoices):
+        BLUEPRINT = "blueprint", "Проект"
+        CONTRACT = "contract", "Договор"
+        TRUCK = "truck", "Доставка"
+        HOUSE = "house", "Строительство"
+        SHIELD = "shield", "Приёмка"
+
+    code = models.SlugField("Код", max_length=80, unique=True)
+    title = models.CharField("Название", max_length=180)
+    description = models.TextField("Описание", blank=True)
+    icon = models.CharField("Иконка", max_length=30, choices=Icon.choices, default=Icon.BLUEPRINT)
+    is_active = models.BooleanField("Активен", default=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Этап работы"
+        verbose_name_plural = "Этапы работы"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return self.title
+
+
 class CostRate(models.Model):
     """Историческая ставка сметного движка.
 

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import JsonLd from "../../components/JsonLd";
 import LeadForm from "../../components/LeadForm";
 import ImageLightbox from "../../components/ImageLightbox";
+import SiteIcon from "../../components/SiteIcon";
 import { SITE_NAME, SITE_URL } from "../../lib/site";
 
 type ProjectCategory = {
@@ -88,6 +89,8 @@ type Project = {
   packages: ProjectPackage[];
   content_sections: ProjectContentSection[];
   illustrated_options: ProjectIllustratedOption[];
+  promotions: ProjectPromotion[];
+  work_steps: ProjectWorkStep[];
 };
 
 type PageProps = {
@@ -110,6 +113,25 @@ type ProjectIllustratedOption = {
   price: string | number | null;
   image: string | null;
   description: string;
+  sort_order: number;
+};
+
+type ProjectPromotion = {
+  id: number;
+  code: string;
+  title: string;
+  description: string;
+  image: string | null;
+  button_label: string;
+  sort_order: number;
+};
+
+type ProjectWorkStep = {
+  id: number;
+  code: string;
+  title: string;
+  description: string;
+  icon: "blueprint" | "contract" | "truck" | "house" | "shield";
   sort_order: number;
 };
 
@@ -195,6 +217,23 @@ function groupByTitle<T extends { group_title: string }>(items: T[]) {
 
     return acc;
   }, {});
+}
+
+function formatContentHeading(title: string) {
+  const normalized = title.trim().toLocaleUpperCase("ru-RU");
+  const knownHeadings: Record<string, string> = {
+    "ОПИСАНИЕ ПРОЕКТА": "Описание проекта",
+    "ВИДЫ БРУСА ДЛЯ ДОМА, ИХ ОТЛИЧИЕ И ЗНАЧЕНИЕ": "Виды бруса и выбор материала",
+    "ВАРИАНТЫ ФУНДАМЕНТОВ, КРОВЛИ И ЧТО ВХОДИТ В СТОИМОСТЬ": "Фундамент, кровля и состав стоимости",
+    "ЧТО ЕЩЕ ВАЖНО ЗНАТЬ": "Что ещё важно знать",
+  };
+
+  if (knownHeadings[normalized]) return knownHeadings[normalized];
+  if (title === normalized) {
+    const lower = title.toLocaleLowerCase("ru-RU");
+    return lower.charAt(0).toLocaleUpperCase("ru-RU") + lower.slice(1);
+  }
+  return title;
 }
 
 function buildProjectJsonLd(project: Project): Record<string, unknown> {
@@ -342,8 +381,6 @@ export default async function ProjectPage({ params }: PageProps) {
 
   const jsonLd = buildProjectJsonLd(project);
   const priceGroups = groupByTitle(project.price_options || []);
-  const addonGroups = groupByTitle(project.addons || []);
-
   const galleryImages = (project.images || []).map((image) => ({
     id: image.id,
     src: image.image,
@@ -360,6 +397,8 @@ export default async function ProjectPage({ params }: PageProps) {
 
   const contentSections = project.content_sections || [];
   const illustratedOptionGroups = groupByTitle(project.illustrated_options || []);
+  const promotions = project.promotions || [];
+  const workSteps = project.work_steps || [];
 
   return (
     <main className="projectPage">
@@ -506,45 +545,49 @@ export default async function ProjectPage({ params }: PageProps) {
       )}
 
       {Object.keys(illustratedOptionGroups).length > 0 && (
-        <section className="container section">
-          <div className="sectionHeader">
-            <p className="eyebrow">Материалы и решения</p>
-            <h2>Дополнительные варианты для проекта</h2>
-            <p>
-              Фундамент, кровля и другие решения, которые можно добавить или заменить
-              при расчёте проекта.
-            </p>
-          </div>
+        <section className="projectOptionsSection">
+          <div className="container section">
+            <div className="sectionHeader projectSectionIntro">
+              <p className="eyebrow">Конструктивные решения</p>
+              <h2>Фундамент и чистовая кровля</h2>
+              <p>Выберите подходящий вариант — стоимость рассчитана именно для этого проекта.</p>
+            </div>
 
-          <div className="illustratedOptionGroups">
-            {Object.entries(illustratedOptionGroups).map(([groupTitle, items]) => (
-              <div className="illustratedOptionGroup" key={groupTitle}>
-                <h3>{groupTitle}</h3>
+            <div className="projectOptionGroups">
+              {Object.entries(illustratedOptionGroups).map(([groupTitle, items]) => (
+                <div className={`projectOptionGroup ${items.length <= 2 ? "isCompact" : ""}`} key={groupTitle}>
+                  <div className="projectOptionGroupHeading">
+                    <span><SiteIcon name={groupTitle.includes("Фундамент") ? "foundation" : "house"} /></span>
+                    <div>
+                      <p>{groupTitle.includes("Фундамент") ? "Основание дома" : "Вместо временной кровли"}</p>
+                      <h3>{groupTitle}</h3>
+                    </div>
+                  </div>
 
-                <div className="illustratedOptionGrid">
-                  {items.map((item) => (
-                    <article className="illustratedOptionCard" key={item.id}>
-                      <div className="illustratedOptionImage">
-                        {item.image ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={item.image} alt={item.title} />
-                        ) : (
-                          <div className="imagePlaceholder">Изображение</div>
-                        )}
-                      </div>
-
-                      <div className="illustratedOptionBody">
-                        <h4>{item.title}</h4>
-
-                        {item.description && <p>{item.description}</p>}
-
-                        <strong>{formatPrice(item.price)}</strong>
-                      </div>
-                    </article>
-                  ))}
+                  <div className="projectOptionGrid">
+                    {items.map((item) => (
+                      <article className="projectOptionCard" key={item.id}>
+                        <div className="projectOptionImage">
+                          {item.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={item.image} alt={item.title} />
+                          ) : (
+                            <SiteIcon name={groupTitle.includes("Фундамент") ? "foundation" : "house"} />
+                          )}
+                        </div>
+                        <div className="projectOptionBody">
+                          <h4>{item.title}</h4>
+                          {item.description && !item.description.toLowerCase().includes("импортировано") && (
+                            <p>{item.description}</p>
+                          )}
+                          <strong>{formatPrice(item.price)}</strong>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -559,8 +602,10 @@ export default async function ProjectPage({ params }: PageProps) {
           <div className="projectTextSections">
             {contentSections.map((section) => (
               <article className="projectTextSection" key={section.id}>
-                <h3>{section.title}</h3>
-                <p>{section.body}</p>
+                <h3>{formatContentHeading(section.title)}</h3>
+                {section.body.split(/\n{2,}/).map((paragraph, index) => (
+                  <p key={`${section.id}-${index}`}>{paragraph}</p>
+                ))}
               </article>
             ))}
           </div>
@@ -576,6 +621,67 @@ export default async function ProjectPage({ params }: PageProps) {
           </section>
         )
       )}
+
+      {promotions.length > 0 && (
+        <section className="projectPromotions">
+          <div className="container section">
+            <div className="sectionHeader projectSectionIntro">
+              <p className="eyebrow">Выгодные условия</p>
+              <h2>Действующие акции</h2>
+              <p>Актуальные предложения можно включить в расчёт проекта.</p>
+            </div>
+            <div className="projectPromotionGrid">
+              {promotions.map((promotion) => (
+                <article className="projectPromotionCard" key={promotion.id}>
+                  <div className="projectPromotionImage">
+                    {promotion.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={promotion.image} alt={promotion.title} />
+                    ) : (
+                      <SiteIcon name="gift" />
+                    )}
+                  </div>
+                  <div>
+                    <h3>{promotion.title}</h3>
+                    {promotion.description && <p>{promotion.description}</p>}
+                    <a href="#lead-form">{promotion.button_label || "Узнать подробнее"} →</a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {workSteps.length > 0 && (
+        <section className="container section projectWorkSection">
+          <div className="sectionHeader projectSectionIntro">
+            <p className="eyebrow">Понятный процесс</p>
+            <h2>Этапы работы</h2>
+          </div>
+          <div className="projectWorkGrid">
+            {workSteps.map((step, index) => (
+              <article className="projectWorkCard" key={step.id}>
+                <span className="projectWorkNumber">{String(index + 1).padStart(2, "0")}</span>
+                <SiteIcon name={step.icon} />
+                <h3>{step.title}</h3>
+                <p>{step.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="projectLeadSection" id="lead-form">
+        <div className="container section projectLeadGrid">
+          <div>
+            <p className="eyebrow">Расчёт проекта</p>
+            <h2>Узнайте точную стоимость строительства</h2>
+            <p>Менеджер уточнит комплектацию, фундамент, кровлю и место доставки.</p>
+          </div>
+          <LeadForm source="project_order" projectSlug={project.slug} title="Получить расчёт" />
+        </div>
+      </section>
     </main>
   );
 }

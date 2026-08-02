@@ -5889,3 +5889,475 @@ main {
     width: 100%;
   }
 }
+
+/* Project detail v2 */
+
+.projectOptionsSection {
+  border-top: 1px solid #e2e6df;
+  border-bottom: 1px solid #e2e6df;
+  background: #f6f4ee;
+}
+
+.projectSectionIntro {
+  max-width: 740px;
+  margin-bottom: 30px;
+}
+
+.projectSectionIntro > p:last-child {
+  max-width: 650px;
+}
+
+.projectOptionGroups {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.projectOptionGroup {
+  overflow: hidden;
+  border: 1px solid #d9dfd8;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 14px 36px rgba(31, 53, 38, 0.05);
+}
+
+.projectOptionGroupHeading {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px solid #e6e9e3;
+  padding: 27px 30px;
+}
+
+.projectOptionGroupHeading > span {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #f6ead8;
+  color: #b87329;
+}
+
+.projectOptionGroupHeading svg {
+  width: 23px;
+  height: 23px;
+}
+
+.projectOptionGroupHeading p,
+.projectOptionGroupHeading h3 {
+  margin: 0;
+}
+
+.projectOptionGroupHeading p {
+  margin-bottom: 3px;
+  color: #a06c32;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.projectOptionGroupHeading h3 {
+  color: #213527;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 400;
+}
+
+.projectOptionGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  background: #fff;
+  padding: 24px;
+}
+
+.projectOptionGroup.isCompact .projectOptionGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.projectOptionCard {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: 205px 1fr;
+  overflow: hidden;
+  border: 1px solid #e0e4de;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.projectOptionImage {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-bottom: 1px solid #e8ebe6;
+  background: #faf9f5;
+}
+
+.projectOptionImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 20px;
+}
+
+.projectOptionImage > svg {
+  width: 48px;
+  height: 48px;
+  color: #c1aa87;
+  stroke-width: 1.2;
+}
+
+.projectOptionBody {
+  display: flex;
+  min-height: 145px;
+  align-items: flex-start;
+  flex-direction: column;
+  padding: 20px 21px 22px;
+}
+
+.projectOptionBody h4 {
+  margin: 0;
+  color: #203426;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.projectOptionBody p {
+  margin: 8px 0 0;
+  color: #6a736b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.projectOptionBody strong {
+  margin-top: auto;
+  padding-top: 14px;
+  color: #176c36;
+  font-size: 20px;
+}
+
+.projectPage .projectTextSections {
+  display: block;
+  max-width: 1120px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid #dfe4de;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(31, 53, 38, 0.05);
+}
+
+.projectPage .projectTextSection {
+  display: block;
+  border-bottom: 1px solid #dfe4de;
+  padding: 46px 58px;
+}
+
+.projectPage .projectTextSection:last-child {
+  border-bottom: 0;
+}
+
+.projectPage .projectTextSection h3 {
+  position: static;
+  max-width: 760px;
+  margin: 0 0 24px;
+  color: #213527;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 31px;
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.projectPage .projectTextSection p {
+  max-width: 880px;
+  margin: 0 0 19px;
+  color: #59655b;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.projectPage .projectTextSection p:last-child {
+  margin-bottom: 0;
+}
+
+.projectPromotions {
+  border-top: 1px solid #e1e5df;
+  background: #173f29;
+}
+
+.projectPromotions .sectionHeader h2,
+.projectPromotions .sectionHeader > p:last-child {
+  color: #fff;
+}
+
+.projectPromotions .eyebrow {
+  color: #e1a55e;
+}
+
+.projectPromotions .sectionHeader > p:last-child {
+  opacity: 0.7;
+}
+
+.projectPromotionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.projectPromotionCard {
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+}
+
+.projectPromotionImage {
+  display: grid;
+  height: 185px;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(255,255,255,0.08);
+}
+
+.projectPromotionImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.projectPromotionImage svg {
+  width: 46px;
+  height: 46px;
+  color: #e3ad69;
+  stroke-width: 1.25;
+}
+
+.projectPromotionCard > div:last-child {
+  padding: 20px;
+}
+
+.projectPromotionCard h3 {
+  min-height: 46px;
+  margin: 0;
+  color: #fff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.projectPromotionCard p {
+  margin: 10px 0;
+  color: rgba(255,255,255,0.68);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.projectPromotionCard a {
+  display: inline-flex;
+  margin-top: 15px;
+  color: #e7b674;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.projectWorkSection {
+  overflow: hidden;
+}
+
+.projectWorkGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid #dfe4de;
+  border-bottom: 1px solid #dfe4de;
+}
+
+.projectWorkCard {
+  position: relative;
+  min-height: 245px;
+  border-right: 1px solid #dfe4de;
+  padding: 24px 20px;
+}
+
+.projectWorkCard:last-child {
+  border-right: 0;
+}
+
+.projectWorkNumber {
+  color: #c1843e;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.projectWorkCard > svg {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin-top: 34px;
+  color: #26543a;
+  stroke-width: 1.35;
+}
+
+.projectWorkCard h3 {
+  margin: 22px 0 9px;
+  color: #203426;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.projectWorkCard p {
+  margin: 0;
+  color: #6b756c;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.projectLeadSection {
+  border-top: 1px solid #dfe4de;
+  background: #f3f1ea;
+}
+
+.projectLeadGrid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.projectLeadGrid > div:first-child h2 {
+  margin: 0;
+  color: #213527;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(35px, 4vw, 53px);
+  font-weight: 400;
+  line-height: 1.03;
+}
+
+.projectLeadGrid > div:first-child > p:last-child {
+  max-width: 520px;
+  color: #626d63;
+  line-height: 1.65;
+}
+
+.projectLeadGrid .leadForm {
+  border: 1px solid #d8ded7;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+}
+
+@media (max-width: 960px) {
+  .projectLeadGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .projectOptionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .projectPromotionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .projectWorkGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-bottom: 0;
+  }
+
+  .projectWorkCard {
+    border-bottom: 1px solid #dfe4de;
+  }
+
+  .projectWorkCard:nth-child(3n) {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .projectOptionGroupHeading {
+    padding: 18px;
+  }
+
+  .projectOptionGrid {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .projectOptionGroup.isCompact .projectOptionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .projectOptionCard {
+    grid-template-columns: 135px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+  }
+
+  .projectOptionBody {
+    min-height: 150px;
+    padding: 17px;
+  }
+
+  .projectPage .projectTextSection {
+    display: block;
+    padding: 30px 22px;
+  }
+
+  .projectPage .projectTextSection h3 {
+    position: static;
+    margin-bottom: 18px;
+    font-size: 25px;
+  }
+
+  .projectPage .projectTextSection p {
+    margin-bottom: 13px;
+    font-size: 15px;
+    line-height: 1.72;
+  }
+
+  .projectPromotionGrid,
+  .projectWorkGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .projectPromotionImage {
+    height: 210px;
+  }
+
+  .projectPromotionCard h3 {
+    min-height: 0;
+  }
+
+  .projectWorkCard,
+  .projectWorkCard:nth-child(3n) {
+    min-height: 0;
+    border-right: 0;
+    padding: 21px 4px;
+  }
+
+  .projectWorkCard > svg {
+    margin-top: 18px;
+  }
+
+  .projectLeadGrid {
+    gap: 28px;
+  }
+}
+
+@media (max-width: 420px) {
+  .projectOptionCard {
+    grid-template-columns: 112px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+  }
+
+  .projectOptionImage {
+    min-height: 142px;
+  }
+}

@@ -6,6 +6,7 @@ from .forms import CatalogExcelImportForm
 from .importers import CatalogImportError, import_catalog_excel
 from .models import (
     BuildPackage,
+    ConstructionStep,
     CostRate,
     BuildPackageItem,
     BuildPackageSection,
@@ -27,6 +28,7 @@ from .models import (
     ProjectRoofCovering,
     ProjectTechnicalData,
     RoofCovering,
+    SitePromotion,
 )
 from .pricing import PricingService
 
@@ -184,6 +186,26 @@ class ProjectContentSectionInline(admin.TabularInline):
     model = ProjectContentSection
     extra = 1
     fields = ("title", "body", "is_active", "sort_order")
+
+
+@admin.register(SitePromotion)
+class SitePromotionAdmin(admin.ModelAdmin):
+    list_display = ("title", "code", "is_active", "sort_order")
+    list_editable = ("is_active", "sort_order")
+    search_fields = ("title", "code", "description")
+    prepopulated_fields = {"code": ("title",)}
+    fieldsets = (
+        ("Акция", {"fields": ("title", "code", "description", "image", "button_label")}),
+        ("Публикация", {"fields": ("is_active", "sort_order")}),
+    )
+
+
+@admin.register(ConstructionStep)
+class ConstructionStepAdmin(admin.ModelAdmin):
+    list_display = ("title", "code", "icon", "is_active", "sort_order")
+    list_editable = ("icon", "is_active", "sort_order")
+    search_fields = ("title", "code", "description")
+    prepopulated_fields = {"code": ("title",)}
 
 
 class ProjectPackageOverrideInline(admin.StackedInline):

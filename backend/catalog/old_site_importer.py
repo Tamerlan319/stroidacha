@@ -17,6 +17,7 @@ from django.utils.text import slugify
 from .models import (
     BuildPackageItem,
     BuildPackageSection,
+    ConstructionStep,
     Project,
     ProjectCategory,
     ProjectContentSection,
@@ -27,6 +28,7 @@ from .models import (
     ProjectPackageOverride,
     ProjectPlan,
     ProjectRoofCovering,
+    SitePromotion,
 )
 from .importers import (
     get_or_create_build_package,
@@ -87,11 +89,28 @@ MATERIAL_SPECS = (
 
 ADDON_SPECS = (
     ("screw-piles", "Фундамент", "Свайный фундамент", r"Свайный\s+фундамент\s*([\d\s]+)\s*руб"),
-    ("reinforced-piles", "Фундамент", "ЖБ сваи (ГОСТ)", r"ЖБ\s+сваи\s*\(ГОСТ\)\s*([\d\s]+)\s*руб"),
-    ("metal-tile", "Кровля", "Металлочерепица", r"Металлочерепица\s*([\d\s]+)\s*руб"),
-    ("ondulin", "Кровля", "Ондулин", r"Ондулин\s*([\d\s]+)\s*руб"),
-    ("flexible-shingles", "Кровля", "Гибкая черепица", r"Гибкая\s+черепица\s*([\d\s]+)\s*руб"),
-    ("metal-profile", "Кровля", "Металлопрофиль", r"Металлопрофиль\s*([\d\s]+)\s*руб"),
+    ("reinforced-piles", "Фундамент", "ЖБ сваи (ГОСТ)", r"ЖБ\s+сваи\s*(?:\(\s*ГОСТ\s*\)|ГОСТ)\s*([\d\s]+)\s*руб"),
+    ("metal-tile", "Чистовая кровля", "Металлочерепица", r"Металлочерепица\s*([\d\s]+)\s*руб"),
+    ("ondulin", "Чистовая кровля", "Ондулин", r"Ондулин\s*([\d\s]+)\s*руб"),
+    ("flexible-shingles", "Чистовая кровля", "Гибкая черепица", r"Гибкая\s+черепица\s*([\d\s]+)\s*руб"),
+    ("metal-profile", "Чистовая кровля", "Металлопрофиль", r"Металлопрофиль\s*([\d\s]+)\s*руб"),
+)
+
+PROMOTION_SPECS = (
+    ("free-delivery", "Бесплатная доставка до 500 км", r"Бесплатн\w*\s+доставк\w*\s+до\s+500\s*км"),
+    ("free-replanning", "Перепланировка типового проекта — бесплатно", r"Перепланировк\w*\s+типов\w*\s+проект\w*[^\n]{0,40}бесплатно"),
+    ("opening-bars-gift", "Ройки в проёмы в подарок", r"Ройки\s+в\s+про[её]мы\s+в\s+подарок"),
+    ("generator", "Бензогенератор на время строительства", r"Бензогенератор[^\n]{0,50}строительств"),
+    ("site-cabin-gift", "Бытовка в подарок", r"Бытовк\w*\s+в\s+подарок"),
+    ("entrance-door-gift", "Входная дверь в подарок", r"Входн\w*\s+двер\w*\s+в\s+подарок"),
+)
+
+WORK_STEP_SPECS = (
+    ("project", "Согласовываем проект", "Выберите готовый проект или пришлите свой.", "blueprint", 10),
+    ("contract", "Подписываем договор", "Фиксируем стоимость, комплектацию и сроки.", "contract", 20),
+    ("delivery", "Доставляем материалы", "Привозим домокомплект и бригаду на участок.", "truck", 30),
+    ("construction", "Строим объект", "Собираем дом или баню по проекту и технологии.", "house", 40),
+    ("handover", "Принимаете работу", "Осматриваете объект и подписываете акт.", "shield", 50),
 )
 
 
@@ -112,6 +131,15 @@ class MediaItem:
     url: str
     alt: str = ""
     is_plan: bool = False
+
+
+@dataclass
+class PromotionItem:
+    code: str
+    title: str
+    image_url: str = ""
+    description: str = ""
+    sort_order: int = 0
 
 
 @dataclass
@@ -137,6 +165,8 @@ class ParsedProject:
     seo_title: str = ""
     seo_description: str = ""
     media: list[MediaItem] = field(default_factory=list)
+    promotions: list[PromotionItem] = field(default_factory=list)
+    work_steps: list[tuple[str, str, str, str, int]] = field(default_factory=list)
 
     @property
     def price_from(self) -> int | None:
@@ -301,6 +331,7 @@ class OldSiteHouseImporter:
         title = self._clean_text(h1.get_text(" ", strip=True))
 
         full_text = main.get_text("\n", strip=True)
+        page_text = soup.get_text("\n", strip=True)
         # We only parse project-specific content before the related-products block.
         project_text = re.split(r"\n\s*Похожие\s+проекты\s*\n", full_text, maxsplit=1, flags=re.IGNORECASE)[0]
 
@@ -350,15 +381,17 @@ class OldSiteHouseImporter:
                         "title": addon_title,
                         "price": self._money(match.group(1)),
                         "sort_order": sort_order,
+                        "image_url": self._find_image_near_text(main, addon_title),
                     }
                 )
 
-        # The old site has a very different page layout. Free-form text blocks are
-        # intentionally NOT imported: they easily capture unrelated page content.
-        # We only migrate structured data (characteristics, prices, options, package rows, media).
-        description, content_sections = "", []
+        description, content_sections = self._extract_content(main)
         package_title, package_description, package_items = self._extract_package(main)
         media = self._extract_gallery(soup)
+        # На старом шаблоне акции и порядок работ находятся за пределами
+        # основного WooCommerce-контейнера проекта, поэтому ищем их по всей странице.
+        promotions = self._extract_promotions(soup, page_text)
+        work_steps = list(WORK_STEP_SPECS) if re.search(r"Порядок\s+работ", page_text, re.IGNORECASE) else []
 
         page_title = ""
         if soup.title:
@@ -392,6 +425,8 @@ class OldSiteHouseImporter:
             seo_title=page_title,
             seo_description=seo_description,
             media=media,
+            promotions=promotions,
+            work_steps=work_steps,
         )
 
     @staticmethod
@@ -424,24 +459,79 @@ class OldSiteHouseImporter:
 
         start_index = headings.index(description_heading)
         relevant = []
+        terminal_heading = None
         for heading in headings[start_index:]:
             title = self._clean_text(heading.get_text(" ", strip=True))
             if title.casefold() == "похожие проекты":
+                terminal_heading = heading
                 break
             relevant.append(heading)
 
         sections: list[tuple[str, str]] = []
         description = ""
         for position, heading in enumerate(relevant):
-            next_heading = relevant[position + 1] if position + 1 < len(relevant) else None
+            next_heading = relevant[position + 1] if position + 1 < len(relevant) else terminal_heading
             body = self._text_until_heading(heading, next_heading)
             heading_title = self._clean_text(heading.get_text(" ", strip=True))
             if heading_title.casefold() == "описание проекта":
                 description = body
-            elif body:
+            if body:
                 sections.append((heading_title, body))
 
         return description, sections
+
+    def _extract_promotions(self, main, full_text: str) -> list[PromotionItem]:
+        result: list[PromotionItem] = []
+        for sort_order, (code, title, pattern) in enumerate(PROMOTION_SPECS, start=1):
+            if not re.search(pattern, full_text, flags=re.IGNORECASE):
+                continue
+            result.append(
+                PromotionItem(
+                    code=code,
+                    title=title,
+                    image_url=self._find_image_near_pattern(main, pattern),
+                    sort_order=sort_order * 10,
+                )
+            )
+        return result
+
+    def _find_image_near_text(self, root, title: str) -> str:
+        words = [re.escape(word) for word in re.split(r"\s+", title) if word]
+        pattern = r"\s+".join(words)
+        return self._find_image_near_pattern(root, pattern)
+
+    def _find_image_near_pattern(self, root, pattern: str) -> str:
+        text_node = root.find(string=re.compile(pattern, flags=re.IGNORECASE))
+        if text_node is None:
+            return ""
+
+        element = text_node.parent
+        for parent in list(element.parents)[:6]:
+            if parent is root:
+                break
+            images = parent.find_all("img")
+            text = self._clean_text(parent.get_text(" ", strip=True))
+            if images and len(text) <= 700:
+                url = self._image_source(images[0])
+                if url:
+                    return url
+
+        for image in element.find_all_next("img", limit=3):
+            url = self._image_source(image)
+            if url:
+                return url
+        return ""
+
+    def _image_source(self, image) -> str:
+        parent = image.find_parent("a")
+        candidates = [
+            parent.get("href") if parent is not None else None,
+            image.get("data-large_image"),
+            image.get("data-src"),
+            image.get("src"),
+        ]
+        source = next((item for item in candidates if self._looks_like_image(item)), None)
+        return urljoin(self.base_url, source) if source else ""
 
     def _extract_package(self, main) -> tuple[str, str, list[tuple[str, str]]]:
         """Extract only structured package table rows.
@@ -586,6 +676,7 @@ class OldSiteHouseImporter:
         prune_related: bool = False,
         replace_media: bool = False,
         clean_imported_text: bool = False,
+        overwrite_content: bool = False,
     ) -> tuple[Project, bool]:
         category, _ = ProjectCategory.objects.get_or_create(
             slug="houses",
@@ -621,6 +712,8 @@ class OldSiteHouseImporter:
         # Optional one-time cleanup for projects already polluted by the first importer.
         if clean_imported_text:
             project.description = ""
+        if data.description and (created or not project.description or overwrite_content):
+            project.description = data.description
         if data.seo_title:
             project.seo_title = data.seo_title[:255]
         if data.seo_description:
@@ -634,6 +727,16 @@ class OldSiteHouseImporter:
         self._sync_addons(project, data.addons, prune=prune_related)
         if clean_imported_text:
             project.content_sections.all().delete()
+        if data.content_sections and (
+            overwrite_content or not project.content_sections.exists()
+        ):
+            self._sync_content(
+                project,
+                data.content_sections,
+                prune=prune_related or overwrite_content,
+            )
+        self._sync_promotions(data.promotions)
+        self._sync_work_steps(data.work_steps)
 
         if not skip_media:
             self._sync_media(project, data.media, replace=replace_media)
@@ -666,6 +769,7 @@ class OldSiteHouseImporter:
             group = str(item.get("group_title") or "").casefold()
             if "фундамент" in group:
                 option = get_or_create_foundation(item["title"])
+                self._ensure_downloaded_image(option, item.get("image_url"))
                 seen_foundations.add(option.code)
                 ProjectFoundation.objects.update_or_create(
                     project=project,
@@ -678,6 +782,7 @@ class OldSiteHouseImporter:
                 )
             elif "кров" in group:
                 option = get_or_create_roof_covering(item["title"])
+                self._ensure_downloaded_image(option, item.get("image_url"))
                 seen_roofs.add(option.code)
                 ProjectRoofCovering.objects.update_or_create(
                     project=project,
@@ -724,6 +829,44 @@ class OldSiteHouseImporter:
             )
         if prune and seen_titles:
             project.content_sections.exclude(title__in=seen_titles).delete()
+
+    def _sync_promotions(self, items: list[PromotionItem]):
+        for item in items:
+            promotion, _ = SitePromotion.objects.update_or_create(
+                code=item.code,
+                defaults={
+                    "title": item.title,
+                    "description": item.description,
+                    "sort_order": item.sort_order,
+                    "is_active": True,
+                },
+            )
+            self._ensure_downloaded_image(promotion, item.image_url)
+
+    @staticmethod
+    def _sync_work_steps(items: list[tuple[str, str, str, str, int]]):
+        for code, title, description, icon, sort_order in items:
+            ConstructionStep.objects.update_or_create(
+                code=code,
+                defaults={
+                    "title": title,
+                    "description": description,
+                    "icon": icon,
+                    "sort_order": sort_order,
+                    "is_active": True,
+                },
+            )
+
+    def _ensure_downloaded_image(self, obj, image_url: str | None):
+        if not image_url or getattr(obj, "image", None):
+            return
+        filename = Path(urlparse(image_url).path).name or f"{obj.pk}.jpg"
+        try:
+            content = ContentFile(self._request_bytes(image_url))
+        except OldSiteImportError as exc:
+            self._log(f"Не удалось загрузить изображение {image_url}: {exc}")
+            return
+        obj.image.save(filename, content, save=True)
 
     def _sync_package(self, project: Project, data: ParsedProject, *, prune: bool):
         title = data.package_title or 'Комплектация дома из бруса "ПОД УСАДКУ"'

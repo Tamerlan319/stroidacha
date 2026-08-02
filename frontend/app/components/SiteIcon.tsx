@@ -7,7 +7,10 @@ type IconName =
   | "blueprint"
   | "chevron"
   | "factory"
+  | "foundation"
+  | "gift"
   | "house"
+  | "contract"
   | "price"
   | "shield"
   | "truck";
@@ -21,6 +24,9 @@ const aliases: Record<string, IconName> = {
   cost: "price",
   delivery: "truck",
   factory: "factory",
+  foundation: "foundation",
+  gift: "gift",
+  contract: "contract",
   home: "house",
   house: "house",
   money: "price",
@@ -88,6 +94,27 @@ export default function SiteIcon({ name, className }: SiteIconProps) {
         <>
           <path d="M3 20V10l6 3V9l6 3V4h4l2 16z" />
           <path d="M7 16h2M12 16h2M17 16h2" />
+        </>
+      )}
+
+      {iconName === "foundation" && (
+        <>
+          <path d="M4 5h16v4H4zM6 9v10M18 9v10M3 19h18" />
+          <path d="M9 9v5M15 9v5M4 14h16" />
+        </>
+      )}
+
+      {iconName === "gift" && (
+        <>
+          <path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13" />
+          <path d="M12 7H8.5a2.5 2.5 0 1 1 2.2-3.7L12 7Zm0 0h3.5a2.5 2.5 0 1 0-2.2-3.7L12 7Z" />
+        </>
+      )}
+
+      {iconName === "contract" && (
+        <>
+          <path d="M6 3.5h9l3 3V20H6zM15 3.5V7h3" />
+          <path d="M9 11h6M9 14h6M9 17h4" />
         </>
       )}
 
