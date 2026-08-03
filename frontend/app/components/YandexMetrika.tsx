@@ -1,37 +1,26 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import {
-  COOKIE_CONSENT_EVENT,
-  COOKIE_CONSENT_STORAGE_KEY,
+  getCookieConsentSnapshot,
+  getServerCookieConsentSnapshot,
+  subscribeToCookieConsent,
 } from "./CookieBanner";
 
 export default function YandexMetrika() {
+  const consent = useSyncExternalStore(
+    subscribeToCookieConsent,
+    getCookieConsentSnapshot,
+    getServerCookieConsentSnapshot
+  );
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const [isAllowed, setIsAllowed] = useState(false);
 
-  useEffect(() => {
-    function syncConsent() {
-      setIsAllowed(
-        window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY) === "all"
-      );
-    }
+  const isLocalSite =
+    siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1");
 
-    syncConsent();
-    window.addEventListener(COOKIE_CONSENT_EVENT, syncConsent);
-
-    return () => {
-      window.removeEventListener(COOKIE_CONSENT_EVENT, syncConsent);
-    };
-  }, []);
-
-  if (
-    !isAllowed ||
-    siteUrl.includes("localhost") ||
-    siteUrl.includes("127.0.0.1")
-  ) {
+  if (consent !== "all" || isLocalSite) {
     return null;
   }
 
@@ -41,16 +30,24 @@ export default function YandexMetrika() {
         (function(m,e,t,r,i,k,a){
           m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
           m[i].l=1*new Date();
+
           for (var j=0; j<document.scripts.length; j++) {
             if (document.scripts[j].src === r) return;
           }
+
           k=e.createElement(t);
           a=e.getElementsByTagName(t)[0];
           k.async=1;
           k.src=r;
           a.parentNode.insertBefore(k,a);
-        })(window, document, "script",
-          "https://mc.yandex.ru/metrika/tag.js?id=111150898", "ym");
+        })(
+          window,
+          document,
+          "script",
+          "https://mc.yandex.ru/metrika/tag.js?id=111150898",
+          "ym"
+        );
+
         ym(111150898, "init", {
           ssr: true,
           webvisor: true,
