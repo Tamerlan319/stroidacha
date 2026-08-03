@@ -1,6 +1,7 @@
 import logging
 
 from rest_framework.generics import CreateAPIView
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 
 from .models import Lead
@@ -15,6 +16,7 @@ class LeadCreateAPIView(CreateAPIView):
     queryset = Lead.objects.all()
     serializer_class = LeadCreateSerializer
     permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def perform_create(self, serializer):
         lead = serializer.save()
@@ -22,4 +24,6 @@ class LeadCreateAPIView(CreateAPIView):
         try:
             notify_managers_about_lead(lead)
         except Exception:
-            logger.exception("Не удалось отправить email-уведомление о заявке")
+            logger.exception(
+                "Не удалось отправить email-уведомление о заявке"
+            )

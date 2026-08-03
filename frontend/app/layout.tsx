@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import YandexMetrika from "./components/YandexMetrika";
+
 import "./globals.css";
 
+import CookieBanner from "./components/CookieBanner";
 import JsonLd from "./components/JsonLd";
+import MobileHorizontalLock from "./components/MobileScrollFix";
 import SiteFooter from "./components/SiteFooter";
 import SiteHeader from "./components/SiteHeader";
+import YandexMetrika from "./components/YandexMetrika";
 import {
   SITE_DESCRIPTION,
   SITE_EMAIL,
@@ -12,8 +15,6 @@ import {
   SITE_PHONE,
   SITE_URL,
 } from "./lib/site";
-
-import MobileHorizontalLock from "./components/MobileScrollFix";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -55,8 +56,8 @@ const siteJsonLd = {
     {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
-      name: SITE_NAME,
-      alternateName: "Брусотека — дома из бруса",
+      name: 'ООО "СтройДача"',
+      alternateName: "Брусотека",
       url: SITE_URL,
       logo: {
         "@type": "ImageObject",
@@ -68,6 +69,7 @@ const siteJsonLd = {
       description: SITE_DESCRIPTION,
       email: SITE_EMAIL,
       telephone: SITE_PHONE,
+      taxID: "4400020680",
       areaServed: {
         "@type": "Country",
         name: "Россия",
@@ -111,6 +113,7 @@ export default function RootLayout({
         {children}
 
         <SiteFooter />
+        <CookieBanner />
         <YandexMetrika />
       </body>
     </html>

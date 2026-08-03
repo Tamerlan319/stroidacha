@@ -1,0 +1,55 @@
+.block {
+  margin-top: 24px;
+  border-top: 1px solid rgba(31, 42, 34, 0.12);
+  padding-top: 20px;
+  color: #4d564d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.brand {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 14px;
+}
+
+.brand strong {
+  color: #1f2a22;
+  font-size: 16px;
+}
+
+.brand span {
+  color: #667066;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.label {
+  margin-bottom: 8px;
+  color: #1f2a22;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.grid a {
+  display: block;
+  color: #1f5a38;
+  text-decoration: none;
+  margin-bottom: 5px;
+}
+
+.grid a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
