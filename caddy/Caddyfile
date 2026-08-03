@@ -1,8 +1,8 @@
 brusodel.ru, www.brusodel.ru {
     encode zstd gzip
 
-    @www host www.brusoteka.ru
-    redir @www https://brusoteka.ru{uri} permanent
+    @www host www.brusodel.ru
+    redir @www https://brusodel.ru{uri} permanent
 
     request_body {
         max_size 80MB
@@ -40,6 +40,6 @@ brusodel.ru, www.brusodel.ru {
     }
 }
 
-brusoteka.ru, www.brusoteka.ru {
+brusodel.ru, www.brusodel.ru {
     redir https://brusodel.ru{uri} 301
 }
