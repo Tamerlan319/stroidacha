@@ -1,45 +1,45 @@
 brusodel.ru, www.brusodel.ru {
-    encode zstd gzip
+	encode zstd gzip
 
-    @www host www.brusodel.ru
-    redir @www https://brusodel.ru{uri} permanent
+	@www host www.brusodel.ru
+	redir @www https://brusodel.ru{uri} permanent
 
-    request_body {
-        max_size 80MB
-    }
+	request_body {
+		max_size 80MB
+	}
 
-    header {
-        -Server
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-        Referrer-Policy "strict-origin-when-cross-origin"
-        Permissions-Policy "camera=(), microphone=(), geolocation=()"
-    }
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
 
-    handle_path /static/* {
-        root * /var/www/static
-        file_server
-    }
+	handle_path /static/* {
+		root * /var/www/static
+		file_server
+	}
 
-    handle_path /media/* {
-        root * /var/www/media
-        file_server
-    }
+	handle_path /media/* {
+		root * /var/www/media
+		file_server
+	}
 
-    handle /api/* {
-        reverse_proxy backend:8000
-    }
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
 
-    handle /admin/* {
-        reverse_proxy backend:8000
-    }
+	handle /admin/* {
+		reverse_proxy backend:8000
+	}
 
-    handle {
-        reverse_proxy frontend:3000
-    }
+	handle {
+		reverse_proxy frontend:3000
+	}
 }
 
 brusoteka.ru, www.brusoteka.ru {
-    redir https://brusodel.ru{uri} permanent
+	redir https://brusodel.ru{uri} permanent
 }
