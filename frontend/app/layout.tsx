@@ -19,7 +19,7 @@ import {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Дома и бани из бруса под ключ — Брусотека",
+    default: "Дома и бани из бруса под ключ — Брусодел",
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -57,7 +57,7 @@ const siteJsonLd = {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: 'ООО "СтройДача"',
-      alternateName: "Брусотека",
+      alternateName: "Брусодел",
       url: SITE_URL,
       logo: {
         "@type": "ImageObject",

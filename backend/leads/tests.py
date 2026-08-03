@@ -27,7 +27,7 @@ class LeadApiComplianceTests(APITestCase):
             "message": "Нужна баня 6х6 по своей планировке",
             "source": "home_phone_consultation",
             "project_slug": "",
-            "page_url": "https://brusoteka.ru/",
+            "page_url": "https://brusodel.ru/",
             "utm_source": "",
             "utm_medium": "",
             "utm_campaign": "",

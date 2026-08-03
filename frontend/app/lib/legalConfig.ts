@@ -1,5 +1,5 @@
 export const legalConfig = {
-  brandName: "Брусотека",
+  brandName: "Брусодел",
   legalName: "ООО «СтройДача»",
   inn: "4400020680",
   ogrn: "1244400002835",
@@ -9,18 +9,18 @@ export const legalConfig = {
   workHours: "Ежедневно с 9:00 до 20:00",
   phoneDisplay: "+7 967 680-18-12",
   phoneDigits: "79676801812",
-  email: "info@brusoteka.ru",
-  privacyEmail: "info@brusoteka.ru",
+  email: "info@brusodel.ru",
+  privacyEmail: "info@brusodel.ru",
   consentVersion: "2026-08-03",
   whatsappPhone: "79676801812",
-  sites: ["https://brusoteka.ru", "https://stroydacha.online"],
+  sites: ["https://brusodel.ru", "https://stroydacha.online"],
   useYandexMetrica: true,
 } as const;
 
 export function getWhatsAppLink(message?: string) {
   const text =
     message ||
-    "Здравствуйте! Хочу получить быстрый расчёт по проекту на сайте Брусотека.";
+    "Здравствуйте! Хочу получить быстрый расчёт по проекту на сайте Брусодел.";
 
   return `https://wa.me/${legalConfig.whatsappPhone}?text=${encodeURIComponent(
     text

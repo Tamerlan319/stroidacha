@@ -1,4 +1,4 @@
-# Брусотека
+# Брусодел
 
 Сайт компании по строительству домов, бань и гаражей из бруса под ключ
 в России.
@@ -31,5 +31,5 @@ npm ci
 npm run dev
 ```
 
-Production-развёртывание на `brusoteka.ru` описано в
+Production-развёртывание на `brusodel.ru` описано в
 [DEPLOYMENT.md](DEPLOYMENT.md).

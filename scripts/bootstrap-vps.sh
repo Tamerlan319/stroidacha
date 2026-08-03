@@ -75,22 +75,22 @@ runuser -u brusoteka-deploy -- git checkout main
 runuser -u brusoteka-deploy -- git merge --ff-only origin/main
 
 if [[ ! -f backend/.env.prod ]]; then
-    BRUSOTEKA_SECRET_KEY="$(openssl rand -base64 48 | tr -d '\n')"
-    BRUSOTEKA_DB_PASSWORD="$(openssl rand -hex 24)"
+    BRUSODEL_SECRET_KEY="$(openssl rand -base64 48 | tr -d '\n')"
+    BRUSODEL_DB_PASSWORD="$(openssl rand -hex 24)"
     umask 077
     tee backend/.env.prod >/dev/null <<ENV
 DEBUG=False
-SECRET_KEY=$BRUSOTEKA_SECRET_KEY
+SECRET_KEY=$BRUSODEL_SECRET_KEY
 
 DB_NAME=brusoteka
 DB_USER=brusoteka_user
-DB_PASSWORD=$BRUSOTEKA_DB_PASSWORD
+DB_PASSWORD=$BRUSODEL_DB_PASSWORD
 DB_HOST=db
 DB_PORT=5432
 
-ALLOWED_HOSTS=brusoteka.ru,www.brusoteka.ru,194.67.74.142,localhost,127.0.0.1
-CORS_ALLOWED_ORIGINS=https://brusoteka.ru,https://www.brusoteka.ru
-CSRF_TRUSTED_ORIGINS=https://brusoteka.ru,https://www.brusoteka.ru
+ALLOWED_HOSTS=brusodel.ru,www.brusodel.ru,194.67.74.142,localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=https://brusodel.ru,https://www.brusodel.ru
+CSRF_TRUSTED_ORIGINS=https://brusodel.ru,https://www.brusodel.ru
 
 DJANGO_SECURE_SSL_REDIRECT=True
 DJANGO_SESSION_COOKIE_SECURE=True
@@ -100,7 +100,7 @@ DJANGO_SECURE_HSTS_SECONDS=31536000
 GUNICORN_WORKERS=2
 
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
-DEFAULT_FROM_EMAIL=no-reply@brusoteka.ru
+DEFAULT_FROM_EMAIL=no-reply@brusodel.ru
 LEAD_NOTIFICATION_EMAILS=
 ENV
     chown brusoteka-deploy:brusoteka-deploy backend/.env.prod
@@ -113,10 +113,10 @@ chown -R brusoteka-deploy:brusoteka-deploy \
 runuser -u brusoteka-deploy -- bash scripts/deploy.sh
 
 if unzip -Z1 backend/backend.zip | grep -q '^media/'; then
-    BRUSOTEKA_TMP_DIR="$(mktemp -d)"
-    trap 'rm -rf "$BRUSOTEKA_TMP_DIR"' EXIT
-    unzip -q backend/backend.zip 'media/*' -d "$BRUSOTEKA_TMP_DIR"
-    docker cp "$BRUSOTEKA_TMP_DIR/media/." brusoteka_backend:/app/media/
+    BRUSODEL_TMP_DIR="$(mktemp -d)"
+    trap 'rm -rf "$BRUSODEL_TMP_DIR"' EXIT
+    unzip -q backend/backend.zip 'media/*' -d "$BRUSODEL_TMP_DIR"
+    docker cp "$BRUSODEL_TMP_DIR/media/." brusoteka_backend:/app/media/
 fi
 
 echo
