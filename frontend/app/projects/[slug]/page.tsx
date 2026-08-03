@@ -7,6 +7,7 @@ import ImageLightbox from "../../components/ImageLightbox";
 import ProjectGalleryWithPrices from "../../components/ProjectGalleryWithPrices";
 import SiteIcon from "../../components/SiteIcon";
 import { SITE_NAME, SITE_URL } from "../../lib/site";
+import detailsStyles from "./ProjectDetails.module.css";
 
 type ProjectCategory = {
   id: number;
@@ -556,30 +557,62 @@ export default async function ProjectPage({ params }: PageProps) {
         </section>
       )}
       {contentSections.length > 0 ? (
-        <section className="container section">
-          <div className="sectionHeader sectionHeaderCenter">
-            <p className="eyebrow">Описание</p>
-            <h2>Подробно о проекте</h2>
+        <section className={`container section ${detailsStyles.section}`}>
+          <div className={detailsStyles.heading}>
+            <div>
+              <p className="eyebrow">Описание</p>
+              <h2>Подробно о проекте</h2>
+            </div>
+            <p>
+              Основные особенности проекта, конструктивные решения и важные
+              детали комплектации.
+            </p>
           </div>
-          <div className="projectTextSections">
-            {contentSections.map((section) => (
-              <article className="projectTextSection" key={section.id}>
-                <h3>{formatContentHeading(section.title)}</h3>
-                {section.body.split(/\n{2,}/).map((paragraph, index) => (
-                  <p key={`${section.id}-${index}`}>{paragraph}</p>
-                ))}
+
+          <div className={detailsStyles.grid}>
+            {contentSections.map((section, sectionIndex) => (
+              <article className={detailsStyles.card} key={section.id}>
+                <div className={detailsStyles.cardTop}>
+                  <span className={detailsStyles.number}>
+                    {String(sectionIndex + 1).padStart(2, "0")}
+                  </span>
+                  <h3>{formatContentHeading(section.title)}</h3>
+                </div>
+
+                <div className={detailsStyles.text}>
+                  {section.body.split(/\n{2,}/).map((paragraph, index) => (
+                    <p key={`${section.id}-${index}`}>{paragraph}</p>
+                  ))}
+                </div>
               </article>
             ))}
           </div>
         </section>
       ) : (
         project.description && (
-          <section className="container section">
-            <div className="sectionHeader sectionHeaderCenter">
-              <p className="eyebrow">Описание</p>
-              <h2>О проекте</h2>
-              <p>{project.description}</p>
+          <section className={`container section ${detailsStyles.section}`}>
+            <div className={detailsStyles.heading}>
+              <div>
+                <p className="eyebrow">Описание</p>
+                <h2>Подробно о проекте</h2>
+              </div>
+              <p>
+                Общая информация о планировке, конструкции и назначении
+                проекта.
+              </p>
             </div>
+
+            <article
+              className={`${detailsStyles.card} ${detailsStyles.singleCard}`}
+            >
+              <div className={detailsStyles.cardTop}>
+                <span className={detailsStyles.number}>01</span>
+                <h3>{project.title}</h3>
+              </div>
+              <div className={detailsStyles.text}>
+                <p>{project.description}</p>
+              </div>
+            </article>
           </section>
         )
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type LightboxImage = {
   id: string | number;
@@ -21,7 +21,6 @@ export default function ImageLightbox({
   className = "",
 }: ImageLightboxProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
   const activeImage =
     activeIndex !== null && images[activeIndex] ? images[activeIndex] : null;
 
@@ -32,11 +31,11 @@ export default function ImageLightbox({
     setActiveIndex(index);
   }
 
-  function closeImage() {
+  const closeImage = useCallback(() => {
     setActiveIndex(null);
-  }
+  }, []);
 
-  function showPrevious() {
+  const showPrevious = useCallback(() => {
     setActiveIndex((currentIndex) => {
       if (currentIndex === null) {
         return null;
@@ -44,9 +43,9 @@ export default function ImageLightbox({
 
       return (currentIndex - 1 + images.length) % images.length;
     });
-  }
+  }, [images.length]);
 
-  function showNext() {
+  const showNext = useCallback(() => {
     setActiveIndex((currentIndex) => {
       if (currentIndex === null) {
         return null;
@@ -54,7 +53,7 @@ export default function ImageLightbox({
 
       return (currentIndex + 1) % images.length;
     });
-  }
+  }, [images.length]);
 
   useEffect(() => {
     if (activeIndex === null) {
@@ -83,7 +82,7 @@ export default function ImageLightbox({
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [activeIndex, images.length]);
+  }, [activeIndex, closeImage, showNext, showPrevious]);
 
   if (images.length === 0) {
     return null;
