@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import LeadForm from "../components/LeadForm";
 import ProjectCatalog from "../components/ProjectCatalog";
+import RichText from "../components/RichText";
 
 import JsonLd from "../components/JsonLd";
 import { SITE_NAME, SITE_URL } from "../lib/site";
@@ -32,6 +33,14 @@ type LandingPageFAQ = {
   answer: string;
 };
 
+type LandingPageImage = {
+  id: number;
+  image: string | null;
+  alt_text: string;
+  caption: string;
+  sort_order: number;
+};
+
 type LandingPage = {
   id: number;
   title: string;
@@ -43,6 +52,7 @@ type LandingPage = {
   category: ProjectCategory | null;
   related_projects: Project[];
   faqs: LandingPageFAQ[];
+  images: LandingPageImage[];
   seo_title: string;
   seo_description: string;
 };
@@ -241,7 +251,48 @@ export default async function LandingPageRoute({ params }: PageProps) {
           <div className="textContent">
             <p className="eyebrow">Подробнее</p>
             <h2>{page.h1}</h2>
-            <div className="textBlock">{page.main_text}</div>
+            <RichText value={page.main_text} />
+          </div>
+        </section>
+      )}
+
+      {(page.images || []).length > 0 && (
+        <section className="container section landingMediaSection">
+          <div className="sectionHeader">
+            <p className="eyebrow">
+              {page.slug === "vypiska-iz-egryul" ? "Документы" : "Фотографии"}
+            </p>
+            <h2>
+              {page.slug === "vypiska-iz-egryul"
+                ? "Выписка из ЕГРЮЛ"
+                : "Материалы страницы"}
+            </h2>
+          </div>
+
+          <div
+            className={`landingMediaGrid ${
+              page.slug === "vypiska-iz-egryul"
+                ? "landingMediaDocuments"
+                : ""
+            }`}
+          >
+            {(page.images || [])
+              .filter((item) => item.image)
+              .map((item) => (
+                <a
+                  href={item.image || "#"}
+                  key={item.id}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    alt={item.alt_text || item.caption || page.h1}
+                    src={item.image || ""}
+                  />
+                  {item.caption && <span>{item.caption}</span>}
+                </a>
+              ))}
           </div>
         </section>
       )}

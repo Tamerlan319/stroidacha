@@ -8,6 +8,35 @@ from .old_site_portfolio_importer import (
     OldSitePortfolioImporter,
     ParsedPortfolioProject,
 )
+from .old_site_reviews_importer import OldSiteReviewsImporter
+
+
+class StubReviewsImporter(OldSiteReviewsImporter):
+    def _request_bytes(self, url: str) -> bytes:
+        return """
+        <div class=\"_cont\">
+          <blockquote>Построили хороший дом точно в срок.</blockquote>
+          <hr>
+          <p>Иван Петрович, Московская область, Чехов, 13.08.2020</p>
+          <blockquote>Баня получилась тёплой и аккуратной.</blockquote>
+          <hr>
+          <p>Анна Сергеевна, Тверская область, 21.10.2022</p>
+        </div>
+        """.encode()
+
+
+class OldSiteReviewsImporterTests(SimpleTestCase):
+    def test_reviews_keep_author_location_date_and_object_type(self):
+        reviews = StubReviewsImporter().parse()
+
+        self.assertEqual(len(reviews), 2)
+        self.assertEqual(reviews[0].author_name, "Иван Петрович")
+        self.assertEqual(
+            reviews[0].city,
+            "Московская область, Чехов · 13.08.2020",
+        )
+        self.assertEqual(reviews[0].project_name, "Дом из бруса")
+        self.assertEqual(reviews[1].project_name, "Баня из бруса")
 
 
 class OldSitePortfolioImporterTests(SimpleTestCase):

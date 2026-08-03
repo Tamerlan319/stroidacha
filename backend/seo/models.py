@@ -9,6 +9,8 @@ class LandingPage(models.Model):
         REGION = "region", "Регион"
         DELIVERY = "delivery", "Доставка"
         PRODUCTION = "production", "Производство"
+        COMPANY = "company", "О компании"
+        GUIDE = "guide", "Справочник"
         CUSTOM = "custom", "Произвольная"
 
     title = models.CharField(
@@ -104,3 +106,24 @@ class LandingPageFAQ(models.Model):
 
     def __str__(self):
         return self.question
+
+
+class LandingPageImage(models.Model):
+    landing_page = models.ForeignKey(
+        LandingPage,
+        verbose_name="SEO-страница",
+        related_name="images",
+        on_delete=models.CASCADE,
+    )
+    image = models.ImageField("Изображение", upload_to="seo/pages/")
+    alt_text = models.CharField("Alt-текст", max_length=255, blank=True)
+    caption = models.CharField("Подпись", max_length=255, blank=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Изображение SEO-страницы"
+        verbose_name_plural = "Изображения SEO-страниц"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return self.caption or self.alt_text or f"Изображение для {self.landing_page}"

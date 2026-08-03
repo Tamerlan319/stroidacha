@@ -7,6 +7,7 @@ import {
   SITE_PHONE_HREF,
 } from "../lib/site";
 import BrandMark from "./BrandMark";
+import FooterLegalBlock from "./FooterLegalBlock";
 
 type LandingPage = {
   id: number;
@@ -75,6 +76,10 @@ export default async function SiteFooter() {
         <div>
           <h3>Направления</h3>
           <ul className="footerLinks">
+            <li><Link href="/portfolio">Портфолио</Link></li>
+            <li><Link href="/otzyvy">Отзывы</Link></li>
+            <li><Link href="/faq">FAQ</Link></li>
+            <li><Link href="/spravochnik">Справочник</Link></li>
             {landingPages.slice(0, 7).map((page) => (
               <li key={page.id}>
                 <Link href={`/${page.slug}`}>{page.h1 || page.title}</Link>
@@ -102,8 +107,13 @@ export default async function SiteFooter() {
         </div>
       </div>
 
+      <div className="container">
+        <FooterLegalBlock />
+      </div>
+
       <div className="container footerBottom">
-        <span>© {new Date().getFullYear()} Брусотека</span>
+        <span>© {new Date().getFullYear()} ООО «СтройДача»</span>
+        <span>«Брусотека» — бренд ООО «СтройДача».</span>
         <span>Информация на сайте не является публичной офертой.</span>
       </div>
     </footer>
