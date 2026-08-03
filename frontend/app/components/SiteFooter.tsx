@@ -7,6 +7,7 @@ import {
   SITE_PHONE_HREF,
 } from "../lib/site";
 import BrandMark from "./BrandMark";
+import FooterLegalBlock from "./FooterLegalBlock";
 
 type LandingPage = {
   id: number;
@@ -106,8 +107,13 @@ export default async function SiteFooter() {
         </div>
       </div>
 
+      <div className="container">
+        <FooterLegalBlock />
+      </div>
+
       <div className="container footerBottom">
-        <span>© {new Date().getFullYear()} Брусотека</span>
+        <span>© {new Date().getFullYear()} ООО «СтройДача»</span>
+        <span>«Брусотека» — бренд ООО «СтройДача».</span>
         <span>Информация на сайте не является публичной офертой.</span>
       </div>
     </footer>

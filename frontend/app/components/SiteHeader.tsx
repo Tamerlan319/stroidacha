@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { CATALOG_LINKS, SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
 import BrandMark from "./BrandMark";
@@ -95,7 +95,10 @@ function SocialIcon({ name }: { name: SocialName }) {
 
 function SocialLinks({ className = "" }: { className?: string }) {
   return (
-    <div className={`sdSocialLinks ${className}`} aria-label="Связаться в мессенджерах">
+    <div
+      className={`sdSocialLinks ${className}`}
+      aria-label="Связаться в мессенджерах"
+    >
       {socialLinks.map((item) => (
         <a
           aria-label={item.title}
@@ -120,8 +123,6 @@ export default function SiteHeader() {
   const [guideLinks, setGuideLinks] = useState<HeaderLink[]>([
     { title: "Все статьи", href: "/spravochnik" },
   ]);
-  const [phone, setPhone] = useState("");
-  const [formStatus, setFormStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -156,12 +157,19 @@ export default function SiteHeader() {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/landing-pages/`
         );
-        if (!response.ok) return;
+
+        if (!response.ok) {
+          return;
+        }
+
         const pages = (await response.json()) as LandingPageListItem[];
         const articles = pages
           .filter((page) => page.page_type === "guide")
           .sort((a, b) => a.sort_order - b.sort_order)
-          .map((page) => ({ title: page.title, href: `/${page.slug}` }));
+          .map((page) => ({
+            title: page.title,
+            href: `/${page.slug}`,
+          }));
 
         if (!isCancelled) {
           setGuideLinks([
@@ -170,11 +178,12 @@ export default function SiteHeader() {
           ]);
         }
       } catch {
-        // Справочник остаётся доступен даже при временной недоступности API.
+        // Справочник остаётся доступен при временной недоступности API.
       }
     }
 
     loadGuideLinks();
+
     return () => {
       isCancelled = true;
     };
@@ -195,65 +204,12 @@ export default function SiteHeader() {
 
   function toggleMobileMenu() {
     setIsOpen((current) => {
-      if (current) setOpenDropdown(null);
+      if (current) {
+        setOpenDropdown(null);
+      }
+
       return !current;
     });
-  }
-
-  async function handleQuickCallback(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!phone.trim() || formStatus === "submitting") return;
-
-    setFormStatus("submitting");
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/leads/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: "Заявка из шапки",
-          phone,
-          email: "",
-          message: "Телефонная консультация и предварительный расчёт",
-          source: "callback",
-          project_slug: "",
-          page_url: window.location.href,
-        }),
-      });
-
-      if (!response.ok) throw new Error("Не удалось отправить заявку");
-      setPhone("");
-      setFormStatus("success");
-    } catch {
-      setFormStatus("error");
-    }
-  }
-
-  function renderQuickForm(className = "") {
-    return (
-      <form className={`sdHeaderQuickForm ${className}`} onSubmit={handleQuickCallback}>
-        <label>
-          <span>Консультация и расчёт</span>
-          <input
-            aria-label="Номер телефона"
-            inputMode="tel"
-            onChange={(event) => {
-              setPhone(event.target.value);
-              if (formStatus !== "idle") setFormStatus("idle");
-            }}
-            placeholder="+7 (___) ___-__-__"
-            required
-            type="tel"
-            value={phone}
-          />
-        </label>
-        <button disabled={formStatus === "submitting"} type="submit">
-          {formStatus === "submitting" ? "Отправляем…" : "Перезвоните мне"}
-        </button>
-        {formStatus === "success" && <small className="isSuccess">Заявка отправлена</small>}
-        {formStatus === "error" && <small className="isError">Не удалось отправить</small>}
-      </form>
-    );
   }
 
   return (
@@ -261,22 +217,29 @@ export default function SiteHeader() {
       <div className="sdHeaderMain">
         <div className="container sdHeaderInner">
           <Link className="sdLogo" href="/" onClick={closeMenu}>
-            <span className="sdLogoMark"><BrandMark /></span>
+            <span className="sdLogoMark">
+              <BrandMark />
+            </span>
             <span className="sdLogoText">
               <strong>Брусотека</strong>
               <small>строим дома из бруса</small>
             </span>
           </Link>
 
-          <p className="sdHeaderPromise">Дома и бани из бруса<br />от производителя</p>
+          <p className="sdHeaderPromise">
+            Дома и бани из бруса
+            <br />
+            от производителя
+          </p>
+
           <SocialLinks className="sdHeaderSocials" />
 
           <div className="sdHeaderContacts">
-            <a className="sdPhone" href={`tel:${SITE_PHONE_HREF}`}>{SITE_PHONE}</a>
+            <a className="sdPhone" href={`tel:${SITE_PHONE_HREF}`}>
+              {SITE_PHONE}
+            </a>
             <small>Ежедневно с 9:00 до 20:00</small>
           </div>
-
-          {renderQuickForm()}
 
           <button
             className="sdBurger"
@@ -296,7 +259,9 @@ export default function SiteHeader() {
         <div className="container sdHeaderNavInner">
           <nav className="sdDesktopNav" aria-label="Основное меню">
             <div
-              className={`sdNavDropdown ${openDropdown === "catalog" ? "isOpen" : ""}`}
+              className={`sdNavDropdown ${
+                openDropdown === "catalog" ? "isOpen" : ""
+              }`}
               onMouseEnter={() => setOpenDropdown("catalog")}
               onMouseLeave={() => setOpenDropdown(null)}
             >
@@ -325,11 +290,17 @@ export default function SiteHeader() {
               )}
             </div>
 
-            <Link href="/calculator" onClick={closeMenu}>Калькулятор</Link>
-            <Link href="/portfolio" onClick={closeMenu}>Портфолио</Link>
+            <Link href="/calculator" onClick={closeMenu}>
+              Калькулятор
+            </Link>
+            <Link href="/portfolio" onClick={closeMenu}>
+              Портфолио
+            </Link>
 
             <div
-              className={`sdNavDropdown ${openDropdown === "company" ? "isOpen" : ""}`}
+              className={`sdNavDropdown ${
+                openDropdown === "company" ? "isOpen" : ""
+              }`}
               onMouseEnter={() => setOpenDropdown("company")}
               onMouseLeave={() => setOpenDropdown(null)}
             >
@@ -358,10 +329,14 @@ export default function SiteHeader() {
               )}
             </div>
 
-            <Link href="/kontakty" onClick={closeMenu}>Контакты</Link>
+            <Link href="/kontakty" onClick={closeMenu}>
+              Контакты
+            </Link>
 
             <div
-              className={`sdNavDropdown ${openDropdown === "guide" ? "isOpen" : ""}`}
+              className={`sdNavDropdown ${
+                openDropdown === "guide" ? "isOpen" : ""
+              }`}
               onMouseEnter={() => setOpenDropdown("guide")}
               onMouseLeave={() => setOpenDropdown(null)}
             >
@@ -390,11 +365,17 @@ export default function SiteHeader() {
               )}
             </div>
 
-            <Link href="/faq" onClick={closeMenu}>FAQ</Link>
-            <Link href="/otzyvy" onClick={closeMenu}>Отзывы</Link>
+            <Link href="/faq" onClick={closeMenu}>
+              FAQ
+            </Link>
+            <Link href="/otzyvy" onClick={closeMenu}>
+              Отзывы
+            </Link>
           </nav>
 
-          <Link className="sdHeaderCalc" href="/calculator">Рассчитать стоимость</Link>
+          <Link className="sdHeaderCalc" href="/calculator">
+            Рассчитать стоимость
+          </Link>
         </div>
       </div>
 
@@ -419,8 +400,13 @@ export default function SiteHeader() {
                   type="button"
                 >
                   <span className="sdMobileNavLabel">
-                    <span className="sdMobileNavIcon"><SiteIcon name="house" /></span>
-                    <span><strong>Каталог проектов</strong><small>Дома и бани из бруса</small></span>
+                    <span className="sdMobileNavIcon">
+                      <SiteIcon name="house" />
+                    </span>
+                    <span>
+                      <strong>Каталог проектов</strong>
+                      <small>Дома и бани из бруса</small>
+                    </span>
                   </span>
                   <SiteIcon className="sdNavChevron" name="chevron" />
                 </button>
@@ -429,24 +415,51 @@ export default function SiteHeader() {
                   <div className="sdMobileSubmenuLinks sdMobileCatalogSubmenu">
                     {CATALOG_LINKS.map((item) => (
                       <Link href={item.href} key={item.href} onClick={closeMenu}>
-                        <span className="sdMobileSubmenuIcon"><SiteIcon name={item.icon} /></span>
-                        <span><strong>{item.title}</strong><small>{item.description}</small></span>
+                        <span className="sdMobileSubmenuIcon">
+                          <SiteIcon name={item.icon} />
+                        </span>
+                        <span>
+                          <strong>{item.title}</strong>
+                          <small>{item.description}</small>
+                        </span>
                       </Link>
                     ))}
                   </div>
                 )}
               </div>
 
-              <Link className="sdMobileDirectLink" href="/calculator" onClick={closeMenu}>
-                <span className="sdMobileNavIcon"><SiteIcon name="price" /></span>
-                <span><strong>Калькулятор</strong><small>Предварительный расчёт</small></span>
-                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              <Link
+                className="sdMobileDirectLink"
+                href="/calculator"
+                onClick={closeMenu}
+              >
+                <span className="sdMobileNavIcon">
+                  <SiteIcon name="price" />
+                </span>
+                <span>
+                  <strong>Калькулятор</strong>
+                  <small>Предварительный расчёт</small>
+                </span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">
+                  →
+                </span>
               </Link>
 
-              <Link className="sdMobileDirectLink" href="/portfolio" onClick={closeMenu}>
-                <span className="sdMobileNavIcon"><SiteIcon name="blueprint" /></span>
-                <span><strong>Портфолио</strong><small>Построенные объекты</small></span>
-                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              <Link
+                className="sdMobileDirectLink"
+                href="/portfolio"
+                onClick={closeMenu}
+              >
+                <span className="sdMobileNavIcon">
+                  <SiteIcon name="blueprint" />
+                </span>
+                <span>
+                  <strong>Портфолио</strong>
+                  <small>Построенные объекты</small>
+                </span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">
+                  →
+                </span>
               </Link>
 
               <div className="sdMobileMenuSection">
@@ -461,8 +474,13 @@ export default function SiteHeader() {
                   type="button"
                 >
                   <span className="sdMobileNavLabel">
-                    <span className="sdMobileNavIcon"><SiteIcon name="factory" /></span>
-                    <span><strong>О компании</strong><small>Производство и условия</small></span>
+                    <span className="sdMobileNavIcon">
+                      <SiteIcon name="factory" />
+                    </span>
+                    <span>
+                      <strong>О компании</strong>
+                      <small>Производство и условия</small>
+                    </span>
                   </span>
                   <SiteIcon className="sdNavChevron" name="chevron" />
                 </button>
@@ -479,10 +497,21 @@ export default function SiteHeader() {
                 )}
               </div>
 
-              <Link className="sdMobileDirectLink" href="/kontakty" onClick={closeMenu}>
-                <span className="sdMobileNavIcon"><SiteIcon name="contract" /></span>
-                <span><strong>Контакты</strong><small>Телефон, адрес и реквизиты</small></span>
-                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              <Link
+                className="sdMobileDirectLink"
+                href="/kontakty"
+                onClick={closeMenu}
+              >
+                <span className="sdMobileNavIcon">
+                  <SiteIcon name="contract" />
+                </span>
+                <span>
+                  <strong>Контакты</strong>
+                  <small>Телефон, адрес и реквизиты</small>
+                </span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">
+                  →
+                </span>
               </Link>
 
               <div className="sdMobileMenuSection">
@@ -497,8 +526,13 @@ export default function SiteHeader() {
                   type="button"
                 >
                   <span className="sdMobileNavLabel">
-                    <span className="sdMobileNavIcon"><SiteIcon name="blueprint" /></span>
-                    <span><strong>Справочник</strong><small>Статьи о строительстве</small></span>
+                    <span className="sdMobileNavIcon">
+                      <SiteIcon name="blueprint" />
+                    </span>
+                    <span>
+                      <strong>Справочник</strong>
+                      <small>Статьи о строительстве</small>
+                    </span>
                   </span>
                   <SiteIcon className="sdNavChevron" name="chevron" />
                 </button>
@@ -515,16 +549,38 @@ export default function SiteHeader() {
                 )}
               </div>
 
-              <Link className="sdMobileDirectLink" href="/faq" onClick={closeMenu}>
-                <span className="sdMobileNavIcon"><SiteIcon name="shield" /></span>
-                <span><strong>Частые вопросы</strong><small>Коротко о важном</small></span>
-                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              <Link
+                className="sdMobileDirectLink"
+                href="/faq"
+                onClick={closeMenu}
+              >
+                <span className="sdMobileNavIcon">
+                  <SiteIcon name="shield" />
+                </span>
+                <span>
+                  <strong>Частые вопросы</strong>
+                  <small>Коротко о важном</small>
+                </span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">
+                  →
+                </span>
               </Link>
 
-              <Link className="sdMobileDirectLink" href="/otzyvy" onClick={closeMenu}>
-                <span className="sdMobileNavIcon"><SiteIcon name="gift" /></span>
-                <span><strong>Отзывы</strong><small>Опыт наших заказчиков</small></span>
-                <span className="sdMobileLinkArrow" aria-hidden="true">→</span>
+              <Link
+                className="sdMobileDirectLink"
+                href="/otzyvy"
+                onClick={closeMenu}
+              >
+                <span className="sdMobileNavIcon">
+                  <SiteIcon name="gift" />
+                </span>
+                <span>
+                  <strong>Отзывы</strong>
+                  <small>Опыт наших заказчиков</small>
+                </span>
+                <span className="sdMobileLinkArrow" aria-hidden="true">
+                  →
+                </span>
               </Link>
             </div>
 
@@ -532,13 +588,13 @@ export default function SiteHeader() {
               <div className="sdMobileContactRow">
                 <div>
                   <small>Звоните — поможем с выбором</small>
-                  <a href={`tel:${SITE_PHONE_HREF}`} onClick={closeMenu}>{SITE_PHONE}</a>
+                  <a href={`tel:${SITE_PHONE_HREF}`} onClick={closeMenu}>
+                    {SITE_PHONE}
+                  </a>
                   <span>Ежедневно с 9:00 до 20:00</span>
                 </div>
                 <SocialLinks />
               </div>
-
-              {renderQuickForm("sdMobileQuickForm")}
             </div>
           </div>
         </nav>

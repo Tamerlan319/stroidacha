@@ -1,0 +1,46 @@
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 48px 20px 72px;
+  color: #26382c;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: #cf8c3c;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page h1 {
+  margin: 0 0 18px;
+  color: #1f2a22;
+  font-size: clamp(34px, 4vw, 52px);
+  line-height: 1.05;
+}
+
+.page h2 {
+  margin: 28px 0 12px;
+  color: #1f2a22;
+  font-size: 24px;
+}
+
+.page p,
+.page li {
+  color: #4e564f;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.page ul {
+  padding-left: 20px;
+}
+
+.meta {
+  margin-bottom: 18px;
+  color: #697169;
+  font-size: 14px;
+}
