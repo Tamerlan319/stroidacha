@@ -150,13 +150,10 @@ jobs:
             --max-time 20 \
             "https://${PRODUCTION_DOMAIN}/api/health/"
           then
-            echo "External HTTPS verification failed. Caddy logs:"
-            ssh "$VPS_USER@$VPS_HOST" 'bash -se' <<'REMOTE'
-              cd /opt/brusoteka
-              docker compose \
-                --env-file backend/.env.prod \
-                -f docker-compose.prod.yml \
-                logs --tail=250 caddy
-            REMOTE
+            echo "External HTTPS verification failed. Fresh Caddy logs:"
+
+            ssh "$VPS_USER@$VPS_HOST" \
+              "cd /opt/brusoteka && docker compose --env-file backend/.env.prod -f docker-compose.prod.yml logs --since=5m --tail=120 caddy"
+
             exit 1
           fi
