@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import JsonLd from "../../components/JsonLd";
 import LeadForm from "../../components/LeadForm";
 import ImageLightbox from "../../components/ImageLightbox";
+import ProjectGalleryWithPrices from "../../components/ProjectGalleryWithPrices";
 import SiteIcon from "../../components/SiteIcon";
 import { SITE_NAME, SITE_URL } from "../../lib/site";
 
@@ -12,7 +13,6 @@ type ProjectCategory = {
   title: string;
   slug: string;
 };
-
 type PriceOption = {
   id: number;
   group_title: string;
@@ -40,7 +40,6 @@ type PackageSection = {
   title: string;
   items: PackageItem[];
 };
-
 type ProjectPackage = {
   id: number;
   title: string;
@@ -66,7 +65,6 @@ type ProjectPlan = {
   alt_text: string;
   sort_order: number;
 };
-
 type Project = {
   id: number;
   external_id: string | null;
@@ -92,7 +90,6 @@ type Project = {
   promotions: ProjectPromotion[];
   work_steps: ProjectWorkStep[];
 };
-
 type PageProps = {
   params: Promise<{
     slug: string;
@@ -115,7 +112,6 @@ type ProjectIllustratedOption = {
   description: string;
   sort_order: number;
 };
-
 type ProjectPromotion = {
   id: number;
   code: string;
@@ -137,7 +133,6 @@ type ProjectWorkStep = {
 
 async function getProject(slug: string): Promise<Project | null> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
   const response = await fetch(`${apiUrl}/projects/${slug}/`, {
     cache: "no-store",
   });
@@ -162,7 +157,6 @@ function getCategoryPageSlug(categorySlug: string) {
 
   return map[categorySlug] || categorySlug;
 }
-
 function normalizePrice(price: string | number | null) {
   if (!price) {
     return null;
@@ -186,7 +180,6 @@ function formatPrice(price: string | number | null) {
 
   return `${numericPrice.toLocaleString("ru-RU")} ₽`;
 }
-
 function getProjectDescription(project: Project) {
   return (
     project.seo_description ||
@@ -204,7 +197,6 @@ function getProjectImages(project: Project) {
 
   return Array.from(new Set(images));
 }
-
 function groupByTitle<T extends { group_title: string }>(items: T[]) {
   return items.reduce<Record<string, T[]>>((acc, item) => {
     const group = item.group_title || "Прочее";
@@ -218,7 +210,6 @@ function groupByTitle<T extends { group_title: string }>(items: T[]) {
     return acc;
   }, {});
 }
-
 function formatContentHeading(title: string) {
   const normalized = title.trim().toLocaleUpperCase("ru-RU");
   const knownHeadings: Record<string, string> = {
@@ -227,7 +218,6 @@ function formatContentHeading(title: string) {
     "ВАРИАНТЫ ФУНДАМЕНТОВ, КРОВЛИ И ЧТО ВХОДИТ В СТОИМОСТЬ": "Фундамент, кровля и состав стоимости",
     "ЧТО ЕЩЕ ВАЖНО ЗНАТЬ": "Что ещё важно знать",
   };
-
   if (knownHeadings[normalized]) return knownHeadings[normalized];
   if (title === normalized) {
     const lower = title.toLocaleLowerCase("ru-RU");
@@ -241,7 +231,6 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
   const categoryPageUrl = `${SITE_URL}/${getCategoryPageSlug(
     project.category.slug
   )}`;
-
   const description = getProjectDescription(project);
   const images = getProjectImages(project);
   const price = normalizePrice(project.price_from);
@@ -259,7 +248,6 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
       name: SITE_NAME,
     },
   };
-
   if (price) {
     product.offers = {
       "@type": "Offer",
@@ -269,7 +257,6 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
       availability: "https://schema.org/InStock",
     };
   }
-
   const graph: Record<string, unknown>[] = [
     {
       "@type": "WebPage",
@@ -311,7 +298,6 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
     },
     product,
   ];
-
   if (project.main_image) {
     graph.push({
       "@type": "ImageObject",
@@ -337,14 +323,12 @@ export async function generateMetadata({
   if (!project) {
     return {};
   }
-
   const pageUrl = `${SITE_URL}/projects/${project.slug}`;
   const description = getProjectDescription(project);
   const title = project.seo_title || `${project.title} | ${SITE_NAME}`;
   const images = project.main_image
     ? [{ url: project.main_image, alt: project.title }]
     : [{ url: "/images/banners/home-hero.jpg", alt: project.title }];
-
   return {
     title: {
       absolute: title,
@@ -370,7 +354,6 @@ export async function generateMetadata({
     },
   };
 }
-
 export default async function ProjectPage({ params }: PageProps) {
   const { slug } = await params;
   const project = await getProject(slug);
@@ -381,29 +364,52 @@ export default async function ProjectPage({ params }: PageProps) {
 
   const jsonLd = buildProjectJsonLd(project);
   const priceGroups = groupByTitle(project.price_options || []);
-  const galleryImages = (project.images || []).map((image) => ({
-    id: image.id,
-    src: image.image,
-    alt: image.alt_text || image.caption || project.title,
-    caption: image.caption,
+  const projectMedia = [
+    ...(project.main_image
+      ? [
+          {
+            id: "main-image",
+            src: project.main_image,
+            alt: project.title,
+            caption: "Главное фото",
+            kind: "image",
+          },
+        ]
+      : []),
+    ...(project.images || []).map((image) => ({
+      id: `image-${image.id}`,
+      src: image.image,
+      alt: image.alt_text || image.caption || project.title,
+      caption: image.caption || "Изображение проекта",
+      kind: image.image_type || "image",
+    })),
+  ].filter(
+    (item, index, allItems) =>
+      allItems.findIndex((candidate) => candidate.src === item.src) === index,
+  );
+  const planImages = (project.plans || []).map((plan) => ({
+    id: plan.id,
+    src: plan.image,
+    alt: plan.alt_text || plan.title || project.title,
+    caption: plan.title || `План ${plan.floor || ""}`,
   }));
 
-  const planImages = (project.plans || []).map((plan) => ({
-  id: plan.id,
-  src: plan.image,
-  alt: plan.alt_text || plan.title || project.title,
-  caption: plan.title || `План ${plan.floor || ""}`,
+  const priceSections = Object.entries(priceGroups).map(([title, items]) => ({
+    title,
+    items: items.map((item) => ({
+      id: item.id,
+      title: item.title,
+      price: formatPrice(item.price),
+    })),
   }));
 
   const contentSections = project.content_sections || [];
   const illustratedOptionGroups = groupByTitle(project.illustrated_options || []);
   const promotions = project.promotions || [];
   const workSteps = project.work_steps || [];
-
   return (
     <main className="projectPage">
       <JsonLd data={jsonLd} />
-
       <section
         className="projectHero projectHeroCover"
         style={
@@ -416,7 +422,6 @@ export default async function ProjectPage({ params }: PageProps) {
           <div className="projectHeroContent">
             <p className="heroKicker">{project.category.title}</p>
             <h1>{project.title}</h1>
-
             <p className="heroText">
               {project.short_description ||
                 "Подробная карточка проекта с характеристиками, ценами и комплектацией."}
@@ -427,7 +432,6 @@ export default async function ProjectPage({ params }: PageProps) {
               {project.size_text && <span>{project.size_text}</span>}
               {project.floor_label && <span>{project.floor_label}</span>}
             </div>
-
             <div className="heroActions">
               <a href="#prices" className="buttonPrimary">
                 Смотреть цены
@@ -437,7 +441,6 @@ export default async function ProjectPage({ params }: PageProps) {
               </a>
             </div>
           </div>
-
           <aside className="projectQuoteCard">
             <strong>Получите точный расчёт</strong>
             <p>Проверим проект, комплектацию, фундамент, кровлю и доставку.</p>
@@ -452,18 +455,12 @@ export default async function ProjectPage({ params }: PageProps) {
           </aside>
         </div>
       </section>
-
-      {galleryImages.length > 0 && (
-        <section className="container section">
-          <div className="sectionHeader">
-            <p className="eyebrow">Галерея</p>
-            <h2>Изображения проекта</h2>
-          </div>
-
-          <ImageLightbox images={galleryImages} previewLimit={5} />
-        </section>
+      {(projectMedia.length > 0 || priceSections.length > 0) && (
+        <ProjectGalleryWithPrices
+          images={projectMedia}
+          priceGroups={priceSections}
+        />
       )}
-
       {planImages.length > 0 && (
         <section className="container section projectPlansSection">
           <div className="sectionHeader sectionHeaderCompact">
@@ -473,7 +470,6 @@ export default async function ProjectPage({ params }: PageProps) {
               Нажмите на планировку, чтобы открыть её крупно и рассмотреть детали.
             </p>
           </div>
-
           <ImageLightbox
             images={planImages}
             previewLimit={4}
@@ -481,33 +477,6 @@ export default async function ProjectPage({ params }: PageProps) {
           />
         </section>
       )}
-
-      {Object.keys(priceGroups).length > 0 && (
-        <section className="container section" id="prices">
-          <div className="sectionHeader">
-            <p className="eyebrow">Стоимость</p>
-            <h2>Цены по материалам</h2>
-          </div>
-
-          <div className="priceGroupGrid">
-            {Object.entries(priceGroups).map(([groupTitle, items]) => (
-              <div className="infoCard" key={groupTitle}>
-                <h3>{groupTitle}</h3>
-
-                <div className="priceRows">
-                  {items.map((item) => (
-                    <div className="priceRow" key={item.id}>
-                      <span>{item.title}</span>
-                      <strong>{formatPrice(item.price)}</strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {project.packages?.length > 0 && (
         <section className="container section">
           <div className="sectionHeader">
@@ -519,7 +488,6 @@ export default async function ProjectPage({ params }: PageProps) {
             {project.packages.map((projectPackage) => (
               <div className="infoCard" key={projectPackage.id}>
                 <h3>{projectPackage.title}</h3>
-
                 {projectPackage.description && (
                   <p>{projectPackage.description}</p>
                 )}
@@ -527,7 +495,6 @@ export default async function ProjectPage({ params }: PageProps) {
                 {projectPackage.sections.map((section) => (
                   <div className="packageSection" key={section.id}>
                     <h4>{section.title}</h4>
-
                     <div className="packageRows">
                       {section.items.map((item) => (
                         <div className="packageRow" key={item.id}>
@@ -543,7 +510,6 @@ export default async function ProjectPage({ params }: PageProps) {
           </div>
         </section>
       )}
-
       {Object.keys(illustratedOptionGroups).length > 0 && (
         <section className="projectOptionsSection">
           <div className="container section">
@@ -552,7 +518,6 @@ export default async function ProjectPage({ params }: PageProps) {
               <h2>Фундамент и чистовая кровля</h2>
               <p>Выберите подходящий вариант — стоимость рассчитана именно для этого проекта.</p>
             </div>
-
             <div className="projectOptionGroups">
               {Object.entries(illustratedOptionGroups).map(([groupTitle, items]) => (
                 <div className={`projectOptionGroup ${items.length <= 2 ? "isCompact" : ""}`} key={groupTitle}>
@@ -563,7 +528,6 @@ export default async function ProjectPage({ params }: PageProps) {
                       <h3>{groupTitle}</h3>
                     </div>
                   </div>
-
                   <div className="projectOptionGrid">
                     {items.map((item) => (
                       <article className="projectOptionCard" key={item.id}>
@@ -591,14 +555,12 @@ export default async function ProjectPage({ params }: PageProps) {
           </div>
         </section>
       )}
-
       {contentSections.length > 0 ? (
         <section className="container section">
           <div className="sectionHeader sectionHeaderCenter">
             <p className="eyebrow">Описание</p>
             <h2>Подробно о проекте</h2>
           </div>
-
           <div className="projectTextSections">
             {contentSections.map((section) => (
               <article className="projectTextSection" key={section.id}>
@@ -621,7 +583,6 @@ export default async function ProjectPage({ params }: PageProps) {
           </section>
         )
       )}
-
       {promotions.length > 0 && (
         <section className="projectPromotions">
           <div className="container section">
@@ -652,7 +613,6 @@ export default async function ProjectPage({ params }: PageProps) {
           </div>
         </section>
       )}
-
       {workSteps.length > 0 && (
         <section className="container section projectWorkSection">
           <div className="sectionHeader projectSectionIntro">
@@ -671,7 +631,6 @@ export default async function ProjectPage({ params }: PageProps) {
           </div>
         </section>
       )}
-
       <section className="projectLeadSection" id="lead-form">
         <div className="container section projectLeadGrid">
           <div>
