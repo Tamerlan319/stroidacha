@@ -1,4 +1,4 @@
-brusoteka.ru, www.brusoteka.ru {
+brusodel.ru, www.brusodel.ru {
     encode zstd gzip
 
     @www host www.brusoteka.ru
@@ -38,4 +38,8 @@ brusoteka.ru, www.brusoteka.ru {
     handle {
         reverse_proxy frontend:3000
     }
+}
+
+brusoteka.ru, www.brusoteka.ru {
+    redir https://brusodel.ru{uri} 301
 }

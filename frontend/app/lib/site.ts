@@ -1,6 +1,6 @@
-export const SITE_NAME = "Брусотека";
+export const SITE_NAME = "Брусодел";
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://brusoteka.ru"
+  process.env.NEXT_PUBLIC_SITE_URL || "https://brusodel.ru"
 ).replace(/\/$/, "");
 
 export const SITE_DESCRIPTION =
@@ -8,7 +8,7 @@ export const SITE_DESCRIPTION =
 
 export const SITE_PHONE = "+7 967 680-18-12";
 export const SITE_PHONE_HREF = "+79676801812";
-export const SITE_EMAIL = "info@brusoteka.ru";
+export const SITE_EMAIL = "info@brusodel.ru";
 
 export const CATALOG_LINKS = [
   {

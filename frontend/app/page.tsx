@@ -9,7 +9,7 @@ import ProjectCatalog from "./components/ProjectCatalog";
 import SiteIcon from "./components/SiteIcon";
 import { CATALOG_LINKS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
 
-const HOME_TITLE = "Дома и бани из бруса под ключ — Брусотека";
+const HOME_TITLE = "Дома и бани из бруса под ключ — Брусодел";
 
 export const metadata: Metadata = {
   title: { absolute: HOME_TITLE },
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
       url: "/images/banners/home-hero.jpg",
       width: 1672,
       height: 941,
-      alt: "Строительство дома из бруса компанией Брусотека",
+      alt: "Строительство дома из бруса компанией Брусодел",
     }],
   },
   twitter: {
@@ -289,7 +289,7 @@ export default async function HomePage() {
         <div className="homeDeliveryMap deliveryMapReal">
           <iframe
             src="https://yandex.ru/map-widget/v1/?um=constructor%3Af2357c7eef2c0a4200a5244d74da6f5e737586274d8529dba014874e07929877&source=constructor"
-            title="Карта доставки Брусотека"
+            title="Карта доставки Брусодел"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
           />

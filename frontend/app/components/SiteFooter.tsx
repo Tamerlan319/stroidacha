@@ -47,7 +47,7 @@ export default async function SiteFooter() {
               <BrandMark />
             </span>
             <span className="sdLogoText">
-              <strong>Брусотека</strong>
+              <strong>Брусодел</strong>
               <small>строительство из дерева</small>
             </span>
           </Link>
@@ -113,7 +113,7 @@ export default async function SiteFooter() {
 
       <div className="container footerBottom">
         <span>© {new Date().getFullYear()} ООО «СтройДача»</span>
-        <span>«Брусотека» — бренд ООО «СтройДача».</span>
+        <span>«Брусодел» — бренд ООО «СтройДача».</span>
         <span>Информация на сайте не является публичной офертой.</span>
       </div>
     </footer>

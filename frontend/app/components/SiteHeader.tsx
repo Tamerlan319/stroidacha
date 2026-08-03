@@ -222,7 +222,7 @@ export default function SiteHeader() {
               <BrandMark />
             </span>
             <span className="sdLogoText">
-              <strong>Брусотека</strong>
+              <strong>Брусодел</strong>
               <small>строим дома из бруса</small>
             </span>
           </Link>

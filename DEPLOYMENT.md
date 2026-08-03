@@ -1,4 +1,4 @@
-# Развёртывание «Брусотеки»
+# Развёртывание «Брусодела»
 
 Production-схема рассчитана на Ubuntu 24.04, 2 vCPU, 2 ГБ RAM, 20 ГБ
 диска и публичный IPv4.
@@ -25,7 +25,7 @@ sudo bash scripts/bootstrap-vps.sh
 
 ## DNS
 
-Для `brusoteka.ru` нужны записи:
+Для `brusodel.ru` нужны записи:
 
 - `A` для `@` → `194.67.74.142`;
 - `A` для `www` → `194.67.74.142`.
@@ -48,7 +48,7 @@ DNS.
 При pull request выполняются тесты Django, ESLint и production-сборка
 Next.js. После push в `main` workflow подключается к VPS, создаёт резервную
 копию PostgreSQL, обновляет код, пересобирает контейнеры и проверяет
-`https://brusoteka.ru/api/health/`.
+`https://brusodel.ru/api/health/`.
 
 ## Данные сайта
 

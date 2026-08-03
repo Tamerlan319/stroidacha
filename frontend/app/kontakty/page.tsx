@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import LeadForm from "../components/LeadForm";
 
 const description =
-  "Контакты компании Брусотека: офис, производство, телефон, email, режим работы и карта проезда.";
+  "Контакты компании Брусодел: офис, производство, телефон, email, режим работы и карта проезда.";
 
 export const metadata: Metadata = {
   title: "Контакты",
@@ -12,17 +12,17 @@ export const metadata: Metadata = {
     canonical: "/kontakty",
   },
   openGraph: {
-    title: "Контакты | Брусотека",
+    title: "Контакты | Брусодел",
     description,
     url: "/kontakty",
     type: "website",
     locale: "ru_RU",
-    siteName: "Брусотека",
+    siteName: "Брусодел",
     images: ["/images/banners/home-hero.jpg"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Контакты | Брусотека",
+    title: "Контакты | Брусодел",
     description,
     images: ["/images/banners/home-hero.jpg"],
   },

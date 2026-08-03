@@ -227,7 +227,7 @@ class OldSitePortfolioImporter:
         size_text = size_text or known_facts.get("size_text", "")
 
         kind = "Баня" if title.casefold().startswith("баня") else "Дом"
-        short_parts = [f"{kind}, реализованный компанией «Брусотека»"]
+        short_parts = [f"{kind}, реализованный компанией «Брусодел»"]
         if location:
             short_parts.append(location)
         if size_text:

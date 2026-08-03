@@ -47,7 +47,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; request = urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'Host': 'brusoteka.ru', 'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(request, timeout=5)",
+          "import urllib.request; request = urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'Host': 'brusodel.ru', 'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(request, timeout=5)",
         ]
       interval: 15s
       timeout: 5s
@@ -60,15 +60,15 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: "https://brusoteka.ru/api"
-        NEXT_PUBLIC_SITE_URL: "https://brusoteka.ru"
+        NEXT_PUBLIC_API_URL: "https://brusodel.ru/api"
+        NEXT_PUBLIC_SITE_URL: "https://brusodel.ru"
     container_name: brusoteka_frontend
     restart: unless-stopped
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_API_URL: "https://brusoteka.ru/api"
-      NEXT_PUBLIC_SITE_URL: "https://brusoteka.ru"
+      NEXT_PUBLIC_API_URL: "https://brusodel.ru/api"
+      NEXT_PUBLIC_SITE_URL: "https://brusodel.ru"
     depends_on:
       backend:
         condition: service_healthy
