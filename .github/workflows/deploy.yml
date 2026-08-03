@@ -16,6 +16,7 @@ concurrency:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -30,9 +31,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     defaults:
       run:
         working-directory: backend
+
     env:
       DEBUG: "False"
       SECRET_KEY: ci-only-secret-key
@@ -44,32 +47,40 @@ jobs:
       ALLOWED_HOSTS: localhost,127.0.0.1
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       CSRF_TRUSTED_ORIGINS: http://localhost:3000
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
+
       - run: pip install -r requirements.txt
       - run: python manage.py check
       - run: python manage.py test
 
   test-frontend:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: frontend
+
     env:
       NEXT_PUBLIC_API_URL: https://brusodel.ru/api
       NEXT_PUBLIC_SITE_URL: https://brusodel.ru
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+
       - run: npm ci
       - run: npm run lint
       - run: npm run build
@@ -81,10 +92,13 @@ jobs:
       - test-frontend
     runs-on: ubuntu-latest
     environment: production
+
     env:
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER }}
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      PRODUCTION_DOMAIN: brusodel.ru
+
     steps:
       - name: Configure SSH
         run: |
@@ -92,6 +106,27 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Check production DNS
+        run: |
+          echo "Expected VPS: $VPS_HOST"
+          echo "Current A records:"
+          getent ahostsv4 "$PRODUCTION_DOMAIN" || true
+          getent ahostsv4 "www.$PRODUCTION_DOMAIN" || true
+
+          if [[ "$VPS_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            DOMAIN_IPS="$(
+              getent ahostsv4 "$PRODUCTION_DOMAIN" |
+              awk '{print $1}' |
+              sort -u
+            )"
+
+            if ! grep -Fxq "$VPS_HOST" <<<"$DOMAIN_IPS"; then
+              echo "::error::A record for $PRODUCTION_DOMAIN does not point to VPS_HOST=$VPS_HOST"
+              echo "Set both REG.RU A records (@ and www) to $VPS_HOST."
+              exit 1
+            fi
+          fi
 
       - name: Deploy main
         run: |
@@ -106,9 +141,22 @@ jobs:
 
       - name: Verify production
         run: |
-          curl --fail \
-            --retry 12 \
+          if ! curl \
+            --fail \
+            --show-error \
+            --retry 20 \
             --retry-delay 5 \
             --retry-all-errors \
             --max-time 20 \
-            https://brusodel.ru/api/health/
+            "https://${PRODUCTION_DOMAIN}/api/health/"
+          then
+            echo "External HTTPS verification failed. Caddy logs:"
+            ssh "$VPS_USER@$VPS_HOST" 'bash -se' <<'REMOTE'
+              cd /opt/brusoteka
+              docker compose \
+                --env-file backend/.env.prod \
+                -f docker-compose.prod.yml \
+                logs --tail=250 caddy
+            REMOTE
+            exit 1
+          fi

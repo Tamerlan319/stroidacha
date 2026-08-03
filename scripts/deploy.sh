@@ -4,51 +4,14 @@ set -Eeuo pipefail
 
 BRUSODEL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BRUSODEL_BACKUP_DIR="/opt/brusoteka-backups"
-BRUSODEL_ENV_FILE="$BRUSODEL_ROOT/backend/.env.prod"
-
-BRUSODEL_PRIMARY_DOMAIN="brusodel.ru"
-BRUSODEL_WWW_DOMAIN="www.brusodel.ru"
-BRUSODEL_PUBLIC_IP="194.67.74.142"
+BRUSODEL_DOMAIN="brusodel.ru"
 
 cd "$BRUSODEL_ROOT"
 
-if [[ ! -f "$BRUSODEL_ENV_FILE" ]]; then
+if [[ ! -f backend/.env.prod ]]; then
     echo "Missing backend/.env.prod. Run scripts/bootstrap-vps.sh first." >&2
     exit 1
 fi
-
-upsert_env_value() {
-    local key="$1"
-    local value="$2"
-
-    if grep -qE "^${key}=" "$BRUSODEL_ENV_FILE"; then
-        sed -i "s|^${key}=.*|${key}=${value}|" "$BRUSODEL_ENV_FILE"
-    else
-        printf '\n%s=%s\n' "$key" "$value" >> "$BRUSODEL_ENV_FILE"
-    fi
-}
-
-# backend/.env.prod is intentionally not stored in Git because it contains
-# secrets. These public deployment settings are therefore synchronized here
-# on every deploy without touching SECRET_KEY, DB_PASSWORD or mail passwords.
-upsert_env_value \
-    "ALLOWED_HOSTS" \
-    "${BRUSODEL_PRIMARY_DOMAIN},${BRUSODEL_WWW_DOMAIN},${BRUSODEL_PUBLIC_IP},localhost,127.0.0.1"
-upsert_env_value \
-    "CORS_ALLOWED_ORIGINS" \
-    "https://${BRUSODEL_PRIMARY_DOMAIN},https://${BRUSODEL_WWW_DOMAIN}"
-upsert_env_value \
-    "CSRF_TRUSTED_ORIGINS" \
-    "https://${BRUSODEL_PRIMARY_DOMAIN},https://${BRUSODEL_WWW_DOMAIN}"
-upsert_env_value \
-    "DEFAULT_FROM_EMAIL" \
-    "no-reply@${BRUSODEL_PRIMARY_DOMAIN}"
-
-chmod 600 "$BRUSODEL_ENV_FILE"
-
-echo "Production domain settings synchronized:"
-echo "  domain: ${BRUSODEL_PRIMARY_DOMAIN}"
-echo "  public IP: ${BRUSODEL_PUBLIC_IP}"
 
 BRUSODEL_COMPOSE=(
     docker compose
@@ -69,17 +32,46 @@ fi
 "${BRUSODEL_COMPOSE[@]}" build --pull
 "${BRUSODEL_COMPOSE[@]}" up -d --remove-orphans
 
-# Internal health must not depend on DNS or the public domain. Public domain
-# access is verified separately by GitHub Actions after deployment.
-"${BRUSODEL_COMPOSE[@]}" exec -T backend \
-    python -c "import urllib.request; request = urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'Host': '127.0.0.1', 'X-Forwarded-Proto': 'https'}); response = urllib.request.urlopen(request, timeout=10); assert response.status == 200"
-
-# A bind-mounted Caddyfile does not itself guarantee that a running Caddy
-# process reloads the changed configuration, so validate and reload explicitly.
+echo "Validating and reloading Caddy configuration..."
 "${BRUSODEL_COMPOSE[@]}" exec -T caddy \
     caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
 "${BRUSODEL_COMPOSE[@]}" exec -T caddy \
     caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+
+echo "Checking Django health inside the backend container..."
+"${BRUSODEL_COMPOSE[@]}" exec -T backend \
+    python -c "import urllib.request; request = urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'Host': 'brusodel.ru', 'X-Forwarded-Proto': 'https'}); response = urllib.request.urlopen(request, timeout=10); print('Backend health:', response.status)"
+
+echo "Waiting for the HTTPS certificate and Caddy route..."
+HTTPS_READY=0
+
+for attempt in $(seq 1 30); do
+    if curl \
+        --fail \
+        --silent \
+        --show-error \
+        --max-time 15 \
+        --resolve "${BRUSODEL_DOMAIN}:443:127.0.0.1" \
+        "https://${BRUSODEL_DOMAIN}/api/health/" \
+        >/dev/null
+    then
+        HTTPS_READY=1
+        echo "HTTPS is ready."
+        break
+    fi
+
+    echo "HTTPS is not ready yet (${attempt}/30). Waiting 5 seconds..."
+    sleep 5
+done
+
+if [[ "$HTTPS_READY" -ne 1 ]]; then
+    echo "Caddy did not obtain or serve a certificate for ${BRUSODEL_DOMAIN}." >&2
+    echo "Check that A records for @ and www point to this VPS public IP." >&2
+    echo "Recent Caddy logs:" >&2
+    "${BRUSODEL_COMPOSE[@]}" logs --tail=250 caddy >&2 || true
+    exit 1
+fi
 
 find "$BRUSODEL_BACKUP_DIR" \
     -type f \
