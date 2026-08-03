@@ -170,7 +170,7 @@ export default async function HomePage() {
 
       <section className="homeTrust" aria-label="О компании">
         <div className="container homeTrustGrid">
-          <article><SiteIcon name="house" /><div><strong>С 1999 года</strong><span>Строим из бруса<br />для жизни</span></div></article>
+          <article><SiteIcon name="house" /><div><strong>С 2009 года</strong><span>Строим из бруса<br />для жизни</span></div></article>
           <article><SiteIcon name="factory" /><div><strong>Производство<br />в Чухломе</strong><span>Собственный профилированный брус</span></div></article>
           <article><SiteIcon name="blueprint" /><div><strong>Российские<br />плотники</strong><span>Опытные бригады из Костромской области</span></div></article>
           <article><SiteIcon name="shield" /><div><strong>Гарантия<br />3 года</strong><span>На работы и конструкцию</span></div></article>
