@@ -20,7 +20,7 @@
   padding:
     calc(74px + env(safe-area-inset-top))
     calc(78px + env(safe-area-inset-right))
-    calc(86px + env(safe-area-inset-bottom))
+    calc(92px + env(safe-area-inset-bottom))
     calc(78px + env(safe-area-inset-left));
   touch-action: none;
   user-select: none;
@@ -35,6 +35,7 @@
   min-width: 0;
   min-height: 0;
   place-items: center;
+  overflow: hidden;
   pointer-events: none;
 }
 
@@ -47,6 +48,9 @@
   border-radius: 14px;
   object-fit: contain;
   pointer-events: auto;
+  transform-origin: center center;
+  transition: transform 90ms ease-out;
+  will-change: transform;
   box-shadow:
     0 30px 90px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -54,11 +58,12 @@
 }
 
 .closeButton,
-.arrowButton {
+.arrowButton,
+.zoomControls button {
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(27, 36, 29, 0.86);
+  background: rgba(27, 36, 29, 0.88);
   color: #ffffff;
   padding: 0;
   cursor: pointer;
@@ -68,32 +73,41 @@
   transition:
     background-color 0.18s ease,
     border-color 0.18s ease,
+    opacity 0.18s ease,
     transform 0.18s ease;
   touch-action: manipulation;
 }
 
 .closeButton:hover,
-.arrowButton:hover {
+.arrowButton:hover,
+.zoomControls button:hover:not(:disabled) {
   border-color: rgba(255, 255, 255, 0.36);
-  background: rgba(53, 71, 58, 0.96);
+  background: rgba(53, 71, 58, 0.97);
 }
 
 .closeButton:active,
-.arrowButton:active {
+.arrowButton:active,
+.zoomControls button:active:not(:disabled) {
   transform: scale(0.94);
 }
 
 .closeButton:focus-visible,
-.arrowButton:focus-visible {
+.arrowButton:focus-visible,
+.zoomControls button:focus-visible {
   outline: 3px solid rgba(232, 169, 91, 0.9);
   outline-offset: 3px;
+}
+
+.zoomControls button:disabled {
+  cursor: default;
+  opacity: 0.38;
 }
 
 .closeButton {
   position: fixed;
   top: calc(18px + env(safe-area-inset-top));
   right: calc(18px + env(safe-area-inset-right));
-  z-index: 6;
+  z-index: 8;
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -111,7 +125,7 @@
 .arrowButton {
   position: fixed;
   top: 50%;
-  z-index: 5;
+  z-index: 6;
   width: 54px;
   height: 54px;
   border-radius: 50%;
@@ -122,12 +136,13 @@
   transform: translateY(-50%) scale(0.94);
 }
 
-.arrowButton svg {
-  width: 28px;
-  height: 28px;
+.arrowButton svg,
+.zoomControls svg {
+  width: 26px;
+  height: 26px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 1.9;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -138,6 +153,30 @@
 
 .nextButton {
   right: calc(18px + env(safe-area-inset-right));
+}
+
+.zoomControls {
+  position: fixed;
+  top: calc(18px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 7;
+  display: grid;
+  grid-template-columns: 46px minmax(72px, auto) 46px;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+.zoomControls button {
+  height: 46px;
+  border-radius: 14px;
+}
+
+.zoomControls .zoomValue {
+  padding: 0 12px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  letter-spacing: 0.02em;
 }
 
 .bottomBar {
@@ -153,7 +192,7 @@
   gap: 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  background: rgba(20, 29, 23, 0.82);
+  background: rgba(20, 29, 23, 0.84);
   color: rgba(255, 255, 255, 0.9);
   padding: 8px 16px;
   transform: translateX(50%);
@@ -192,10 +231,10 @@
   .overlay {
     padding:
       calc(72px + env(safe-area-inset-top))
-      calc(10px + env(safe-area-inset-right))
-      calc(88px + env(safe-area-inset-bottom))
-      calc(10px + env(safe-area-inset-left));
-    background: rgba(5, 8, 6, 0.99);
+      calc(8px + env(safe-area-inset-right))
+      calc(96px + env(safe-area-inset-bottom))
+      calc(8px + env(safe-area-inset-left));
+    background: rgba(5, 8, 6, 0.995);
   }
 
   .stage {
@@ -206,7 +245,8 @@
   .image {
     max-width: 100%;
     max-height: 100%;
-    border-radius: 9px;
+    border-radius: 8px;
+    transition: none;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.52);
   }
 
@@ -216,7 +256,19 @@
     width: 50px;
     height: 50px;
     border-color: rgba(255, 255, 255, 0.28);
-    background: rgba(30, 42, 33, 0.96);
+    background: rgba(30, 42, 33, 0.97);
+  }
+
+  .zoomControls {
+    top: auto;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    grid-template-columns: 46px minmax(68px, auto) 46px;
+    gap: 5px;
+  }
+
+  .zoomControls button {
+    height: 46px;
+    border-radius: 13px;
   }
 
   .arrowButton {
@@ -232,18 +284,22 @@
   }
 
   .previousButton {
-    left: calc(12px + env(safe-area-inset-left));
+    left: calc(10px + env(safe-area-inset-left));
   }
 
   .nextButton {
-    right: calc(12px + env(safe-area-inset-right));
+    right: calc(10px + env(safe-area-inset-right));
   }
 
   .bottomBar {
-    bottom: calc(17px + env(safe-area-inset-bottom));
-    min-height: 42px;
-    max-width: calc(100vw - 148px);
-    padding: 7px 14px;
+    top: calc(14px + env(safe-area-inset-top));
+    right: auto;
+    bottom: auto;
+    left: calc(12px + env(safe-area-inset-left));
+    min-height: 40px;
+    max-width: calc(100vw - 150px);
+    padding: 7px 13px;
+    transform: none;
   }
 
   .caption {
@@ -254,9 +310,9 @@
 @media (max-height: 520px) and (orientation: landscape) {
   .overlay {
     padding:
-      calc(12px + env(safe-area-inset-top))
+      calc(10px + env(safe-area-inset-top))
       calc(72px + env(safe-area-inset-right))
-      calc(12px + env(safe-area-inset-bottom))
+      calc(10px + env(safe-area-inset-bottom))
       calc(72px + env(safe-area-inset-left));
   }
 
@@ -265,6 +321,15 @@
     right: calc(8px + env(safe-area-inset-right));
     width: 44px;
     height: 44px;
+  }
+
+  .zoomControls {
+    top: calc(8px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+
+  .zoomControls button {
+    height: 40px;
   }
 
   .arrowButton {
@@ -280,15 +345,21 @@
   }
 
   .bottomBar {
+    top: auto;
+    right: 50%;
     bottom: calc(8px + env(safe-area-inset-bottom));
+    left: auto;
     min-height: 34px;
     padding: 4px 12px;
+    transform: translateX(50%);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .image,
   .closeButton,
-  .arrowButton {
+  .arrowButton,
+  .zoomControls button {
     transition: none;
   }
 }

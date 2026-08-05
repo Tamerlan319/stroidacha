@@ -3,6 +3,7 @@
 import {
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
   useCallback,
   useEffect,
   useRef,
@@ -25,15 +26,47 @@ type ImageLightboxProps = {
   className?: string;
 };
 
-type PointerStart = {
+type Point = {
   x: number;
   y: number;
+};
+
+type PointerStart = Point & {
   time: number;
 };
+
+type PinchStart = {
+  distance: number;
+  center: Point;
+  scale: number;
+  offset: Point;
+};
+
+const MIN_SCALE = 1;
+const MAX_SCALE = 5;
+const ZOOM_STEP = 0.5;
+const DOUBLE_TAP_SCALE = 2.5;
 
 const HORIZONTAL_SWIPE_DISTANCE = 48;
 const VERTICAL_CLOSE_DISTANCE = 90;
 const SWIPE_MAX_DURATION = 700;
+const TAP_MAX_DISTANCE = 12;
+const DOUBLE_TAP_DELAY = 320;
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+function getDistance(first: Point, second: Point) {
+  return Math.hypot(second.x - first.x, second.y - first.y);
+}
+
+function getCenter(first: Point, second: Point): Point {
+  return {
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2,
+  };
+}
 
 export default function ImageLightbox({
   images,
@@ -41,16 +74,122 @@ export default function ImageLightbox({
   className = "",
 }: ImageLightboxProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [scale, setScale] = useState(MIN_SCALE);
+  const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
 
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  const scaleRef = useRef(scale);
+  const offsetRef = useRef(offset);
+  const pointersRef = useRef<Map<number, Point>>(new Map());
   const pointerStartRef = useRef<PointerStart | null>(null);
+  const panLastPointRef = useRef<Point | null>(null);
+  const pinchStartRef = useRef<PinchStart | null>(null);
   const ignoreNextOverlayClickRef = useRef(false);
+  const lastTapRef = useRef<PointerStart | null>(null);
 
   const activeImage =
     activeIndex !== null && images[activeIndex] ? images[activeIndex] : null;
 
   const previewImages = images.slice(0, previewLimit);
   const hiddenCount = Math.max(images.length - previewImages.length, 0);
+
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+
+  useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
+
+  const getClampedOffset = useCallback(
+    (nextOffset: Point, nextScale = scaleRef.current): Point => {
+      const stage = stageRef.current;
+      const image = imageRef.current;
+
+      if (!stage || !image || nextScale <= MIN_SCALE) {
+        return { x: 0, y: 0 };
+      }
+
+      const displayedWidth = image.offsetWidth;
+      const displayedHeight = image.offsetHeight;
+      const stageWidth = stage.clientWidth;
+      const stageHeight = stage.clientHeight;
+
+      const maximumX = Math.max(
+        0,
+        (displayedWidth * nextScale - stageWidth) / 2,
+      );
+      const maximumY = Math.max(
+        0,
+        (displayedHeight * nextScale - stageHeight) / 2,
+      );
+
+      return {
+        x: clamp(nextOffset.x, -maximumX, maximumX),
+        y: clamp(nextOffset.y, -maximumY, maximumY),
+      };
+    },
+    [],
+  );
+
+  const applyZoom = useCallback(
+    (nextScale: number, focalPoint?: Point) => {
+      const clampedScale = clamp(nextScale, MIN_SCALE, MAX_SCALE);
+      const currentScale = scaleRef.current;
+      const currentOffset = offsetRef.current;
+
+      if (clampedScale === MIN_SCALE) {
+        scaleRef.current = MIN_SCALE;
+        offsetRef.current = { x: 0, y: 0 };
+        setScale(MIN_SCALE);
+        setOffset({ x: 0, y: 0 });
+        return;
+      }
+
+      let nextOffset = currentOffset;
+
+      if (focalPoint && stageRef.current && currentScale > 0) {
+        const stageBounds = stageRef.current.getBoundingClientRect();
+        const pointFromCenter = {
+          x:
+            focalPoint.x -
+            (stageBounds.left + stageBounds.width / 2) -
+            currentOffset.x,
+          y:
+            focalPoint.y -
+            (stageBounds.top + stageBounds.height / 2) -
+            currentOffset.y,
+        };
+
+        const zoomRatio = clampedScale / currentScale;
+
+        nextOffset = {
+          x:
+            currentOffset.x -
+            pointFromCenter.x * (zoomRatio - 1),
+          y:
+            currentOffset.y -
+            pointFromCenter.y * (zoomRatio - 1),
+        };
+      }
+
+      const clampedOffset = getClampedOffset(nextOffset, clampedScale);
+
+      scaleRef.current = clampedScale;
+      offsetRef.current = clampedOffset;
+      setScale(clampedScale);
+      setOffset(clampedOffset);
+    },
+    [getClampedOffset],
+  );
+
+  const resetZoom = useCallback(() => {
+    applyZoom(MIN_SCALE);
+  }, [applyZoom]);
 
   const openImage = useCallback((index: number) => {
     setActiveIndex(index);
@@ -79,6 +218,15 @@ export default function ImageLightbox({
       return (currentIndex + 1) % images.length;
     });
   }, [images.length]);
+
+  useEffect(() => {
+    resetZoom();
+    pointersRef.current.clear();
+    pointerStartRef.current = null;
+    panLastPointRef.current = null;
+    pinchStartRef.current = null;
+    lastTapRef.current = null;
+  }, [activeIndex, resetZoom]);
 
   useEffect(() => {
     if (activeIndex === null) {
@@ -137,15 +285,39 @@ export default function ImageLightbox({
         return;
       }
 
-      if (event.key === "ArrowLeft") {
+      if (
+        event.key === "ArrowLeft" &&
+        scaleRef.current === MIN_SCALE
+      ) {
         event.preventDefault();
         showPrevious();
         return;
       }
 
-      if (event.key === "ArrowRight") {
+      if (
+        event.key === "ArrowRight" &&
+        scaleRef.current === MIN_SCALE
+      ) {
         event.preventDefault();
         showNext();
+        return;
+      }
+
+      if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        applyZoom(scaleRef.current + ZOOM_STEP);
+        return;
+      }
+
+      if (event.key === "-") {
+        event.preventDefault();
+        applyZoom(scaleRef.current - ZOOM_STEP);
+        return;
+      }
+
+      if (event.key === "0") {
+        event.preventDefault();
+        resetZoom();
       }
     }
 
@@ -183,7 +355,14 @@ export default function ImageLightbox({
 
       previouslyFocusedElement?.focus({ preventScroll: true });
     };
-  }, [activeIndex, closeImage, showNext, showPrevious]);
+  }, [
+    activeIndex,
+    applyZoom,
+    closeImage,
+    resetZoom,
+    showNext,
+    showPrevious,
+  ]);
 
   useEffect(() => {
     if (
@@ -208,6 +387,24 @@ export default function ImageLightbox({
     });
   }, [activeIndex, images]);
 
+  useEffect(() => {
+    function clampAfterResize() {
+      const clampedOffset = getClampedOffset(
+        offsetRef.current,
+        scaleRef.current,
+      );
+
+      offsetRef.current = clampedOffset;
+      setOffset(clampedOffset);
+    }
+
+    window.addEventListener("resize", clampAfterResize);
+
+    return () => {
+      window.removeEventListener("resize", clampAfterResize);
+    };
+  }, [getClampedOffset]);
+
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     const target = event.target;
 
@@ -215,32 +412,241 @@ export default function ImageLightbox({
       target instanceof Element &&
       target.closest("button, a")
     ) {
+      return;
+    }
+
+    const point = {
+      x: event.clientX,
+      y: event.clientY,
+    };
+
+    pointersRef.current.set(event.pointerId, point);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+
+    if (pointersRef.current.size === 1) {
+      pointerStartRef.current = {
+        ...point,
+        time: Date.now(),
+      };
+      panLastPointRef.current = point;
+      pinchStartRef.current = null;
+      return;
+    }
+
+    if (pointersRef.current.size === 2) {
+      const [firstPoint, secondPoint] = Array.from(
+        pointersRef.current.values(),
+      );
+
+      pinchStartRef.current = {
+        distance: getDistance(firstPoint, secondPoint),
+        center: getCenter(firstPoint, secondPoint),
+        scale: scaleRef.current,
+        offset: offsetRef.current,
+      };
+
+      pointerStartRef.current = null;
+      panLastPointRef.current = null;
+      ignoreNextOverlayClickRef.current = true;
+    }
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!pointersRef.current.has(event.pointerId)) {
+      return;
+    }
+
+    const point = {
+      x: event.clientX,
+      y: event.clientY,
+    };
+
+    pointersRef.current.set(event.pointerId, point);
+
+    if (
+      pointersRef.current.size === 2 &&
+      pinchStartRef.current
+    ) {
+      const [firstPoint, secondPoint] = Array.from(
+        pointersRef.current.values(),
+      );
+
+      const currentDistance = getDistance(firstPoint, secondPoint);
+      const currentCenter = getCenter(firstPoint, secondPoint);
+      const pinchStart = pinchStartRef.current;
+
+      if (pinchStart.distance <= 0) {
+        return;
+      }
+
+      const nextScale = clamp(
+        pinchStart.scale *
+          (currentDistance / pinchStart.distance),
+        MIN_SCALE,
+        MAX_SCALE,
+      );
+
+      const stageBounds =
+        stageRef.current?.getBoundingClientRect();
+
+      let nextOffset = {
+        x:
+          pinchStart.offset.x +
+          (currentCenter.x - pinchStart.center.x),
+        y:
+          pinchStart.offset.y +
+          (currentCenter.y - pinchStart.center.y),
+      };
+
+      if (stageBounds && pinchStart.scale > 0) {
+        const pointFromCenter = {
+          x:
+            pinchStart.center.x -
+            (stageBounds.left + stageBounds.width / 2) -
+            pinchStart.offset.x,
+          y:
+            pinchStart.center.y -
+            (stageBounds.top + stageBounds.height / 2) -
+            pinchStart.offset.y,
+        };
+
+        const zoomRatio = nextScale / pinchStart.scale;
+
+        nextOffset = {
+          x:
+            nextOffset.x -
+            pointFromCenter.x * (zoomRatio - 1),
+          y:
+            nextOffset.y -
+            pointFromCenter.y * (zoomRatio - 1),
+        };
+      }
+
+      const clampedOffset = getClampedOffset(
+        nextOffset,
+        nextScale,
+      );
+
+      scaleRef.current = nextScale;
+      offsetRef.current = clampedOffset;
+      setScale(nextScale);
+      setOffset(clampedOffset);
+      return;
+    }
+
+    if (
+      pointersRef.current.size === 1 &&
+      scaleRef.current > MIN_SCALE &&
+      panLastPointRef.current
+    ) {
+      const delta = {
+        x: point.x - panLastPointRef.current.x,
+        y: point.y - panLastPointRef.current.y,
+      };
+
+      const nextOffset = getClampedOffset({
+        x: offsetRef.current.x + delta.x,
+        y: offsetRef.current.y + delta.y,
+      });
+
+      panLastPointRef.current = point;
+      offsetRef.current = nextOffset;
+      setOffset(nextOffset);
+      ignoreNextOverlayClickRef.current = true;
+    }
+  }
+
+  function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    const releasedPoint = pointersRef.current.get(event.pointerId);
+    const pointerStart = pointerStartRef.current;
+
+    pointersRef.current.delete(event.pointerId);
+
+    if (pointersRef.current.size === 1) {
+      const [remainingPoint] = Array.from(
+        pointersRef.current.values(),
+      );
+
+      panLastPointRef.current = remainingPoint;
+      pointerStartRef.current = {
+        ...remainingPoint,
+        time: Date.now(),
+      };
+      pinchStartRef.current = null;
+      return;
+    }
+
+    panLastPointRef.current = null;
+    pinchStartRef.current = null;
+
+    if (!pointerStart || !releasedPoint) {
       pointerStartRef.current = null;
       return;
     }
 
-    pointerStartRef.current = {
-      x: event.clientX,
-      y: event.clientY,
-      time: Date.now(),
-    };
-
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  }
-
-  function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
-    const pointerStart = pointerStartRef.current;
     pointerStartRef.current = null;
 
-    if (!pointerStart) {
-      return;
-    }
-
-    const deltaX = event.clientX - pointerStart.x;
-    const deltaY = event.clientY - pointerStart.y;
+    const deltaX = releasedPoint.x - pointerStart.x;
+    const deltaY = releasedPoint.y - pointerStart.y;
     const absoluteX = Math.abs(deltaX);
     const absoluteY = Math.abs(deltaY);
     const duration = Date.now() - pointerStart.time;
+    const movedDistance = Math.hypot(deltaX, deltaY);
+
+    if (scaleRef.current > MIN_SCALE) {
+      if (
+        movedDistance <= TAP_MAX_DISTANCE &&
+        duration <= 260
+      ) {
+        const lastTap = lastTapRef.current;
+        const isDoubleTap =
+          lastTap !== null &&
+          Date.now() - lastTap.time <= DOUBLE_TAP_DELAY &&
+          Math.hypot(
+            releasedPoint.x - lastTap.x,
+            releasedPoint.y - lastTap.y,
+          ) <= 36;
+
+        if (isDoubleTap) {
+          applyZoom(MIN_SCALE);
+          lastTapRef.current = null;
+          ignoreNextOverlayClickRef.current = true;
+        } else {
+          lastTapRef.current = {
+            ...releasedPoint,
+            time: Date.now(),
+          };
+        }
+      }
+
+      return;
+    }
+
+    if (
+      movedDistance <= TAP_MAX_DISTANCE &&
+      duration <= 260
+    ) {
+      const lastTap = lastTapRef.current;
+      const isDoubleTap =
+        lastTap !== null &&
+        Date.now() - lastTap.time <= DOUBLE_TAP_DELAY &&
+        Math.hypot(
+          releasedPoint.x - lastTap.x,
+          releasedPoint.y - lastTap.y,
+        ) <= 36;
+
+      if (isDoubleTap) {
+        applyZoom(DOUBLE_TAP_SCALE, releasedPoint);
+        lastTapRef.current = null;
+        ignoreNextOverlayClickRef.current = true;
+        return;
+      }
+
+      lastTapRef.current = {
+        ...releasedPoint,
+        time: Date.now(),
+      };
+    }
 
     if (
       duration <= SWIPE_MAX_DURATION &&
@@ -268,13 +674,16 @@ export default function ImageLightbox({
       return;
     }
 
-    if (absoluteX > 10 || absoluteY > 10) {
+    if (movedDistance > TAP_MAX_DISTANCE) {
       ignoreNextOverlayClickRef.current = true;
     }
   }
 
-  function handlePointerCancel() {
+  function handlePointerCancel(event: ReactPointerEvent<HTMLDivElement>) {
+    pointersRef.current.delete(event.pointerId);
     pointerStartRef.current = null;
+    panLastPointRef.current = null;
+    pinchStartRef.current = null;
   }
 
   function handleOverlayClick(event: MouseEvent<HTMLDivElement>) {
@@ -290,6 +699,17 @@ export default function ImageLightbox({
     closeImage();
   }
 
+  function handleWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    event.preventDefault();
+
+    const zoomDelta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+
+    applyZoom(scaleRef.current + zoomDelta, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
   if (images.length === 0) {
     return null;
   }
@@ -297,14 +717,17 @@ export default function ImageLightbox({
   const lightbox =
     activeImage && typeof document !== "undefined" ? (
       <div
+        ref={overlayRef}
         className={styles.overlay}
         role="dialog"
         aria-modal="true"
         aria-labelledby="project-lightbox-title"
         onClick={handleOverlayClick}
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
+        onWheel={handleWheel}
       >
         <h2 id="project-lightbox-title" className={styles.srOnly}>
           Просмотр фотографий проекта
@@ -325,18 +748,35 @@ export default function ImageLightbox({
           </svg>
         </button>
 
-        <div className={styles.stage}>
+        <div ref={stageRef} className={styles.stage}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
+            ref={imageRef}
             className={styles.image}
             src={activeImage.src}
             alt={activeImage.alt}
             draggable={false}
+            style={{
+              transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
+              cursor: scale > MIN_SCALE ? "grab" : "zoom-in",
+            }}
             onClick={(event) => event.stopPropagation()}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+
+              if (scaleRef.current > MIN_SCALE) {
+                resetZoom();
+              } else {
+                applyZoom(DOUBLE_TAP_SCALE, {
+                  x: event.clientX,
+                  y: event.clientY,
+                });
+              }
+            }}
           />
         </div>
 
-        {images.length > 1 && (
+        {images.length > 1 && scale === MIN_SCALE && (
           <>
             <button
               className={`${styles.arrowButton} ${styles.previousButton}`}
@@ -367,6 +807,43 @@ export default function ImageLightbox({
             </button>
           </>
         )}
+
+        <div
+          className={styles.zoomControls}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            aria-label="Уменьшить фотографию"
+            disabled={scale <= MIN_SCALE}
+            onClick={() => applyZoom(scaleRef.current - ZOOM_STEP)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 12h12" />
+            </svg>
+          </button>
+
+          <button
+            className={styles.zoomValue}
+            type="button"
+            aria-label="Вернуть исходный размер фотографии"
+            disabled={scale <= MIN_SCALE}
+            onClick={resetZoom}
+          >
+            {Math.round(scale * 100)}%
+          </button>
+
+          <button
+            type="button"
+            aria-label="Увеличить фотографию"
+            disabled={scale >= MAX_SCALE}
+            onClick={() => applyZoom(scaleRef.current + ZOOM_STEP)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 6v12M6 12h12" />
+            </svg>
+          </button>
+        </div>
 
         <div
           className={styles.bottomBar}
