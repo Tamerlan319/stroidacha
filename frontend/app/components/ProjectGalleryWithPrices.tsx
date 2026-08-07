@@ -135,25 +135,31 @@ export default function ProjectGalleryWithPrices({
   const hasGallery = images.length > 0;
   const hasPrices = priceGroups.length > 0;
 
+  const resetLightboxZoom = useCallback(() => {
+    setZoomLevel(1);
+    setNaturalImageSize({ width: 0, height: 0 });
+  }, []);
+
   const showPrevious = useCallback(() => {
     if (images.length < 2) return;
+    resetLightboxZoom();
     setSelectedIndex((current) =>
       (current - 1 + images.length) % images.length,
     );
-  }, [images.length]);
+  }, [images.length, resetLightboxZoom]);
 
   const showNext = useCallback(() => {
     if (images.length < 2) return;
+    resetLightboxZoom();
     setSelectedIndex((current) => (current + 1) % images.length);
-  }, [images.length]);
+  }, [images.length, resetLightboxZoom]);
 
   const openLightbox = useCallback(() => {
     if (!activeImage) return;
     previouslyFocusedElement.current = document.activeElement as HTMLElement;
-    setZoomLevel(1);
-    setNaturalImageSize({ width: 0, height: 0 });
+    resetLightboxZoom();
     setLightboxOpen(true);
-  }, [activeImage]);
+  }, [activeImage, resetLightboxZoom]);
 
   const closeLightbox = useCallback(() => {
     setLightboxOpen(false);
@@ -200,13 +206,6 @@ export default function ProjectGalleryWithPrices({
       inline: "center",
     });
   }, [safeIndex]);
-
-  useEffect(() => {
-    if (!lightboxOpen) return;
-
-    setZoomLevel(1);
-    setNaturalImageSize({ width: 0, height: 0 });
-  }, [lightboxOpen, safeIndex]);
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -292,6 +291,9 @@ export default function ProjectGalleryWithPrices({
   }, [closeLightbox, lightboxOpen, showNext, showPrevious]);
 
   function selectImage(index: number) {
+    if (lightboxOpen) {
+      resetLightboxZoom();
+    }
     setSelectedIndex(index);
   }
 
