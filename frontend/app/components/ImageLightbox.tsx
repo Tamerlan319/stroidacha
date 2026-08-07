@@ -46,7 +46,6 @@ const MIN_SCALE = 1;
 const MAX_SCALE = 5;
 const ZOOM_STEP = 0.5;
 const DOUBLE_TAP_SCALE = 2.5;
-
 const HORIZONTAL_SWIPE_DISTANCE = 48;
 const VERTICAL_CLOSE_DISTANCE = 90;
 const SWIPE_MAX_DURATION = 700;
@@ -77,11 +76,9 @@ export default function ImageLightbox({
   const [scale, setScale] = useState(MIN_SCALE);
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
 
-  const overlayRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-
   const scaleRef = useRef(scale);
   const offsetRef = useRef(offset);
   const pointersRef = useRef<Map<number, Point>>(new Map());
@@ -93,7 +90,6 @@ export default function ImageLightbox({
 
   const activeImage =
     activeIndex !== null && images[activeIndex] ? images[activeIndex] : null;
-
   const previewImages = images.slice(0, previewLimit);
   const hiddenCount = Math.max(images.length - previewImages.length, 0);
 
@@ -143,10 +139,11 @@ export default function ImageLightbox({
       const currentOffset = offsetRef.current;
 
       if (clampedScale === MIN_SCALE) {
+        const zeroOffset = { x: 0, y: 0 };
         scaleRef.current = MIN_SCALE;
-        offsetRef.current = { x: 0, y: 0 };
+        offsetRef.current = zeroOffset;
         setScale(MIN_SCALE);
-        setOffset({ x: 0, y: 0 });
+        setOffset(zeroOffset);
         return;
       }
 
@@ -164,21 +161,15 @@ export default function ImageLightbox({
             (stageBounds.top + stageBounds.height / 2) -
             currentOffset.y,
         };
-
         const zoomRatio = clampedScale / currentScale;
 
         nextOffset = {
-          x:
-            currentOffset.x -
-            pointFromCenter.x * (zoomRatio - 1),
-          y:
-            currentOffset.y -
-            pointFromCenter.y * (zoomRatio - 1),
+          x: currentOffset.x - pointFromCenter.x * (zoomRatio - 1),
+          y: currentOffset.y - pointFromCenter.y * (zoomRatio - 1),
         };
       }
 
       const clampedOffset = getClampedOffset(nextOffset, clampedScale);
-
       scaleRef.current = clampedScale;
       offsetRef.current = clampedOffset;
       setScale(clampedScale);
@@ -191,47 +182,56 @@ export default function ImageLightbox({
     applyZoom(MIN_SCALE);
   }, [applyZoom]);
 
-  const openImage = useCallback((index: number) => {
-    setActiveIndex(index);
+  const resetInteractionState = useCallback(() => {
+    const zeroOffset = { x: 0, y: 0 };
+
+    scaleRef.current = MIN_SCALE;
+    offsetRef.current = zeroOffset;
+    setScale(MIN_SCALE);
+    setOffset(zeroOffset);
+
+    pointersRef.current.clear();
+    pointerStartRef.current = null;
+    panLastPointRef.current = null;
+    pinchStartRef.current = null;
+    lastTapRef.current = null;
+    ignoreNextOverlayClickRef.current = false;
   }, []);
+
+  const openImage = useCallback(
+    (index: number) => {
+      resetInteractionState();
+      setActiveIndex(index);
+    },
+    [resetInteractionState],
+  );
 
   const closeImage = useCallback(() => {
     setActiveIndex(null);
   }, []);
 
   const showPrevious = useCallback(() => {
-    setActiveIndex((currentIndex) => {
-      if (currentIndex === null || images.length === 0) {
-        return null;
-      }
+    if (images.length < 2) return;
 
+    resetInteractionState();
+    setActiveIndex((currentIndex) => {
+      if (currentIndex === null) return null;
       return (currentIndex - 1 + images.length) % images.length;
     });
-  }, [images.length]);
+  }, [images.length, resetInteractionState]);
 
   const showNext = useCallback(() => {
-    setActiveIndex((currentIndex) => {
-      if (currentIndex === null || images.length === 0) {
-        return null;
-      }
+    if (images.length < 2) return;
 
+    resetInteractionState();
+    setActiveIndex((currentIndex) => {
+      if (currentIndex === null) return null;
       return (currentIndex + 1) % images.length;
     });
-  }, [images.length]);
+  }, [images.length, resetInteractionState]);
 
   useEffect(() => {
-    resetZoom();
-    pointersRef.current.clear();
-    pointerStartRef.current = null;
-    panLastPointRef.current = null;
-    pinchStartRef.current = null;
-    lastTapRef.current = null;
-  }, [activeIndex, resetZoom]);
-
-  useEffect(() => {
-    if (activeIndex === null) {
-      return;
-    }
+    if (activeIndex === null) return;
 
     const body = document.body;
     const html = document.documentElement;
@@ -253,7 +253,6 @@ export default function ImageLightbox({
       touchAction: body.style.touchAction,
       overscrollBehavior: body.style.overscrollBehavior,
     };
-
     const previousHtmlStyles = {
       overflow: html.style.overflow,
       height: html.style.height,
@@ -285,19 +284,13 @@ export default function ImageLightbox({
         return;
       }
 
-      if (
-        event.key === "ArrowLeft" &&
-        scaleRef.current === MIN_SCALE
-      ) {
+      if (event.key === "ArrowLeft" && scaleRef.current === MIN_SCALE) {
         event.preventDefault();
         showPrevious();
         return;
       }
 
-      if (
-        event.key === "ArrowRight" &&
-        scaleRef.current === MIN_SCALE
-      ) {
+      if (event.key === "ArrowRight" && scaleRef.current === MIN_SCALE) {
         event.preventDefault();
         showNext();
         return;
@@ -322,7 +315,6 @@ export default function ImageLightbox({
     }
 
     document.addEventListener("keydown", handleKeyDown);
-
     const focusFrame = window.requestAnimationFrame(() => {
       closeButtonRef.current?.focus({ preventScroll: true });
     });
@@ -340,19 +332,15 @@ export default function ImageLightbox({
       body.style.height = previousBodyStyles.height;
       body.style.overflow = previousBodyStyles.overflow;
       body.style.touchAction = previousBodyStyles.touchAction;
-      body.style.overscrollBehavior =
-        previousBodyStyles.overscrollBehavior;
+      body.style.overscrollBehavior = previousBodyStyles.overscrollBehavior;
 
       html.style.overflow = previousHtmlStyles.overflow;
       html.style.height = previousHtmlStyles.height;
       html.style.touchAction = previousHtmlStyles.touchAction;
-      html.style.overscrollBehavior =
-        previousHtmlStyles.overscrollBehavior;
-
+      html.style.overscrollBehavior = previousHtmlStyles.overscrollBehavior;
       html.style.scrollBehavior = "auto";
       window.scrollTo(0, scrollY);
       html.style.scrollBehavior = previousHtmlStyles.scrollBehavior;
-
       previouslyFocusedElement?.focus({ preventScroll: true });
     };
   }, [
@@ -373,15 +361,11 @@ export default function ImageLightbox({
       return;
     }
 
-    const previousIndex =
-      (activeIndex - 1 + images.length) % images.length;
+    const previousIndex = (activeIndex - 1 + images.length) % images.length;
     const nextIndex = (activeIndex + 1) % images.length;
 
     [images[previousIndex], images[nextIndex]].forEach((image) => {
-      if (!image) {
-        return;
-      }
-
+      if (!image) return;
       const preloadedImage = new window.Image();
       preloadedImage.src = image.src;
     });
@@ -393,41 +377,27 @@ export default function ImageLightbox({
         offsetRef.current,
         scaleRef.current,
       );
-
       offsetRef.current = clampedOffset;
       setOffset(clampedOffset);
     }
 
     window.addEventListener("resize", clampAfterResize);
-
-    return () => {
-      window.removeEventListener("resize", clampAfterResize);
-    };
+    return () => window.removeEventListener("resize", clampAfterResize);
   }, [getClampedOffset]);
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     const target = event.target;
 
-    if (
-      target instanceof Element &&
-      target.closest("button, a")
-    ) {
+    if (target instanceof Element && target.closest("button, a")) {
       return;
     }
 
-    const point = {
-      x: event.clientX,
-      y: event.clientY,
-    };
-
+    const point = { x: event.clientX, y: event.clientY };
     pointersRef.current.set(event.pointerId, point);
     event.currentTarget.setPointerCapture?.(event.pointerId);
 
     if (pointersRef.current.size === 1) {
-      pointerStartRef.current = {
-        ...point,
-        time: Date.now(),
-      };
+      pointerStartRef.current = { ...point, time: Date.now() };
       panLastPointRef.current = point;
       pinchStartRef.current = null;
       return;
@@ -444,7 +414,6 @@ export default function ImageLightbox({
         scale: scaleRef.current,
         offset: offsetRef.current,
       };
-
       pointerStartRef.current = null;
       panLastPointRef.current = null;
       ignoreNextOverlayClickRef.current = true;
@@ -452,50 +421,30 @@ export default function ImageLightbox({
   }
 
   function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!pointersRef.current.has(event.pointerId)) {
-      return;
-    }
+    if (!pointersRef.current.has(event.pointerId)) return;
 
-    const point = {
-      x: event.clientX,
-      y: event.clientY,
-    };
-
+    const point = { x: event.clientX, y: event.clientY };
     pointersRef.current.set(event.pointerId, point);
 
-    if (
-      pointersRef.current.size === 2 &&
-      pinchStartRef.current
-    ) {
+    if (pointersRef.current.size === 2 && pinchStartRef.current) {
       const [firstPoint, secondPoint] = Array.from(
         pointersRef.current.values(),
       );
-
       const currentDistance = getDistance(firstPoint, secondPoint);
       const currentCenter = getCenter(firstPoint, secondPoint);
       const pinchStart = pinchStartRef.current;
 
-      if (pinchStart.distance <= 0) {
-        return;
-      }
+      if (pinchStart.distance <= 0) return;
 
       const nextScale = clamp(
-        pinchStart.scale *
-          (currentDistance / pinchStart.distance),
+        pinchStart.scale * (currentDistance / pinchStart.distance),
         MIN_SCALE,
         MAX_SCALE,
       );
-
-      const stageBounds =
-        stageRef.current?.getBoundingClientRect();
-
+      const stageBounds = stageRef.current?.getBoundingClientRect();
       let nextOffset = {
-        x:
-          pinchStart.offset.x +
-          (currentCenter.x - pinchStart.center.x),
-        y:
-          pinchStart.offset.y +
-          (currentCenter.y - pinchStart.center.y),
+        x: pinchStart.offset.x + (currentCenter.x - pinchStart.center.x),
+        y: pinchStart.offset.y + (currentCenter.y - pinchStart.center.y),
       };
 
       if (stageBounds && pinchStart.scale > 0) {
@@ -509,24 +458,15 @@ export default function ImageLightbox({
             (stageBounds.top + stageBounds.height / 2) -
             pinchStart.offset.y,
         };
-
         const zoomRatio = nextScale / pinchStart.scale;
 
         nextOffset = {
-          x:
-            nextOffset.x -
-            pointFromCenter.x * (zoomRatio - 1),
-          y:
-            nextOffset.y -
-            pointFromCenter.y * (zoomRatio - 1),
+          x: nextOffset.x - pointFromCenter.x * (zoomRatio - 1),
+          y: nextOffset.y - pointFromCenter.y * (zoomRatio - 1),
         };
       }
 
-      const clampedOffset = getClampedOffset(
-        nextOffset,
-        nextScale,
-      );
-
+      const clampedOffset = getClampedOffset(nextOffset, nextScale);
       scaleRef.current = nextScale;
       offsetRef.current = clampedOffset;
       setScale(nextScale);
@@ -543,7 +483,6 @@ export default function ImageLightbox({
         x: point.x - panLastPointRef.current.x,
         y: point.y - panLastPointRef.current.y,
       };
-
       const nextOffset = getClampedOffset({
         x: offsetRef.current.x + delta.x,
         y: offsetRef.current.y + delta.y,
@@ -563,10 +502,7 @@ export default function ImageLightbox({
     pointersRef.current.delete(event.pointerId);
 
     if (pointersRef.current.size === 1) {
-      const [remainingPoint] = Array.from(
-        pointersRef.current.values(),
-      );
-
+      const [remainingPoint] = Array.from(pointersRef.current.values());
       panLastPointRef.current = remainingPoint;
       pointerStartRef.current = {
         ...remainingPoint,
@@ -593,39 +529,7 @@ export default function ImageLightbox({
     const duration = Date.now() - pointerStart.time;
     const movedDistance = Math.hypot(deltaX, deltaY);
 
-    if (scaleRef.current > MIN_SCALE) {
-      if (
-        movedDistance <= TAP_MAX_DISTANCE &&
-        duration <= 260
-      ) {
-        const lastTap = lastTapRef.current;
-        const isDoubleTap =
-          lastTap !== null &&
-          Date.now() - lastTap.time <= DOUBLE_TAP_DELAY &&
-          Math.hypot(
-            releasedPoint.x - lastTap.x,
-            releasedPoint.y - lastTap.y,
-          ) <= 36;
-
-        if (isDoubleTap) {
-          applyZoom(MIN_SCALE);
-          lastTapRef.current = null;
-          ignoreNextOverlayClickRef.current = true;
-        } else {
-          lastTapRef.current = {
-            ...releasedPoint,
-            time: Date.now(),
-          };
-        }
-      }
-
-      return;
-    }
-
-    if (
-      movedDistance <= TAP_MAX_DISTANCE &&
-      duration <= 260
-    ) {
+    if (movedDistance <= TAP_MAX_DISTANCE && duration <= 260) {
       const lastTap = lastTapRef.current;
       const isDoubleTap =
         lastTap !== null &&
@@ -636,17 +540,20 @@ export default function ImageLightbox({
         ) <= 36;
 
       if (isDoubleTap) {
-        applyZoom(DOUBLE_TAP_SCALE, releasedPoint);
+        if (scaleRef.current > MIN_SCALE) {
+          resetZoom();
+        } else {
+          applyZoom(DOUBLE_TAP_SCALE, releasedPoint);
+        }
         lastTapRef.current = null;
         ignoreNextOverlayClickRef.current = true;
         return;
       }
 
-      lastTapRef.current = {
-        ...releasedPoint,
-        time: Date.now(),
-      };
+      lastTapRef.current = { ...releasedPoint, time: Date.now() };
     }
+
+    if (scaleRef.current > MIN_SCALE) return;
 
     if (
       duration <= SWIPE_MAX_DURATION &&
@@ -654,13 +561,8 @@ export default function ImageLightbox({
       absoluteX > absoluteY * 1.15
     ) {
       ignoreNextOverlayClickRef.current = true;
-
-      if (deltaX < 0) {
-        showNext();
-      } else {
-        showPrevious();
-      }
-
+      if (deltaX < 0) showNext();
+      else showPrevious();
       return;
     }
 
@@ -692,16 +594,12 @@ export default function ImageLightbox({
       return;
     }
 
-    if (event.defaultPrevented) {
-      return;
-    }
-
+    if (event.defaultPrevented) return;
     closeImage();
   }
 
   function handleWheel(event: ReactWheelEvent<HTMLDivElement>) {
     event.preventDefault();
-
     const zoomDelta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
 
     applyZoom(scaleRef.current + zoomDelta, {
@@ -710,14 +608,11 @@ export default function ImageLightbox({
     });
   }
 
-  if (images.length === 0) {
-    return null;
-  }
+  if (images.length === 0) return null;
 
   const lightbox =
     activeImage && typeof document !== "undefined" ? (
       <div
-        ref={overlayRef}
         className={styles.overlay}
         role="dialog"
         aria-modal="true"
@@ -763,7 +658,6 @@ export default function ImageLightbox({
             onClick={(event) => event.stopPropagation()}
             onDoubleClick={(event) => {
               event.stopPropagation();
-
               if (scaleRef.current > MIN_SCALE) {
                 resetZoom();
               } else {
@@ -791,7 +685,6 @@ export default function ImageLightbox({
                 <path d="m15 5-7 7 7 7" />
               </svg>
             </button>
-
             <button
               className={`${styles.arrowButton} ${styles.nextButton}`}
               type="button"
@@ -822,7 +715,6 @@ export default function ImageLightbox({
               <path d="M6 12h12" />
             </svg>
           </button>
-
           <button
             className={styles.zoomValue}
             type="button"
@@ -832,7 +724,6 @@ export default function ImageLightbox({
           >
             {Math.round(scale * 100)}%
           </button>
-
           <button
             type="button"
             aria-label="Увеличить фотографию"
@@ -852,7 +743,6 @@ export default function ImageLightbox({
           {activeImage.caption && (
             <span className={styles.caption}>{activeImage.caption}</span>
           )}
-
           <span className={styles.counter}>
             {(activeIndex ?? 0) + 1} / {images.length}
           </span>
@@ -878,7 +768,6 @@ export default function ImageLightbox({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={image.src} alt={image.alt} />
-
               {image.caption && <span>{image.caption}</span>}
 
               {isLastPreview && (
