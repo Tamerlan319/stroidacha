@@ -93,8 +93,11 @@ export default function ProjectGalleryLightbox({
     ? Math.min(Math.max(activeIndex, 0), images.length - 1)
     : 0;
   const safeIndexRef = useRef(safeIndex);
-  safeIndexRef.current = safeIndex;
   const activeImage = images[safeIndex] ?? null;
+
+  useEffect(() => {
+    safeIndexRef.current = safeIndex;
+  }, [safeIndex]);
 
   useEffect(() => {
     scaleRef.current = scale;
