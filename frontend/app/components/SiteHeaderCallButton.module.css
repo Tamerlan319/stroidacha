@@ -9,6 +9,66 @@
   margin-left: 0;
 }
 
+/* Верхний ряд соцсетей: четыре app-style иконки как в референсе. */
+:global(.sdHeaderSocials) {
+  gap: 5px;
+}
+
+:global(.sdHeaderSocials) a {
+  width: 31px;
+  height: 31px;
+  min-height: 31px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 7px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 31px 31px;
+  padding: 0;
+  box-shadow: 0 2px 5px rgba(20, 31, 24, 0.14);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+:global(.sdHeaderSocials) a:hover {
+  border: 0;
+  background-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 9px rgba(20, 31, 24, 0.18);
+}
+
+:global(.sdHeaderSocials) a > * {
+  visibility: hidden;
+}
+
+/* Исходный порядок: VK, WhatsApp, Telegram, Viber, OK.
+   Viber временно используется только как визуальный слот MAX; переход отключён,
+   пока не задана ссылка на профиль MAX. */
+:global(.sdHeaderSocials) a:nth-child(1) {
+  order: 1;
+  background-image: url("/social/vk.svg");
+}
+
+:global(.sdHeaderSocials) a:nth-child(4) {
+  order: 2;
+  background-image: url("/social/max.svg");
+  pointer-events: none;
+}
+
+:global(.sdHeaderSocials) a:nth-child(2) {
+  order: 3;
+  background-image: url("/social/whatsapp.svg");
+}
+
+:global(.sdHeaderSocials) a:nth-child(3) {
+  order: 4;
+  background-image: url("/social/telegram.svg");
+}
+
+:global(.sdHeaderSocials) a:nth-child(5) {
+  display: none;
+}
+
 .callButton {
   display: inline-flex;
   min-height: 40px;
