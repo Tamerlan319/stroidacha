@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -33,66 +34,24 @@ const socialLinks = [
   {
     title: "ВКонтакте",
     href: process.env.NEXT_PUBLIC_VK_URL || "https://vk.com/",
-    icon: "vk",
+    iconSrc: "/social/vk.svg",
+  },
+  {
+    title: "MAX",
+    href: process.env.NEXT_PUBLIC_MAX_URL || "https://max.ru/",
+    iconSrc: "/social/max.svg",
   },
   {
     title: "WhatsApp",
     href: "https://api.whatsapp.com/send?phone=79676801812",
-    icon: "whatsapp",
+    iconSrc: "/social/whatsapp.svg",
   },
   {
     title: "Telegram",
     href: process.env.NEXT_PUBLIC_TELEGRAM_URL || "https://t.me/+79676801812",
-    icon: "telegram",
-  },
-  {
-    title: "Viber",
-    href: "viber://chat?number=79676801812",
-    icon: "viber",
-  },
-  {
-    title: "Одноклассники",
-    href: process.env.NEXT_PUBLIC_OK_URL || "https://ok.ru/",
-    icon: "ok",
+    iconSrc: "/social/telegram.svg",
   },
 ] as const;
-
-type SocialName = (typeof socialLinks)[number]["icon"];
-
-function SocialIcon({ name }: { name: SocialName }) {
-  if (name === "vk" || name === "ok") {
-    return (
-      <span className="sdSocialMonogram" aria-hidden="true">
-        {name === "vk" ? "VK" : "OK"}
-      </span>
-    );
-  }
-
-  if (name === "telegram") {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="m3.2 11.2 16.1-6.3c.8-.3 1.5.2 1.2 1.5l-2.7 12.7c-.2.9-.8 1.1-1.6.7l-4.1-3-2 1.9c-.2.2-.4.4-.8.4l.3-4.2 7.7-7c.3-.3-.1-.5-.5-.2L7.3 13.7l-4.1-1.3c-.9-.3-.9-.9 0-1.2Z" />
-      </svg>
-    );
-  }
-
-  if (name === "whatsapp") {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M12 3a8.2 8.2 0 0 0-7 12.4L4 20l4.7-1.2A8.2 8.2 0 1 0 12 3Z" />
-        <path d="M8.7 8.1c.2-.5.4-.5.7-.5h.5c.2 0 .3.1.4.4l.7 1.7c.1.3 0 .4-.1.6l-.5.7c-.2.2-.1.4 0 .6.6 1 1.5 1.8 2.5 2.3.2.1.4.1.6-.1l.8-1c.2-.2.4-.2.6-.1l1.7.8c.3.1.4.3.4.5 0 .2-.1 1.2-.7 1.7-.5.5-1.2.8-2 .8-1 0-2.5-.5-4.1-1.8-2-1.6-3.2-3.9-3.3-5.3 0-.7.2-1.1.5-1.5.3-.3.6-.5.8-.5Z" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M6.1 4.7c3.8-2 9.9-1.2 11.7.8 1.8 2.1 2 7 .6 9.4-.8 1.4-2.3 2.1-4 2.5l-2.4 2v-1.7c-2.6.1-5.1-.3-6.3-1.6-2.2-2.3-2.4-9.3.4-11.4Z" />
-      <path d="M8.3 7.5c.3-.3.7-.4 1-.1l1 1.4c.2.3.2.6 0 .8l-.5.6c.5 1 1.4 1.9 2.4 2.4l.7-.6c.2-.2.5-.2.8 0l1.3 1c.3.2.3.6.1.9-.5.8-1.2 1.2-2 1-2.7-.5-6-3.8-6.4-6.4-.1-.4.7-1 .6-1Z" />
-      <path d="M12.2 6.6c2.1.2 3.4 1.5 3.6 3.6M12.1 8.2c1.1.1 1.9.8 2 2" />
-    </svg>
-  );
-}
 
 function SocialLinks({ className = "" }: { className?: string }) {
   return (
@@ -106,10 +65,17 @@ function SocialLinks({ className = "" }: { className?: string }) {
           href={item.href}
           key={item.title}
           rel="noopener noreferrer"
-          target={item.href.startsWith("http") ? "_blank" : undefined}
+          target="_blank"
           title={item.title}
         >
-          <SocialIcon name={item.icon} />
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="sdSocialAppIcon"
+            height={31}
+            src={item.iconSrc}
+            width={31}
+          />
         </a>
       ))}
     </div>
