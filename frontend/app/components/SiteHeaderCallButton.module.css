@@ -9,6 +9,41 @@
   margin-left: 0;
 }
 
+/* Верхний ряд соцсетей: четыре app-style иконки как в референсе. */
+:global(.sdHeaderSocials) {
+  gap: 5px;
+}
+
+:global(.sdHeaderSocials) a {
+  display: block;
+  width: 31px;
+  height: 31px;
+  min-height: 31px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  padding: 0;
+  box-shadow: 0 2px 5px rgba(20, 31, 24, 0.14);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+:global(.sdHeaderSocials) a:hover {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 9px rgba(20, 31, 24, 0.18);
+}
+
+:global(.sdHeaderSocials .sdSocialAppIcon) {
+  display: block;
+  width: 31px;
+  height: 31px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
 .callButton {
   display: inline-flex;
   min-height: 40px;
