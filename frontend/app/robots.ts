@@ -10,6 +10,10 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         "/api/",
         "/admin/",
+        // Вложения заявок теперь хранятся вне /media/ (см. leads/storage.py)
+        // и отдаются только через авторизованный view — здесь на всякий
+        // случай, второй защитный слой, а не единственная защита.
+        "/media/leads/",
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
