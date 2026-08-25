@@ -24,9 +24,35 @@ mkdir -p "$BACKUP_DIR"
 if "${COMPOSE[@]}" ps --status running --services | grep -qx db; then
 	BACKUP_FILE="$BACKUP_DIR/postgres-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
 
-	"${COMPOSE[@]}" exec -T db \
-		sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' \
-		| gzip -9 > "$BACKUP_FILE"
+	# Дамп содержит все заявки (телефоны, переписку, IP) — по 152-ФЗ бэкап
+	# нужно защищать не хуже рабочей БД. Шифруем asymmetric-ключом GPG, если
+	# он настроен (см. DEPLOYMENT.md — "Резервные копии"), чтобы приватный
+	# ключ для расшифровки не приходилось хранить на этом же сервере.
+	if [[ -n "${BACKUP_GPG_RECIPIENT:-}" ]]; then
+		"${COMPOSE[@]}" exec -T db \
+			sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' \
+			| gzip -9 \
+			| gpg --batch --yes --trust-model always \
+				--encrypt --recipient "$BACKUP_GPG_RECIPIENT" \
+				--output "$BACKUP_FILE.gpg"
+		BACKUP_FILE="$BACKUP_FILE.gpg"
+	else
+		echo "WARNING: BACKUP_GPG_RECIPIENT is not set in backend/.env.prod — backup will be written UNENCRYPTED. See DEPLOYMENT.md > 'Резервные копии'." >&2
+		"${COMPOSE[@]}" exec -T db \
+			sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' \
+			| gzip -9 > "$BACKUP_FILE"
+	fi
+
+	# Копия за пределами этого сервера — без неё компрометация VPS означает
+	# потерю и рабочей БД, и всех свежих бэкапов разом. Настраивается через
+	# rclone (см. DEPLOYMENT.md); без настройки шаг просто пропускается.
+	if [[ -n "${BACKUP_REMOTE_RCLONE_TARGET:-}" ]]; then
+		if command -v rclone >/dev/null 2>&1; then
+			rclone copy "$BACKUP_FILE" "$BACKUP_REMOTE_RCLONE_TARGET"
+		else
+			echo "WARNING: BACKUP_REMOTE_RCLONE_TARGET is set but rclone is not installed on this host — off-site backup copy was skipped." >&2
+		fi
+	fi
 fi
 
 echo "Building application images..."
@@ -83,7 +109,7 @@ echo "HTTPS is ready: https://${PRIMARY_DOMAIN}"
 
 find "$BACKUP_DIR" \
 	-type f \
-	-name 'postgres-*.sql.gz' \
+	\( -name 'postgres-*.sql.gz' -o -name 'postgres-*.sql.gz.gpg' \) \
 	-mtime +14 \
 	-delete
 
