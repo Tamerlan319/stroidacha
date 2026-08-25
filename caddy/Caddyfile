@@ -17,14 +17,36 @@ brusodel.ru, www.brusodel.ru {
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 	}
 
+	# Статика Django (в основном админка) — имена файлов не хэшируются по
+	# содержимому, поэтому долгий immutable-кэш небезопасен: используем
+	# умеренный срок с обязательной ревалидацией.
 	handle_path /static/* {
 		root * /var/www/static
+		header Cache-Control "public, max-age=604800, must-revalidate"
 		file_server
 	}
 
+	# Медиатека Django (фото проектов, портфолио, SEO-страниц). При повторной
+	# загрузке файла с тем же именем Django сам генерирует новое имя, поэтому
+	# путь у уже опубликованного файла практически не переиспользуется —
+	# длинный кэш здесь безопасен и даёт основной выигрыш: карточка проекта
+	# может отдавать по 5-10 фотографий, и раньше все они уходили без единого
+	# заголовка Cache-Control.
 	handle_path /media/* {
 		root * /var/www/media
+		header Cache-Control "public, max-age=2592000"
 		file_server
+	}
+
+	# Статические файлы из frontend/public (баннеры, логотипы, иконки).
+	# В отличие от /media/*, эти файлы иногда переиздаются под тем же путём
+	# (см. историю правок home-hero.jpg) — поэтому не ставим сюда год с
+	# immutable, как для хэшированных чанков Next.js, а держим короткий кэш
+	# с быстрым фоновым обновлением.
+	@publicAssets path /images/* /brand/* /favicon.ico /apple-icon.png /icon.svg /file.svg
+	handle @publicAssets {
+		header Cache-Control "public, max-age=3600, stale-while-revalidate=86400"
+		reverse_proxy frontend:3000
 	}
 
 	handle /api/* {

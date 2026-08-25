@@ -181,6 +181,7 @@ class ProjectListSerializer(PricingSerializerMixin, AbsoluteImageUrlMixin, seria
             "main_image",
             "is_featured",
             "sort_order",
+            "updated_at",
         )
 
     def get_floor_label(self, obj):

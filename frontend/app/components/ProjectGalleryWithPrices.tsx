@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from "react";
 
 import ProjectGalleryLightbox from "./ProjectGalleryLightbox";
@@ -172,8 +173,14 @@ export default function ProjectGalleryWithPrices({
                     activeImage.caption || activeImage.alt
                   }» на весь экран`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={activeImage.src} alt={activeImage.alt} />
+                  <Image
+                    src={activeImage.src}
+                    alt={activeImage.alt}
+                    fill
+                    sizes="(max-width: 980px) 100vw, 60vw"
+                    style={{ objectFit: "contain" }}
+                    priority
+                  />
                   <span className={styles.zoomBadge}>
                     <ExpandIcon />
                     Увеличить
@@ -224,8 +231,13 @@ export default function ProjectGalleryWithPrices({
                         aria-label={`Показать: ${image.caption || image.alt}`}
                       >
                         <span className={styles.thumbnailImage}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={image.src} alt="" />
+                          <Image
+                            src={image.src}
+                            alt=""
+                            fill
+                            sizes="120px"
+                            style={{ objectFit: "cover" }}
+                          />
                         </span>
                       </button>
                     );

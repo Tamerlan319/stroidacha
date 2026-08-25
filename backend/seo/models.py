@@ -69,6 +69,29 @@ class LandingPage(models.Model):
         help_text="Проекты, которые нужно показать на странице",
     )
 
+    filter_width = models.DecimalField(
+        "Фильтр по ширине, м",
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=(
+            "Заполните вместе с «Фильтр по длине», чтобы каталог на странице "
+            "показывал только проекты этого размера (например, 6х6). "
+            "Если оставить пустым, каталог покажет все проекты выбранной "
+            "категории — это годится для страниц-хабов вроде «Дома из бруса», "
+            "но не для размерных страниц (иначе размерная страница дублирует хаб)."
+        ),
+    )
+    filter_length = models.DecimalField(
+        "Фильтр по длине, м",
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="См. подсказку у поля «Фильтр по ширине».",
+    )
+
     seo_title = models.CharField("SEO title", max_length=255, blank=True)
     seo_description = models.TextField("SEO description", blank=True)
 

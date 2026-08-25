@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -95,8 +96,13 @@ export default function HomePortfolioShowcase() {
 
       {photos.slice(0, 4).map((photo, index) => (
         <div className={`builtPhoto ${index === 0 ? "builtPhotoMain" : ""}`} key={photo}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo} alt={`${project.title}, фотография ${index + 1}`} />
+          <Image
+            src={photo}
+            alt={`${project.title}, фотография ${index + 1}`}
+            fill
+            sizes="(max-width: 780px) 50vw, 25vw"
+            style={{ objectFit: "cover" }}
+          />
         </div>
       ))}
     </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import JsonLd from "../../components/JsonLd";
@@ -629,8 +630,13 @@ export default async function ProjectPage({ params }: PageProps) {
                 <article className="projectPromotionCard" key={promotion.id}>
                   <div className="projectPromotionImage">
                     {promotion.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={promotion.image} alt={promotion.title} />
+                      <Image
+                        src={promotion.image}
+                        alt={promotion.title}
+                        fill
+                        sizes="(max-width: 780px) 100vw, 380px"
+                        style={{ objectFit: "cover" }}
+                      />
                     ) : (
                       <SiteIcon name="gift" />
                     )}
