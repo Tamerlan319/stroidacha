@@ -12,6 +12,9 @@ export const legalConfig = {
   email: "info@brusodel.ru",
   privacyEmail: "info@brusodel.ru",
   consentVersion: "2026-08-03",
+  // Держите в согласии с LEAD_RETENTION_MONTHS в backend/.env.prod — это
+  // просто текст политики, отдельного API для этого значения нет.
+  retentionMonths: 24,
   whatsappPhone: "79676801812",
   sites: ["https://brusodel.ru", "https://stroydacha.online"],
   useYandexMetrica: true,

@@ -46,6 +46,7 @@ class LandingPageListSerializer(serializers.ModelSerializer):
             "seo_title",
             "seo_description",
             "sort_order",
+            "updated_at",
         )
 
 
@@ -69,9 +70,12 @@ class LandingPageDetailSerializer(serializers.ModelSerializer):
             "related_projects",
             "faqs",
             "images",
+            "filter_width",
+            "filter_length",
             "seo_title",
             "seo_description",
             "sort_order",
+            "updated_at",
         )
 
     def get_related_projects(self, obj):

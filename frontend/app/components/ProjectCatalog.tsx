@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -58,6 +59,12 @@ type ProjectCatalogProps = {
   description?: string;
   moreHref?: string;
   moreLabel?: string;
+  // Жёсткое ограничение по размеру footprint (например, для страницы
+  // "Дома из бруса 6х6"). В отличие от Filters, это не пользовательский
+  // фильтр — оно задаётся страницей и всегда применяется поверх остальных
+  // условий, включая сброс фильтров и переключение сортировки/страниц.
+  filterWidth?: number;
+  filterLength?: number;
 };
 
 const constructionTypes = [
@@ -99,6 +106,7 @@ function buildProjectsUrl(
   page = 1,
   ordering: Ordering = "default",
   paginate = true,
+  lockedSize?: { width?: number; length?: number },
 ) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const params = new URLSearchParams();
@@ -108,6 +116,13 @@ function buildProjectsUrl(
       params.set(key, value);
     }
   });
+
+  if (lockedSize?.width) {
+    params.set("width", String(lockedSize.width));
+  }
+  if (lockedSize?.length) {
+    params.set("length", String(lockedSize.length));
+  }
 
   if (ordering !== "default") {
     params.set("ordering", ordering);
@@ -132,7 +147,14 @@ export default function ProjectCatalog({
   description = "Выберите готовый проект или отправьте свой — менеджер поможет рассчитать стоимость под нужную комплектацию.",
   moreHref,
   moreLabel = "Смотреть больше",
+  filterWidth,
+  filterLength,
 }: ProjectCatalogProps) {
+  const lockedSize =
+    filterWidth || filterLength
+      ? { width: filterWidth, length: filterLength }
+      : undefined;
+
   const initialFilters: Filters = {
     category: initialCategory,
     construction_type: "",
@@ -184,7 +206,13 @@ export default function ProjectCatalog({
 
     try {
       const response = await fetch(
-        buildProjectsUrl(nextFilters, nextPage, nextOrdering, usesPagination)
+        buildProjectsUrl(
+          nextFilters,
+          nextPage,
+          nextOrdering,
+          usesPagination,
+          lockedSize,
+        )
       );
 
       if (!response.ok) {
@@ -264,7 +292,8 @@ export default function ProjectCatalog({
               initialFilters,
               pageFromUrl,
               "default",
-              usesPagination
+              usesPagination,
+              lockedSize
             )
           ),
         ]);
@@ -478,8 +507,13 @@ export default function ProjectCatalog({
                 <article className="projectCard" key={project.id}>
                   <Link className="projectImage" href={`/projects/${project.slug}`}>
                     {project.main_image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={project.main_image} alt={project.title} />
+                      <Image
+                        src={project.main_image}
+                        alt={project.title}
+                        fill
+                        sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                        style={{ objectFit: "cover" }}
+                      />
                     ) : (
                       <div className="imagePlaceholder">Фото проекта</div>
                     )}

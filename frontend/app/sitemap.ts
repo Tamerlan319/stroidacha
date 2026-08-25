@@ -4,10 +4,12 @@ import { SITE_URL } from "./lib/site";
 
 type Project = {
   slug: string;
+  updated_at?: string;
 };
 
 type LandingPage = {
   slug: string;
+  updated_at?: string;
 };
 
 async function getProjects(): Promise<Project[]> {
@@ -46,6 +48,19 @@ async function getLandingPages(): Promise<LandingPage[]> {
   }
 }
 
+// Для карточек проектов и SEO-страниц бэкенд отдаёт настоящую дату
+// последнего изменения (updated_at). Для статических разделов (главная,
+// калькулятор и т.д.) у нас нет per-страничного трекинга правок, поэтому
+// lastModified для них намеренно не проставляется — Google и Яндекс
+// трактуют это поле как опциональное, и отсутствующая дата лучше, чем
+// придуманная (раньше здесь стоял new Date() на каждый запрос сайтмапа,
+// что делало сигнал lastmod бесполезным для всех 150+ URL сразу).
+function toLastModified(value?: string): Date | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [projects, landingPages] = await Promise.all([
     getProjects(),
@@ -55,43 +70,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
     },
     {
       url: `${SITE_URL}/calculator`,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
     },
     {
       url: `${SITE_URL}/portfolio`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
       url: `${SITE_URL}/kontakty`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
       url: `${SITE_URL}/spravochnik`,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${SITE_URL}/otzyvy`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
       url: `${SITE_URL}/faq`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.7,
     },
@@ -99,14 +107,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const projectPages: MetadataRoute.Sitemap = projects.map((project) => ({
     url: `${SITE_URL}/projects/${project.slug}`,
-    lastModified: new Date(),
+    lastModified: toLastModified(project.updated_at),
     changeFrequency: "weekly",
     priority: 0.8,
   }));
 
   const seoPages: MetadataRoute.Sitemap = landingPages.map((page) => ({
     url: `${SITE_URL}/${page.slug}`,
-    lastModified: new Date(),
+    lastModified: toLastModified(page.updated_at),
     changeFrequency: "weekly",
     priority: 0.9,
   }));

@@ -3495,6 +3495,7 @@ main {
 }
 
 .portfolioObjectImage {
+  position: relative;
   overflow: hidden;
   height: 185px;
   background: #ddd6cb;
@@ -6315,6 +6316,7 @@ main {
 }
 
 .projectPromotionImage {
+  position: relative;
   display: grid;
   height: 185px;
   place-items: center;

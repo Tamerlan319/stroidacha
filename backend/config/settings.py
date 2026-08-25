@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "import_export",
+    "axes",
 
     "catalog",
     "leads",
@@ -64,7 +65,22 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Обязательно последним — django-axes считает попытки входа в /admin/
+    # и блокирует перебор пароля (152-ФЗ: техническая защита панели,
+    # через которую доступны все ПДн заявок).
+    "axes.middleware.AxesMiddleware",
 ]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# Блокировка входа в админку после подряд неудачных попыток — вместо
+# неограниченного числа попыток подобрать пароль, которое было раньше.
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # час
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 
 ROOT_URLCONF = 'config.urls'
 
@@ -147,6 +163,11 @@ CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Приватное хранилище вложений заявок (см. leads/storage.py). Не путать с
+# MEDIA_ROOT: этот каталог не примонтирован в Caddy и не отдаётся напрямую —
+# доступ только через авторизованный Django-view.
+PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
+
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -186,3 +207,29 @@ SECURE_HSTS_SECONDS = env.int(
 SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+
+# Срок хранения персональных данных заявки (152-ФЗ ст. 5: нельзя хранить
+# дольше, чем требуют цели обработки — сайт уже обещает это в /privacy,
+# но раньше это ничем не было обеспечено технически). После истечения
+# срока management-команда anonymize_old_leads стирает phone/message/
+# ip_address/user_agent/вложения, оставляя обезличенную запись для
+# статистики по источникам. Итоговое число должен подтвердить владелец
+# бизнеса — 24 месяца это разумный дефолт для строительной ниши с долгим
+# циклом принятия решения, а не жёсткое требование закона.
+LEAD_RETENTION_MONTHS = env.int("LEAD_RETENTION_MONTHS", default=24)
+
+REST_FRAMEWORK = {
+    # ScopedRateThrottle не ограничивает вьюхи без throttle_scope — это
+    # безопасный глобальный дефолт, реальный лимит задан только для приёма
+    # заявок (см. LeadCreateAPIView.throttle_scope), чтобы не мешать
+    # обычному чтению каталога.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "leads": env(
+            "LEAD_THROTTLE_RATE",
+            default="10/hour",
+        ),
+    },
+}

@@ -59,6 +59,8 @@ class ProjectListAPIView(ListAPIView):
         price_min = self.request.query_params.get("price_min")
         price_max = self.request.query_params.get("price_max")
         floors = self.request.query_params.get("floors")
+        width = self.request.query_params.get("width")
+        length = self.request.query_params.get("length")
         ordering = self.request.query_params.get("ordering", "default")
 
         if category:
@@ -73,6 +75,14 @@ class ProjectListAPIView(ListAPIView):
             queryset = queryset.filter(area__lte=area_max)
         if floors:
             queryset = queryset.filter(floors=floors)
+        # Точный фильтр по размеру footprint (например, "6x6"). Используется
+        # размерными SEO-страницами (LandingPage.filter_width/filter_length),
+        # чтобы каталог на такой странице показывал только проекты этого
+        # размера, а не весь каталог категории.
+        if width:
+            queryset = queryset.filter(width=width)
+        if length:
+            queryset = queryset.filter(length=length)
 
         # Эффективная цена зависит от нескольких коэффициентов и может быть
         # вычислена только единым PricingService. Для текущего каталога (~сотни

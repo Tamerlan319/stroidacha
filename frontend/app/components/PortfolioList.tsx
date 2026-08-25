@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import ImageLightbox, { LightboxImage } from "./ImageLightbox";
 
@@ -40,8 +41,15 @@ export default function PortfolioList({ items }: PortfolioListProps) {
           <article className="portfolioObject" key={item.id}>
             <div className="portfolioObjectSummary">
               <div className="portfolioObjectImage">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.mainImage} alt={item.title} />
+                {item.mainImage && (
+                  <Image
+                    src={item.mainImage}
+                    alt={item.title}
+                    fill
+                    sizes="(max-width: 780px) 100vw, 320px"
+                    style={{ objectFit: "cover" }}
+                  />
+                )}
               </div>
 
               <div className="portfolioObjectContent">

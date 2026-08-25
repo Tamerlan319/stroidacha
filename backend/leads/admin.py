@@ -1,7 +1,25 @@
 from django.contrib import admin
+from django.urls import reverse
 from django.utils.html import format_html
 
 from .models import Lead, LeadAttachment
+
+
+def attachment_file_link(attachment):
+    """Ссылка на скачивание вложения через авторизованный view.
+
+    Файл лежит в приватном хранилище (leads/storage.py) и больше не имеет
+    публичного URL — attachment.file.url намеренно вызывает исключение,
+    поэтому админка отдаёт ссылку на LeadAttachmentDownloadView.
+    """
+    if not attachment.pk or not attachment.file:
+        return "—"
+
+    url = reverse("lead-attachment-download", args=[attachment.pk])
+    return format_html(
+        '<a href="{}" target="_blank" rel="noopener">Открыть</a>',
+        url,
+    )
 
 
 class LeadAttachmentInline(admin.TabularInline):
@@ -19,13 +37,7 @@ class LeadAttachmentInline(admin.TabularInline):
 
     @admin.display(description="Файл")
     def file_link(self, attachment):
-        if not attachment.pk or not attachment.file:
-            return "—"
-
-        return format_html(
-            '<a href="{}" target="_blank" rel="noopener">Открыть</a>',
-            attachment.file.url,
-        )
+        return attachment_file_link(attachment)
 
     @admin.display(description="Размер")
     def size_display(self, attachment):
@@ -53,6 +65,7 @@ class LeadAdmin(admin.ModelAdmin):
         "consent_version",
         "is_processed",
         "created_at",
+        "anonymized_at",
     )
     list_filter = (
         "source",
@@ -82,6 +95,7 @@ class LeadAdmin(admin.ModelAdmin):
         "page_url",
         "consent_version",
         "consent_given_at",
+        "anonymized_at",
     )
     inlines = (LeadAttachmentInline,)
 
@@ -137,6 +151,7 @@ class LeadAdmin(admin.ModelAdmin):
                     "user_agent",
                     "created_at",
                     "updated_at",
+                    "anonymized_at",
                 ),
                 "classes": ("collapse",),
             },
@@ -165,9 +180,13 @@ class LeadAttachmentAdmin(admin.ModelAdmin):
     )
     readonly_fields = (
         "lead",
-        "file",
+        "file_link",
         "original_name",
         "content_type",
         "size",
         "created_at",
     )
+
+    @admin.display(description="Файл")
+    def file_link(self, attachment):
+        return attachment_file_link(attachment)

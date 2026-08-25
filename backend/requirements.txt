@@ -2,6 +2,7 @@ asgiref==3.11.1
 beautifulsoup4==4.15.0
 diff-match-patch==20241021
 Django==5.2.15
+django-axes==8.3.1
 django-cors-headers==4.9.0
 django-environ==0.14.0
 django-import-export==4.4.1

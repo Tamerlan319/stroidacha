@@ -53,6 +53,8 @@ type LandingPage = {
   related_projects: Project[];
   faqs: LandingPageFAQ[];
   images: LandingPageImage[];
+  filter_width: string | number | null;
+  filter_length: string | number | null;
   seo_title: string;
   seo_description: string;
 };
@@ -201,6 +203,17 @@ export default async function LandingPageRoute({ params }: PageProps) {
   const catalogCategory = landingCategoryBySlug[slug] || page.category;
   const jsonLd = buildLandingPageJsonLd(page);
 
+  // Размерные страницы (например, "Дома из бруса 6х6") задают точный
+  // footprint через filter_width/filter_length в админке. Если поля не
+  // заполнены, каталог показывает всю категорию — это ожидаемо для
+  // страниц-хабов вроде "Дома из бруса".
+  const filterWidth = page.filter_width ? Number(page.filter_width) : undefined;
+  const filterLength = page.filter_length ? Number(page.filter_length) : undefined;
+  const catalogDescription =
+    filterWidth && filterLength
+      ? `Показаны проекты размером ${filterWidth}×${filterLength} м. Уточните дополнительные параметры: тип строительства и ориентировочную стоимость.`
+      : "Выберите подходящий проект и уточните параметры: площадь, тип строительства и ориентировочную стоимость.";
+
   return (
     <main>
       <JsonLd data={jsonLd} />
@@ -240,9 +253,11 @@ export default async function LandingPageRoute({ params }: PageProps) {
           initialCategory={catalogCategory.slug}
           showCategoryFilter={false}
           showFilters={true}
+          filterWidth={filterWidth}
+          filterLength={filterLength}
           eyebrow="Каталог"
           title={`Проекты: ${page.h1}`}
-          description="Выберите подходящий проект и уточните параметры: площадь, тип строительства и ориентировочную стоимость."
+          description={catalogDescription}
         />
       )}
 
