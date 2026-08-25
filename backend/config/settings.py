@@ -147,6 +147,11 @@ CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Приватное хранилище вложений заявок (см. leads/storage.py). Не путать с
+# MEDIA_ROOT: этот каталог не примонтирован в Caddy и не отдаётся напрямую —
+# доступ только через авторизованный Django-view.
+PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
+
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 

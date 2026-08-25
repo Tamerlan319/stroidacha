@@ -1,5 +1,9 @@
 from django.db import models
 
+from .storage import PrivateLeadAttachmentStorage
+
+private_attachment_storage = PrivateLeadAttachmentStorage()
+
 
 class Lead(models.Model):
     class Source(models.TextChoices):
@@ -84,6 +88,7 @@ class LeadAttachment(models.Model):
     file = models.FileField(
         "Файл",
         upload_to="leads/attachments/%Y/%m/%d",
+        storage=private_attachment_storage,
     )
     original_name = models.CharField("Исходное имя", max_length=255)
     content_type = models.CharField("Тип файла", max_length=100, blank=True)

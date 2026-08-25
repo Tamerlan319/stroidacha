@@ -38,6 +38,11 @@ services:
     volumes:
       - media_data:/app/media
       - static_data:/app/staticfiles
+      # Вложения заявок (leads.LeadAttachment) — приватное хранилище.
+      # Намеренно НЕ примонтировано в сервис caddy: только backend может
+      # прочитать эти файлы, отдача наружу идёт через авторизованный
+      # LeadAttachmentDownloadView, а не напрямую файловым сервером.
+      - private_media_data:/app/private_media
     depends_on:
       db:
         condition: service_healthy
@@ -104,6 +109,7 @@ services:
 volumes:
   postgres_data:
   media_data:
+  private_media_data:
   static_data:
   caddy_data:
   caddy_config:
