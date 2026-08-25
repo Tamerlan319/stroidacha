@@ -208,6 +208,16 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
+# Срок хранения персональных данных заявки (152-ФЗ ст. 5: нельзя хранить
+# дольше, чем требуют цели обработки — сайт уже обещает это в /privacy,
+# но раньше это ничем не было обеспечено технически). После истечения
+# срока management-команда anonymize_old_leads стирает phone/message/
+# ip_address/user_agent/вложения, оставляя обезличенную запись для
+# статистики по источникам. Итоговое число должен подтвердить владелец
+# бизнеса — 24 месяца это разумный дефолт для строительной ниши с долгим
+# циклом принятия решения, а не жёсткое требование закона.
+LEAD_RETENTION_MONTHS = env.int("LEAD_RETENTION_MONTHS", default=24)
+
 REST_FRAMEWORK = {
     # ScopedRateThrottle не ограничивает вьюхи без throttle_scope — это
     # безопасный глобальный дефолт, реальный лимит задан только для приёма

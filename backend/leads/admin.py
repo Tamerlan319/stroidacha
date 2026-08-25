@@ -65,6 +65,7 @@ class LeadAdmin(admin.ModelAdmin):
         "consent_version",
         "is_processed",
         "created_at",
+        "anonymized_at",
     )
     list_filter = (
         "source",
@@ -94,6 +95,7 @@ class LeadAdmin(admin.ModelAdmin):
         "page_url",
         "consent_version",
         "consent_given_at",
+        "anonymized_at",
     )
     inlines = (LeadAttachmentInline,)
 
@@ -149,6 +151,7 @@ class LeadAdmin(admin.ModelAdmin):
                     "user_agent",
                     "created_at",
                     "updated_at",
+                    "anonymized_at",
                 ),
                 "classes": ("collapse",),
             },

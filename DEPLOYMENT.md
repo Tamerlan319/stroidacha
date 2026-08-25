@@ -56,6 +56,38 @@ Next.js. После push в `main` workflow подключается к VPS, с�
 локальной PostgreSQL с проектами, страницами и контактами. Перед публикацией
 полного каталога нужно отдельно перенести дамп базы данных.
 
+## Хранение персональных данных заявок (152-ФЗ)
+
+Вложения заявок (фото, планировки) хранятся в приватном сторадже, не
+раздаются Caddy и отдаются только сотрудникам из Django admin. После
+первого деплоя изменений безопасности выполните один раз:
+
+```bash
+docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+  exec backend python manage.py migrate_lead_attachments_to_private_storage
+```
+
+Проверьте, что скачивание файлов заявки в админке работает, и только
+после этого повторите с `--delete-source`, чтобы убрать старые копии из
+публичной медиатеки.
+
+Заявки старше `LEAD_RETENTION_MONTHS` месяцев (по умолчанию 24, задаётся
+в `backend/.env.prod`) нужно обезличивать по расписанию — в проекте нет
+celery/beat, поэтому это обычный `cron` на сервере:
+
+```bash
+crontab -u brusoteka-deploy -e
+# добавить строку:
+0 4 1 * * /opt/brusoteka/scripts/cron-anonymize-leads.sh >> /var/log/brusoteka-anonymize-leads.log 2>&1
+```
+
+Проверить, что будет удалено, без реального изменения данных:
+
+```bash
+docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+  exec backend python manage.py anonymize_old_leads --dry-run
+```
+
 ## Полезные команды
 
 ```bash
