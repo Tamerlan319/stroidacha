@@ -4,6 +4,7 @@ from django.http import FileResponse, Http404
 from rest_framework.generics import CreateAPIView
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import Lead, LeadAttachment
@@ -19,6 +20,12 @@ class LeadCreateAPIView(CreateAPIView):
     serializer_class = LeadCreateSerializer
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    # Публичный AllowAny-эндпоинт без лимита раньше можно было заваливать
+    # фейковыми заявками или файлами по 20 МБ без охлаждения. Лимит — по IP
+    # (ScopedRateThrottle для анонимных запросов ключуется по адресу),
+    # настраивается через LEAD_THROTTLE_RATE (см. settings.REST_FRAMEWORK).
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "leads"
 
     def perform_create(self, serializer):
         lead = serializer.save()

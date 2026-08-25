@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "import_export",
+    "axes",
 
     "catalog",
     "leads",
@@ -64,7 +65,22 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Обязательно последним — django-axes считает попытки входа в /admin/
+    # и блокирует перебор пароля (152-ФЗ: техническая защита панели,
+    # через которую доступны все ПДн заявок).
+    "axes.middleware.AxesMiddleware",
 ]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# Блокировка входа в админку после подряд неудачных попыток — вместо
+# неограниченного числа попыток подобрать пароль, которое было раньше.
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # час
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 
 ROOT_URLCONF = 'config.urls'
 
@@ -191,3 +207,19 @@ SECURE_HSTS_SECONDS = env.int(
 SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+
+REST_FRAMEWORK = {
+    # ScopedRateThrottle не ограничивает вьюхи без throttle_scope — это
+    # безопасный глобальный дефолт, реальный лимит задан только для приёма
+    # заявок (см. LeadCreateAPIView.throttle_scope), чтобы не мешать
+    # обычному чтению каталога.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "leads": env(
+            "LEAD_THROTTLE_RATE",
+            default="10/hour",
+        ),
+    },
+}
