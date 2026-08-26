@@ -251,7 +251,18 @@ class Project(models.Model):
     def computed_size_text(self) -> str:
         if self.width is None or self.length is None:
             return self.size_text or ""
-        return f"{self.width:g}х{self.length:g}"
+
+        # width/length хранятся как NUMERIC(6,2), поэтому Decimal всегда
+        # приходит с двумя знаками после точки (Decimal("6.00")). В отличие
+        # от float, format(decimal, "g") незначащие нули не убирает — отсюда
+        # раньше на карточках отображалось "6.00х7.00" вместо "6х7".
+        # normalize() + fixed-point убирает лишние нули и не даёт
+        # normalize() уйти в экспоненциальную запись на круглых числах
+        # (например, 60.00 → "6E+1" без явного "f").
+        def format_dimension(value: Decimal) -> str:
+            return format(Decimal(value).normalize(), "f")
+
+        return f"{format_dimension(self.width)}х{format_dimension(self.length)}"
 
     @property
     def computed_floor_label(self) -> str:
