@@ -176,6 +176,21 @@ EMAIL_BACKEND = env(
     default="django.core.mail.backends.console.EmailBackend",
 )
 
+# Нужны только когда EMAIL_BACKEND — smtp.EmailBackend (см. .env.prod.example
+# и DEPLOYMENT.md > "Email-уведомления о заявках"). С console.EmailBackend
+# (дефолт) эти настройки ни на что не влияют — письма просто пишутся в лог
+# контейнера, наружу не уходят.
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=465)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+# По умолчанию — SSL на 465 (так работает Яндекс.Почта и большинство
+# провайдеров без доп. настройки). Для STARTTLS на 587 переключите оба флага
+# через .env.prod: EMAIL_USE_SSL=False, EMAIL_USE_TLS=True.
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=True)
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
+EMAIL_TIMEOUT = 10
+
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",
     default="no-reply@localhost",

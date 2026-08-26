@@ -56,6 +56,37 @@ Next.js. После push в `main` workflow подключается к VPS, с�
 локальной PostgreSQL с проектами, страницами и контактами. Перед публикацией
 полного каталога нужно отдельно перенести дамп базы данных.
 
+## Email-уведомления о заявках
+
+По умолчанию `EMAIL_BACKEND=console.EmailBackend` — письмо о новой заявке
+(`leads.services.notify_managers_about_lead`) только пишется в лог
+контейнера `backend`, наружу не уходит. Чтобы заявки реально приходили на
+почту, в `backend/.env.prod` нужно:
+
+1. Переключить бэкенд на SMTP и заполнить `EMAIL_HOST*` — закомментированный
+   пример под Яндекс.Почту уже есть в `backend/.env.prod.example`.
+2. Для Яндекс.Почты `EMAIL_HOST_PASSWORD` — это **пароль приложения**
+   (Яндекс ID → Пароли и приложения → Пароль для внешнего приложения →
+   «Почта»), а не пароль от самого аккаунта — обычный пароль SMTP не
+   примет.
+3. `DEFAULT_FROM_EMAIL` должен совпадать с `EMAIL_HOST_USER` — иначе Яндекс
+   отклонит письмо как подмену отправителя.
+4. `LEAD_NOTIFICATION_EMAILS` — один адрес или несколько через запятую,
+   куда слать уведомления.
+
+Применить и проверить:
+
+```bash
+docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+  up -d --no-deps backend
+
+docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+  exec backend python manage.py sendtestemail you@example.com
+```
+
+Если `sendtestemail` не приходит — смотрите ошибку в логах:
+`docker compose ... logs --tail=50 backend`.
+
 ## Резервные копии
 
 `scripts/deploy.sh` дампит Postgres при каждом деплое. Дамп содержит все
