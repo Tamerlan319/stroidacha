@@ -99,12 +99,28 @@ services:
       - static_data:/var/www/static:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      default:
+        # Даёт остальным контейнерам (в первую очередь frontend, который при
+        # серверном рендеринге сам ходит на NEXT_PUBLIC_API_URL =
+        # https://brusodel.ru/api) резолвить домен сайта на Caddy внутри
+        # docker-сети, а не через публичный DNS. Без этого запрос уходит на
+        # собственный плавающий IP сервера и виснет — hairpin NAT к самому
+        # себе через floating IP не работает на некоторых облачных
+        # провайдерах (в частности, на Рег.Облаке — на классическом VPS
+        # такой проблемы не было).
+        aliases:
+          - brusodel.ru
+          - www.brusodel.ru
     depends_on:
       backend:
         condition: service_healthy
       frontend:
         condition: service_healthy
     mem_limit: 128m
+
+networks:
+  default:
 
 volumes:
   postgres_data:
