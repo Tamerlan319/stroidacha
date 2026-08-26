@@ -32,6 +32,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "project_name",
             "rating",
             "sort_order",
+            "created_at",
         )
 
 class AbsoluteImageUrlMixin:

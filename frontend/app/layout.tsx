@@ -50,12 +50,58 @@ export const viewport: Viewport = {
   themeColor: "#1f3325",
 };
 
-const siteJsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
+type SiteReview = {
+  id: number;
+  author_name: string;
+  city: string;
+  text: string;
+  rating: number;
+  created_at?: string;
+};
+
+async function getReviews(): Promise<SiteReview[]> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  try {
+    const response = await fetch(`${apiUrl}/reviews/`, { cache: "no-store" });
+    if (!response.ok) {
+      return [];
+    }
+    return response.json();
+  } catch {
+    // Корневой layout оборачивает весь сайт — сбой запроса отзывов не
+    // должен ронять вообще все страницы, лучше просто остаться без
+    // AggregateRating в разметке для этого запроса.
+    return [];
+  }
+}
+
+function extractReviewDate(review: SiteReview): string | undefined {
+  // Отзывы, перенесённые со старого сайта, хранят настоящую дату отзыва в
+  // конце поля city через " · " (например: "Московская область, Раменское
+  // · 30.10.2019") — это и есть реальная дата, в отличие от created_at
+  // (момент переноса записи в текущую базу при миграции сайта).
+  const match = review.city.match(/(\d{2})\.(\d{2})\.(\d{4})\s*$/);
+  if (match) {
+    const [, day, month, year] = match;
+    return `${year}-${month}-${day}`;
+  }
+  return review.created_at?.slice(0, 10);
+}
+
+function buildSiteJsonLd(reviews: SiteReview[]) {
+  const organizationId = `${SITE_URL}/#organization`;
+
+  const ratingValue =
+    reviews.length > 0
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) /
+        reviews.length
+      : null;
+
+  const graph: Record<string, unknown>[] = [
     {
       "@type": "Organization",
-      "@id": `${SITE_URL}/#organization`,
+      "@id": organizationId,
       name: 'ООО "СтройДача"',
       alternateName: "Брусодел",
       url: SITE_URL,
@@ -82,6 +128,17 @@ const siteJsonLd = {
         areaServed: "RU",
         availableLanguage: ["Russian"],
       },
+      ...(ratingValue !== null
+        ? {
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: ratingValue.toFixed(1),
+              reviewCount: reviews.length,
+              bestRating: "5",
+              worstRating: "1",
+            },
+          }
+        : {}),
     },
     {
       "@type": "WebSite",
@@ -92,17 +149,48 @@ const siteJsonLd = {
       description: SITE_DESCRIPTION,
       inLanguage: "ru-RU",
       publisher: {
-        "@id": `${SITE_URL}/#organization`,
+        "@id": organizationId,
       },
     },
-  ],
-};
+  ];
 
-export default function RootLayout({
+  // AggregateRating без подтверждающих его отзывов — ровно то, из-за чего
+  // поисковики и валидаторы структурированных данных не доверяют
+  // самостоятельно опубликованному рейтингу. Публикуем реальные отзывы из
+  // Django Admin (/otzyvy), а не только агрегат.
+  for (const review of reviews) {
+    graph.push({
+      "@type": "Review",
+      itemReviewed: { "@id": organizationId },
+      author: {
+        "@type": "Person",
+        name: review.author_name,
+      },
+      reviewBody: review.text,
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: review.rating,
+        bestRating: "5",
+        worstRating: "1",
+      },
+      datePublished: extractReviewDate(review),
+    });
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": graph,
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const reviews = await getReviews();
+  const siteJsonLd = buildSiteJsonLd(reviews);
+
   return (
     <html lang="ru">
       <body>
