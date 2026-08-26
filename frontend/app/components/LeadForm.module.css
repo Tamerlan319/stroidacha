@@ -265,6 +265,10 @@
   overflow: hidden !important;
 }
 
+.captchaField {
+  margin-top: 15px;
+}
+
 .consent {
   display: flex;
   align-items: flex-start;

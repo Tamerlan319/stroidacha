@@ -8,6 +8,7 @@ from rest_framework import serializers
 
 from catalog.models import Project
 
+from .captcha import verify_smartcaptcha
 from .models import Lead, LeadAttachment
 
 
@@ -71,6 +72,12 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         allow_blank=True,
         max_length=255,
     )
+    smartcaptcha_token = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        max_length=2000,
+    )
     consent_accepted = serializers.BooleanField(write_only=True)
     consent_version = serializers.CharField(
         write_only=True,
@@ -108,6 +115,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "utm_content",
             "utm_term",
             "website",
+            "smartcaptcha_token",
             "consent_accepted",
             "consent_version",
             "attachments",
@@ -162,6 +170,21 @@ class LeadCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs.pop("website", ""):
             raise serializers.ValidationError("Не удалось отправить заявку.")
+
+        token = attrs.pop("smartcaptcha_token", "")
+        request = self.context.get("request")
+        ip_address = self.get_client_ip(request) if request else None
+
+        if not verify_smartcaptcha(token, ip_address):
+            raise serializers.ValidationError(
+                {
+                    "smartcaptcha_token": (
+                        "Не пройдена проверка «Я не робот». Обновите страницу "
+                        "и попробуйте ещё раз."
+                    )
+                }
+            )
+
         return attrs
 
     @transaction.atomic

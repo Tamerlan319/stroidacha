@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import {
   ChangeEvent,
   DragEvent,
   FormEvent,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -12,6 +14,32 @@ import {
 
 import { getWhatsAppLink, legalConfig } from "../lib/legalConfig";
 import styles from "./LeadForm.module.css";
+
+// Пусто, если ключ не задан на сборке — тогда капча просто не рендерится
+// (форма продолжает работать как раньше, см. NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY
+// в backend/.env.prod.example). Бэкенд аналогично не требует токен, пока
+// не настроен SMARTCAPTCHA_SERVER_KEY — см. leads/captcha.py.
+const SMARTCAPTCHA_CLIENT_KEY =
+  process.env.NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY || "";
+
+type SmartCaptchaRenderParams = {
+  sitekey: string;
+  hl?: string;
+  callback?: (token: string) => void;
+};
+
+declare global {
+  interface Window {
+    smartCaptcha?: {
+      render: (
+        container: HTMLElement,
+        params: SmartCaptchaRenderParams
+      ) => number;
+      reset: (widgetId?: number) => void;
+      destroy: (widgetId?: number) => void;
+    };
+  }
+}
 
 type LeadFormProps = {
   source?: string;
@@ -26,7 +54,7 @@ type FormState = {
   website: string;
 };
 
-type FieldName = "phone" | "message" | "attachments" | "consent";
+type FieldName = "phone" | "message" | "attachments" | "consent" | "captcha";
 type FieldErrors = Partial<Record<FieldName, string>>;
 
 const EMPTY_FORM: FormState = {
@@ -183,6 +211,8 @@ function parseApiErrors(data: unknown): {
 
     if (key === "phone" || key === "message" || key === "attachments") {
       fields[key] = message;
+    } else if (key === "smartcaptcha_token") {
+      fields.captcha = message;
     } else if (key === "non_field_errors" || key === "detail") {
       general = message;
     }
@@ -209,10 +239,54 @@ export default function LeadForm({
   const [generalError, setGeneralError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [isCaptchaScriptLoaded, setIsCaptchaScriptLoaded] = useState(false);
 
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const captchaContainerRef = useRef<HTMLDivElement>(null);
+  const captchaWidgetIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (
+      !SMARTCAPTCHA_CLIENT_KEY ||
+      !isCaptchaScriptLoaded ||
+      !captchaContainerRef.current ||
+      captchaWidgetIdRef.current !== null ||
+      !window.smartCaptcha
+    ) {
+      return;
+    }
+
+    captchaWidgetIdRef.current = window.smartCaptcha.render(
+      captchaContainerRef.current,
+      {
+        sitekey: SMARTCAPTCHA_CLIENT_KEY,
+        hl: "ru",
+        callback: (token) => {
+          setCaptchaToken(token);
+          setErrors((current) => ({ ...current, captcha: undefined }));
+        },
+      }
+    );
+  }, [isCaptchaScriptLoaded]);
+
+  useEffect(() => {
+    return () => {
+      if (captchaWidgetIdRef.current !== null) {
+        window.smartCaptcha?.destroy(captchaWidgetIdRef.current);
+        captchaWidgetIdRef.current = null;
+      }
+    };
+  }, []);
+
+  function resetCaptcha() {
+    setCaptchaToken("");
+    if (captchaWidgetIdRef.current !== null) {
+      window.smartCaptcha?.reset(captchaWidgetIdRef.current);
+    }
+  }
 
   const messageCharactersLeft = MAX_MESSAGE_LENGTH - form.message.length;
   const selectedFilesSize = useMemo(
@@ -374,6 +448,14 @@ export default function LeadForm({
 
     if (nextErrors.consent) {
       document.getElementById("lead-consent")?.focus();
+      return;
+    }
+
+    if (nextErrors.captcha) {
+      captchaContainerRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     }
   }
 
@@ -382,7 +464,13 @@ export default function LeadForm({
 
     const nextErrors = validateForm();
 
+    if (SMARTCAPTCHA_CLIENT_KEY && !captchaToken) {
+      nextErrors.captcha = "Подтвердите, что вы не робот.";
+      setTouched((current) => ({ ...current, captcha: true }));
+    }
+
     if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       setStatus("error");
       setGeneralError("Проверьте отмеченные поля.");
       window.requestAnimationFrame(() => focusFirstInvalidField(nextErrors));
@@ -413,6 +501,7 @@ export default function LeadForm({
       body.append("utm_campaign", getUtmValue("utm_campaign"));
       body.append("utm_content", getUtmValue("utm_content"));
       body.append("utm_term", getUtmValue("utm_term"));
+      body.append("smartcaptcha_token", captchaToken);
 
       attachments.forEach((file) => body.append("attachments", file));
 
@@ -449,6 +538,9 @@ export default function LeadForm({
       );
     } finally {
       setIsSubmitting(false);
+      // Токен SmartCaptcha одноразовый — после любой попытки отправки (успех
+      // или ошибка) нужен новый для следующей.
+      resetCaptcha();
     }
   }
 
@@ -656,6 +748,22 @@ export default function LeadForm({
           />
         </label>
       </div>
+
+      {SMARTCAPTCHA_CLIENT_KEY && (
+        <div className={styles.captchaField}>
+          <Script
+            src="https://smartcaptcha.yandexcloud.net/captcha.js"
+            strategy="afterInteractive"
+            onLoad={() => setIsCaptchaScriptLoaded(true)}
+          />
+          <div ref={captchaContainerRef} />
+          {touched.captcha && errors.captcha && (
+            <div className={styles.fieldError} role="alert">
+              {errors.captcha}
+            </div>
+          )}
+        </div>
+      )}
 
       <label
         className={`${styles.consent} ${

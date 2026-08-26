@@ -201,6 +201,13 @@ LEAD_NOTIFICATION_EMAILS = env.list(
     default=[],
 )
 
+# Секретный ключ Яндекс SmartCaptcha (см. leads/captcha.py). Публичный
+# client-ключ для виджета живёт только на фронтенде (NEXT_PUBLIC_*) — сюда
+# его добавлять не нужно. Пустое значение полностью отключает проверку
+# (форма продолжает работать как раньше — так тесты и локальная разработка
+# не ломаются без реального ключа).
+SMARTCAPTCHA_SERVER_KEY = env("SMARTCAPTCHA_SERVER_KEY", default="")
+
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

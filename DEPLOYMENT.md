@@ -87,6 +87,35 @@ docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
 Если `sendtestemail` не приходит — смотрите ошибку в логах:
 `docker compose ... logs --tail=50 backend`.
 
+## Яндекс SmartCaptcha
+
+Форма заявки (`LeadForm`) поддерживает Яндекс SmartCaptcha
+(https://cloud.yandex.ru/services/smartcaptcha) — по умолчанию выключена:
+без ключей форма работает как раньше, ни фронтенд, ни бэкенд ничего не
+требуют.
+
+1. Создайте капчу в Yandex Cloud Console — получите **client key**
+   (публичный, для виджета) и **server key** (секретный, для проверки).
+2. Впишите в `backend/.env.prod`:
+
+   ```
+   SMARTCAPTCHA_SERVER_KEY=...
+   NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY=...
+   ```
+
+3. `NEXT_PUBLIC_*` Next.js встраивает в клиентский бандл на этапе **сборки**,
+   поэтому одного рестарта контейнера недостаточно — нужна пересборка:
+
+   ```bash
+   docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+     build frontend
+   docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+     up -d --no-deps backend frontend
+   ```
+
+`SMARTCAPTCHA_SERVER_KEY` без `NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY` (или
+наоборот) не имеет смысла — заполняйте оба сразу.
+
 ## Резервные копии
 
 `scripts/deploy.sh` дампит Postgres при каждом деплое. Дамп содержит все

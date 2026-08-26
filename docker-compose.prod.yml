@@ -67,6 +67,11 @@ services:
       args:
         NEXT_PUBLIC_API_URL: "https://brusodel.ru/api"
         NEXT_PUBLIC_SITE_URL: "https://brusodel.ru"
+        # Публичный (не секретный) ключ виджета Яндекс SmartCaptcha — читается
+        # из backend/.env.prod через `docker compose --env-file` (см. .env.prod.example).
+        # Next.js встраивает NEXT_PUBLIC_* в клиентский бандл на этапе сборки,
+        # поэтому обновление значения требует пересборки, а не просто рестарта.
+        NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY: "${NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY:-}"
     container_name: brusoteka_frontend
     restart: unless-stopped
     environment:
@@ -74,6 +79,7 @@ services:
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_API_URL: "https://brusodel.ru/api"
       NEXT_PUBLIC_SITE_URL: "https://brusodel.ru"
+      NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY: "${NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY:-}"
     depends_on:
       backend:
         condition: service_healthy
