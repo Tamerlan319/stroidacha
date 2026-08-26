@@ -8,7 +8,7 @@ export const SITE_DESCRIPTION =
 
 export const SITE_PHONE = "+7 967 680-18-12";
 export const SITE_PHONE_HREF = "+79676801812";
-export const SITE_EMAIL = "info@brusodel.ru";
+export const SITE_EMAIL = "brusodel@yandex.ru";
 
 export const CATALOG_LINKS = [
   {

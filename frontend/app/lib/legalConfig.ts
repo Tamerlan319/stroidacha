@@ -9,8 +9,8 @@ export const legalConfig = {
   workHours: "Ежедневно с 9:00 до 20:00",
   phoneDisplay: "+7 967 680-18-12",
   phoneDigits: "79676801812",
-  email: "info@brusodel.ru",
-  privacyEmail: "info@brusodel.ru",
+  email: "brusodel@yandex.ru",
+  privacyEmail: "brusodel@yandex.ru",
   consentVersion: "2026-08-03",
   // Держите в согласии с LEAD_RETENTION_MONTHS в backend/.env.prod — это
   // просто текст политики, отдельного API для этого значения нет.
