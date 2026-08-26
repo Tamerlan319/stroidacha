@@ -9,7 +9,7 @@ import {
   subscribeToCookieConsent,
 } from "./CookieBanner";
 
-const METRIKA_ID = 111281451;
+const METRIKA_ID = 111986431;
 
 export default function YandexMetrika() {
   const consent = useSyncExternalStore(
@@ -58,6 +58,7 @@ export default function YandexMetrika() {
 
         ym(${METRIKA_ID}, "init", {
           ssr: true,
+          webvisor: true,
           clickmap: true,
           ecommerce: "dataLayer",
           referrer: document.referrer,
