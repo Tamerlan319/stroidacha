@@ -88,7 +88,7 @@ DB_PASSWORD=$BRUSODEL_DB_PASSWORD
 DB_HOST=db
 DB_PORT=5432
 
-ALLOWED_HOSTS=brusodel.ru,www.brusodel.ru,194.67.74.142,localhost,127.0.0.1
+ALLOWED_HOSTS=brusodel.ru,www.brusodel.ru,194.67.74.172,localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=https://brusodel.ru,https://www.brusodel.ru
 CSRF_TRUSTED_ORIGINS=https://brusodel.ru,https://www.brusodel.ru
 
