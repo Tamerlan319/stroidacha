@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import LeadForm from "../components/LeadForm";
@@ -59,6 +60,12 @@ type LandingPage = {
   seo_description: string;
 };
 
+type SiblingPage = {
+  slug: string;
+  page_type: string;
+  h1: string;
+};
+
 type PageProps = {
   params: Promise<{
     slug: string;
@@ -68,6 +75,20 @@ type PageProps = {
 const landingCategoryBySlug: Record<string, ProjectCategory> = {
   "doma-iz-brusa": { id: 0, slug: "houses", title: "Дома" },
   "bani-iz-brusa": { id: 0, slug: "baths", title: "Бани" },
+};
+
+// Подписи для карточек в блоке "Смотрите также" — держим в соответствии с
+// seo.models.LandingPage.PageType на бэкенде.
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  service: "Каталог",
+  size: "Размер",
+  material: "Материал",
+  region: "Регион",
+  delivery: "Доставка",
+  production: "Производство",
+  company: "О компании",
+  guide: "Справочник",
+  custom: "Страница",
 };
 
 async function getLandingPage(slug: string): Promise<LandingPage | null> {
@@ -86,6 +107,36 @@ async function getLandingPage(slug: string): Promise<LandingPage | null> {
   }
 
   return response.json();
+}
+
+// Соседние SEO-страницы того же раздела каталога (хаб, размеры, регион) —
+// блок "Смотрите также" ниже. Не показываем на страницах без category
+// (справочные статьи вроде "ипотека" или "доставка" не входят ни в один
+// каталожный раздел, и это ожидаемо).
+async function getSiblingPages(
+  categorySlug: string,
+  currentSlug: string,
+): Promise<SiblingPage[]> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  try {
+    const response = await fetch(
+      `${apiUrl}/landing-pages/?category=${encodeURIComponent(categorySlug)}`,
+      { cache: "no-store" },
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const pages: SiblingPage[] = await response.json();
+    // Каталог размерных страниц может вырасти до пары десятков — ограничиваем
+    // блок, чтобы он оставался ссылкой "по теме", а не второй картой сайта.
+    // Полный список всё равно доступен через sitemap.xml.
+    return pages.filter((page) => page.slug !== currentSlug).slice(0, 12);
+  } catch {
+    return [];
+  }
 }
 
 function buildLandingPageJsonLd(page: LandingPage) {
@@ -203,6 +254,10 @@ export default async function LandingPageRoute({ params }: PageProps) {
   const catalogCategory = landingCategoryBySlug[slug] || page.category;
   const jsonLd = buildLandingPageJsonLd(page);
 
+  const siblingPages = catalogCategory
+    ? await getSiblingPages(catalogCategory.slug, page.slug)
+    : [];
+
   // Размерные страницы (например, "Дома из бруса 6х6") задают точный
   // footprint через filter_width/filter_length в админке. Если поля не
   // заполнены, каталог показывает всю категорию — это ожидаемо для
@@ -267,6 +322,28 @@ export default async function LandingPageRoute({ params }: PageProps) {
             <p className="eyebrow">Подробнее</p>
             <h2>{page.h1}</h2>
             <RichText value={page.main_text} />
+          </div>
+        </section>
+      )}
+
+      {siblingPages.length > 0 && (
+        <section className="container section">
+          <div className="sectionHeader">
+            <p className="eyebrow">Смотрите также</p>
+            <h2>Похожие страницы каталога</h2>
+          </div>
+
+          <div className="seoLinkGrid">
+            {siblingPages.map((sibling) => (
+              <Link
+                className="seoLinkCard"
+                href={`/${sibling.slug}`}
+                key={sibling.slug}
+              >
+                <span>{PAGE_TYPE_LABELS[sibling.page_type] || "Страница"}</span>
+                <strong>{sibling.h1}</strong>
+              </Link>
+            ))}
           </div>
         </section>
       )}
