@@ -134,6 +134,28 @@ docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
   exec backend python manage.py anonymize_old_leads --dry-run
 ```
 
+## SEO-страницы по размерам и региону
+
+`generate_seo_landing_pages` создаёт страницы под конкретные размеры
+домов/бань (например, «Дома из бруса 7х7») и региональные страницы
+Москва/область — по фактическим данным каталога. Не перезаписывает уже
+существующие страницы (в том числе изменённые вручную в Django Admin),
+если не передан `--overwrite`, поэтому его можно безопасно перезапускать
+после добавления новых проектов в каталог:
+
+```bash
+# сначала посмотреть, что будет создано
+docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+  exec backend python manage.py generate_seo_landing_pages --dry-run
+
+docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+  exec backend python manage.py generate_seo_landing_pages
+```
+
+Новые страницы публикуются сразу (`is_active=True`) — тексты и FAQ можно
+поправить в Django Admin в любой момент, командой они не будут
+перезаписаны без `--overwrite`.
+
 ## Полезные команды
 
 ```bash
