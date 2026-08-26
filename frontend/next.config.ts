@@ -21,6 +21,15 @@ const nextConfig: NextConfig = {
       { protocol: "http", hostname: "localhost", port: "8000" },
       { protocol: "http", hostname: "192.168.1.67", port: "8000" },
     ],
+    // На проде контейнер сам себе резолвит brusodel.ru на внутренний IP
+    // Caddy в docker-сети (см. docker-compose.prod.yml, network alias) —
+    // без этого публичный плавающий IP не поддерживает hairpin NAT обратно
+    // на себя же (см. коммит с фиксом NEXT_PUBLIC_API_URL). Из-за алиаса
+    // резолвится приватный адрес, и next/image по умолчанию блокирует такую
+    // оптимизацию как потенциальный SSRF. Здесь это безопасно: src всегда
+    // приходит из доверенных ответов Django API, а не от пользователя, и
+    // remotePatterns выше и так ограничивает хосты только нашим доменом.
+    dangerouslyAllowLocalIP: true,
   },
 };
 
