@@ -1,6 +1,21 @@
 from django.contrib import admin
 
-from .models import Advantage, FAQ, Review, WorkStep, ContactLocation, PortfolioProject, PortfolioImage
+from .models import (
+    Advantage,
+    FAQ,
+    Review,
+    SocialLink,
+    WorkStep,
+    ContactLocation,
+    PortfolioProject,
+    PortfolioImage,
+)
+
+
+@admin.register(SocialLink)
+class SocialLinkAdmin(admin.ModelAdmin):
+    list_display = ("platform", "url", "is_active", "sort_order")
+    list_editable = ("url", "is_active", "sort_order")
 
 
 @admin.register(Advantage)

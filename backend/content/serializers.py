@@ -1,6 +1,21 @@
 from rest_framework import serializers
 
-from .models import Advantage, FAQ, Review, WorkStep, ContactLocation, PortfolioProject, PortfolioImage
+from .models import (
+    Advantage,
+    FAQ,
+    Review,
+    SocialLink,
+    WorkStep,
+    ContactLocation,
+    PortfolioProject,
+    PortfolioImage,
+)
+
+
+class SocialLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SocialLink
+        fields = ("platform", "url")
 
 
 class AdvantageSerializer(serializers.ModelSerializer):

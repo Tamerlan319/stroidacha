@@ -1,6 +1,33 @@
 from django.db import models
 from django.utils.text import slugify
 
+class SocialLink(models.Model):
+    class Platform(models.TextChoices):
+        VK = "vk", "ВКонтакте"
+        MAX = "max", "MAX"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        TELEGRAM = "telegram", "Telegram"
+
+    platform = models.CharField(
+        "Платформа",
+        max_length=20,
+        choices=Platform.choices,
+        unique=True,
+        help_text="Иконка и подпись для платформы фиксированы в коде сайта — здесь редактируется только ссылка.",
+    )
+    url = models.URLField("Ссылка", max_length=500)
+    is_active = models.BooleanField("Показывать", default=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Ссылка на соцсеть"
+        verbose_name_plural = "Ссылки на соцсети"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.get_platform_display()} — {self.url}"
+
+
 class Advantage(models.Model):
     title = models.CharField("Заголовок", max_length=255)
     description = models.TextField("Описание", blank=True)

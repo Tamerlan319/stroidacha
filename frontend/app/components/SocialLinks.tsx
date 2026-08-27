@@ -1,60 +1,63 @@
+"use client";
+
 import Image from "next/image";
 
-const socialLinks = [
-  {
-    title: "ВКонтакте",
-    href: process.env.NEXT_PUBLIC_VK_URL || "https://vk.com/",
-    iconSrc: "/social/vk.svg",
-  },
-  {
-    title: "MAX",
-    href: process.env.NEXT_PUBLIC_MAX_URL || "https://max.ru/",
-    iconSrc: "/social/max.svg",
-  },
-  {
-    title: "WhatsApp",
-    href: "https://api.whatsapp.com/send?phone=79676801812",
-    iconSrc: "/social/whatsapp.svg",
-  },
-  {
-    title: "Telegram",
-    href: process.env.NEXT_PUBLIC_TELEGRAM_URL || "https://t.me/+79676801812",
-    iconSrc: "/social/telegram.svg",
-  },
-] as const;
+import { useSocialLinks } from "./SocialLinksProvider";
+
+const PLATFORM_META: Record<string, { title: string; iconSrc: string }> = {
+  vk: { title: "ВКонтакте", iconSrc: "/social/vk.svg" },
+  max: { title: "MAX", iconSrc: "/social/max.svg" },
+  whatsapp: { title: "WhatsApp", iconSrc: "/social/whatsapp.svg" },
+  telegram: { title: "Telegram", iconSrc: "/social/telegram.svg" },
+};
+
+// Резервный список — только на случай, если запрос к API не удался при
+// самой первой загрузке layout.tsx. Реальные ссылки редактируются в Django
+// Admin (модель SocialLink), не здесь.
+const FALLBACK_LINKS = [
+  { platform: "vk", url: "https://vk.com/" },
+  { platform: "max", url: "https://max.ru/" },
+  { platform: "whatsapp", url: "https://api.whatsapp.com/send?phone=79676801812" },
+  { platform: "telegram", url: "https://t.me/+79676801812" },
+];
 
 type SocialLinksProps = {
   className?: string;
 };
 
-// Общий ряд иконок мессенджеров/соцсетей — используется в шапке сайта и в
-// LeadForm (вместо одиночной кнопки WhatsApp). Единый источник данных, чтобы
-// ссылки не расходились между местами использования.
 export default function SocialLinks({ className = "" }: SocialLinksProps) {
+  const contextLinks = useSocialLinks();
+  const links = contextLinks.length > 0 ? contextLinks : FALLBACK_LINKS;
+
   return (
     <div
       className={`sdSocialLinks ${className}`}
       aria-label="Связаться в мессенджерах"
     >
-      {socialLinks.map((item) => (
-        <a
-          aria-label={item.title}
-          href={item.href}
-          key={item.title}
-          rel="noopener noreferrer"
-          target="_blank"
-          title={item.title}
-        >
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="sdSocialAppIcon"
-            height={31}
-            src={item.iconSrc}
-            width={31}
-          />
-        </a>
-      ))}
+      {links.map((item) => {
+        const meta = PLATFORM_META[item.platform];
+        if (!meta) return null;
+
+        return (
+          <a
+            aria-label={meta.title}
+            href={item.url}
+            key={item.platform}
+            rel="noopener noreferrer"
+            target="_blank"
+            title={meta.title}
+          >
+            <Image
+              alt=""
+              aria-hidden="true"
+              className="sdSocialAppIcon"
+              height={31}
+              src={meta.iconSrc}
+              width={31}
+            />
+          </a>
+        );
+      })}
     </div>
   );
 }

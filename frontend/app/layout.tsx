@@ -7,6 +7,7 @@ import JsonLd from "./components/JsonLd";
 import MobileHorizontalLock from "./components/MobileScrollFix";
 import SiteFooter from "./components/SiteFooter";
 import SiteHeader from "./components/SiteHeader";
+import { SocialLinkData, SocialLinksProvider } from "./components/SocialLinksProvider";
 import YandexMetrika from "./components/YandexMetrika";
 import {
   SITE_DESCRIPTION,
@@ -72,6 +73,23 @@ async function getReviews(): Promise<SiteReview[]> {
     // Корневой layout оборачивает весь сайт — сбой запроса отзывов не
     // должен ронять вообще все страницы, лучше просто остаться без
     // AggregateRating в разметке для этого запроса.
+    return [];
+  }
+}
+
+async function getSocialLinks(): Promise<SocialLinkData[]> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  try {
+    const response = await fetch(`${apiUrl}/social-links/`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return [];
+    }
+    return response.json();
+  } catch {
+    // SocialLinks.tsx сам подставит резервный список, если тут пусто.
     return [];
   }
 }
@@ -218,21 +236,26 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const reviews = await getReviews();
+  const [reviews, socialLinks] = await Promise.all([
+    getReviews(),
+    getSocialLinks(),
+  ]);
   const siteJsonLd = buildSiteJsonLd(reviews);
 
   return (
     <html lang="ru">
       <body>
-        <JsonLd data={siteJsonLd} />
-        <MobileHorizontalLock />
-        <SiteHeader />
+        <SocialLinksProvider links={socialLinks}>
+          <JsonLd data={siteJsonLd} />
+          <MobileHorizontalLock />
+          <SiteHeader />
 
-        {children}
+          {children}
 
-        <SiteFooter />
-        <CookieBanner />
-        <YandexMetrika />
+          <SiteFooter />
+          <CookieBanner />
+          <YandexMetrika />
+        </SocialLinksProvider>
       </body>
     </html>
   );
