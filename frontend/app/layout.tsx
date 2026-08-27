@@ -7,6 +7,7 @@ import JsonLd from "./components/JsonLd";
 import MobileHorizontalLock from "./components/MobileScrollFix";
 import SiteFooter from "./components/SiteFooter";
 import SiteHeader from "./components/SiteHeader";
+import { SocialLinkData, SocialLinksProvider } from "./components/SocialLinksProvider";
 import YandexMetrika from "./components/YandexMetrika";
 import {
   SITE_DESCRIPTION,
@@ -76,6 +77,23 @@ async function getReviews(): Promise<SiteReview[]> {
   }
 }
 
+async function getSocialLinks(): Promise<SocialLinkData[]> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  try {
+    const response = await fetch(`${apiUrl}/social-links/`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return [];
+    }
+    return response.json();
+  } catch {
+    // SocialLinks.tsx сам подставит резервный список, если тут пусто.
+    return [];
+  }
+}
+
 function extractReviewDate(review: SiteReview): string | undefined {
   // Отзывы, перенесённые со старого сайта, хранят настоящую дату отзыва в
   // конце поля city через " · " (например: "Московская область, Раменское
@@ -116,6 +134,19 @@ function buildSiteJsonLd(reviews: SiteReview[]) {
       email: SITE_EMAIL,
       telephone: SITE_PHONE,
       taxID: "4400020680",
+      // Юридический адрес — тот же, что указан на /kontakty и /requisites.
+      // Отдельные локации (офис в Москве, производство в Чухломе) со своими
+      // часами работы — в ContactLocation (см. /api/contacts/); их вывод в
+      // виде отдельных LocalBusiness с адресом и часами работы для каждой
+      // точки — следующий шаг для локального SEO, сейчас не реализовано.
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "пер. Дорожный, д. 17, кв. 2",
+        addressLocality: "Чухлома",
+        addressRegion: "Костромская область",
+        postalCode: "157130",
+        addressCountry: "RU",
+      },
       areaServed: {
         "@type": "Country",
         name: "Россия",
@@ -205,21 +236,26 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const reviews = await getReviews();
+  const [reviews, socialLinks] = await Promise.all([
+    getReviews(),
+    getSocialLinks(),
+  ]);
   const siteJsonLd = buildSiteJsonLd(reviews);
 
   return (
     <html lang="ru">
       <body>
-        <JsonLd data={siteJsonLd} />
-        <MobileHorizontalLock />
-        <SiteHeader />
+        <SocialLinksProvider links={socialLinks}>
+          <JsonLd data={siteJsonLd} />
+          <MobileHorizontalLock />
+          <SiteHeader />
 
-        {children}
+          {children}
 
-        <SiteFooter />
-        <CookieBanner />
-        <YandexMetrika />
+          <SiteFooter />
+          <CookieBanner />
+          <YandexMetrika />
+        </SocialLinksProvider>
       </body>
     </html>
   );

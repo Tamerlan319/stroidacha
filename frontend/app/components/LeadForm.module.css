@@ -303,9 +303,10 @@
 }
 
 .actionRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   margin-top: 14px;
 }
 
@@ -316,22 +317,17 @@
   gap: 9px;
 }
 
-.whatsappButton {
+.altContact {
   display: flex;
-  min-height: 48px;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: #ffffff;
-  border: 1px solid #cdd8cf;
-  color: #1f5a38;
-  font-size: 14px;
-  font-weight: 800;
-  text-decoration: none;
+  gap: 9px;
 }
 
-.whatsappButton:hover {
-  background: #f7faf7;
+.altContact span {
+  color: #778079;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .spinner {
@@ -413,9 +409,5 @@
   .attachButton {
     grid-column: 1 / -1;
     width: 100%;
-  }
-
-  .actionRow {
-    grid-template-columns: 1fr;
   }
 }

@@ -59,14 +59,22 @@ class ProjectListAPIView(ListAPIView):
         price_min = self.request.query_params.get("price_min")
         price_max = self.request.query_params.get("price_max")
         floors = self.request.query_params.get("floors")
+        material = self.request.query_params.get("material")
+        size_min = self.request.query_params.get("size_min")
+        size_max = self.request.query_params.get("size_max")
         width = self.request.query_params.get("width")
         length = self.request.query_params.get("length")
         ordering = self.request.query_params.get("ordering", "default")
 
+        def split_values(raw):
+            return [item.strip() for item in raw.split(",") if item.strip()]
+
         if category:
             queryset = queryset.filter(category__slug=category)
         if construction_type:
-            queryset = queryset.filter(construction_type=construction_type)
+            # Поддерживает несколько значений через запятую — фильтр каталога
+            # позволяет отметить сразу "Брус" и "Каркас" галочками.
+            queryset = queryset.filter(construction_type__in=split_values(construction_type))
         if featured in ("1", "true", "yes", "да"):
             queryset = queryset.filter(is_featured=True)
         if area_min:
@@ -74,7 +82,21 @@ class ProjectListAPIView(ListAPIView):
         if area_max:
             queryset = queryset.filter(area__lte=area_max)
         if floors:
-            queryset = queryset.filter(floors=floors)
+            queryset = queryset.filter(floors__in=split_values(floors))
+        if material:
+            # У проекта нет прямого поля material — материал приходит через
+            # ProjectOffer (проект может продаваться в нескольких материалах).
+            # distinct() нужен, чтобы проект с несколькими подходящими
+            # предложениями не задваивался в выдаче.
+            queryset = queryset.filter(
+                offers__material__kind__in=split_values(material)
+            ).distinct()
+        # "Размер" в фильтре каталога — один диапазон, применяется и к ширине,
+        # и к длине (например, 6–10 м покажет 6х8, 7х9, но не 5х12).
+        if size_min:
+            queryset = queryset.filter(width__gte=size_min, length__gte=size_min)
+        if size_max:
+            queryset = queryset.filter(width__lte=size_max, length__lte=size_max)
         # Точный фильтр по размеру footprint (например, "6x6"). Используется
         # размерными SEO-страницами (LandingPage.filter_width/filter_length),
         # чтобы каталог на такой странице показывал только проекты этого

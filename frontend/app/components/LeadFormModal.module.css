@@ -1,0 +1,61 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  background: rgba(15, 22, 16, 0.62);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 40px 16px;
+}
+
+.panel {
+  position: relative;
+  width: min(560px, 100%);
+}
+
+.panel :global(.leadForm) {
+  width: 100%;
+}
+
+.closeButton {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  z-index: 1;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--sd-border);
+  border-radius: 50%;
+  background: white;
+  color: var(--sd-forest);
+  padding: 0;
+  box-shadow: 0 10px 24px rgba(24, 30, 23, 0.22);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.closeButton:hover {
+  background: var(--sd-forest);
+  color: white;
+  transform: scale(1.06);
+}
+
+.closeButton svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+@media (max-width: 480px) {
+  .overlay {
+    padding: 34px 12px;
+  }
+}

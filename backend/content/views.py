@@ -2,11 +2,20 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 
-from .models import Advantage, FAQ, Review, WorkStep, ContactLocation, PortfolioProject
+from .models import (
+    Advantage,
+    FAQ,
+    Review,
+    SocialLink,
+    WorkStep,
+    ContactLocation,
+    PortfolioProject,
+)
 from .serializers import (
     AdvantageSerializer,
     FAQSerializer,
     ReviewSerializer,
+    SocialLinkSerializer,
     WorkStepSerializer,
     ContactLocationSerializer,
     PortfolioProjectSerializer,
@@ -28,6 +37,16 @@ class HomepageContentAPIView(APIView):
             }
         )
     
+class SocialLinkListAPIView(ListAPIView):
+    serializer_class = SocialLinkSerializer
+
+    def get_queryset(self):
+        return SocialLink.objects.filter(is_active=True).order_by(
+            "sort_order",
+            "id",
+        )
+
+
 class ContactLocationListAPIView(ListAPIView):
     serializer_class = ContactLocationSerializer
 

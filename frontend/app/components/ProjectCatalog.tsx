@@ -2,13 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-type ProjectCategory = {
-  id: number;
-  title: string;
-  slug: string;
-};
+import CatalogFilterPanel, {
+  EMPTY_FILTERS,
+  Filters,
+  FilterGroupKey,
+  ProjectCategory,
+  getActiveFilterChips,
+} from "./CatalogFilterPanel";
+import filterPanelStyles from "./CatalogFilterPanel.module.css";
+import CustomProjectCard from "./CustomProjectCard";
 
 type Project = {
   id: number;
@@ -22,15 +26,6 @@ type Project = {
   price_from: string | number | null;
   short_description: string;
   main_image: string | null;
-};
-
-type Filters = {
-  category: string;
-  construction_type: string;
-  area_min: string;
-  area_max: string;
-  price_max: string;
-  floors: string;
 };
 
 type Ordering =
@@ -59,6 +54,11 @@ type ProjectCatalogProps = {
   description?: string;
   moreHref?: string;
   moreLabel?: string;
+  // Карточка "Свой проект" — предложение прислать эскиз/фото. Нужна на
+  // страницах каталога (/doma-iz-brusa, /bani-iz-brusa), но не в мини-подборке
+  // на главной — там уже есть отдельная карточка "Индивидуальный проект" в
+  // блоке "Выберите направление" чуть выше, повторять предложение не нужно.
+  showCustomProjectCard?: boolean;
   // Жёсткое ограничение по размеру footprint (например, для страницы
   // "Дома из бруса 6х6"). В отличие от Filters, это не пользовательский
   // фильтр — оно задаётся страницей и всегда применяется поверх остальных
@@ -66,14 +66,6 @@ type ProjectCatalogProps = {
   filterWidth?: number;
   filterLength?: number;
 };
-
-const constructionTypes = [
-  { value: "", label: "Любой тип" },
-  { value: "timber", label: "Брус" },
-  { value: "frame", label: "Каркас" },
-  { value: "log", label: "Бревно" },
-  { value: "other", label: "Другое" },
-];
 
 function formatPrice(price: string | number | null) {
   if (!price) {
@@ -107,15 +99,27 @@ function buildProjectsUrl(
   ordering: Ordering = "default",
   paginate = true,
   lockedSize?: { width?: number; length?: number },
+  pageSize: number = PAGE_SIZE,
 ) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const params = new URLSearchParams();
 
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
-  });
+  if (filters.category) params.set("category", filters.category);
+  if (filters.construction_types.length) {
+    params.set("construction_type", filters.construction_types.join(","));
+  }
+  if (filters.floors_list.length) {
+    params.set("floors", filters.floors_list.join(","));
+  }
+  if (filters.materials.length) {
+    params.set("material", filters.materials.join(","));
+  }
+  if (filters.size_min) params.set("size_min", filters.size_min);
+  if (filters.size_max) params.set("size_max", filters.size_max);
+  if (filters.area_min) params.set("area_min", filters.area_min);
+  if (filters.area_max) params.set("area_max", filters.area_max);
+  if (filters.price_min) params.set("price_min", filters.price_min);
+  if (filters.price_max) params.set("price_max", filters.price_max);
 
   if (lockedSize?.width) {
     params.set("width", String(lockedSize.width));
@@ -129,7 +133,7 @@ function buildProjectsUrl(
   }
   if (paginate) {
     params.set("page", String(page));
-    params.set("page_size", String(PAGE_SIZE));
+    params.set("page_size", String(pageSize));
   }
 
   const query = params.toString();
@@ -149,6 +153,7 @@ export default function ProjectCatalog({
   moreLabel = "Смотреть больше",
   filterWidth,
   filterLength,
+  showCustomProjectCard = true,
 }: ProjectCatalogProps) {
   const lockedSize =
     filterWidth || filterLength
@@ -157,16 +162,16 @@ export default function ProjectCatalog({
 
   const initialFilters: Filters = {
     category: initialCategory,
-    construction_type: "",
-    area_min: "",
-    area_max: "",
-    price_max: "",
-    floors: "",
+    ...EMPTY_FILTERS,
   };
 
   const [categories, setCategories] = useState<ProjectCategory[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(initialFilters);
+  const [previewCount, setPreviewCount] = useState<number | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [ordering, setOrdering] = useState<Ordering>("default");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProjects, setTotalProjects] = useState(0);
@@ -203,6 +208,7 @@ export default function ProjectCatalog({
   ) {
     setIsLoading(true);
     setErrorMessage("");
+    setAppliedFilters(nextFilters);
 
     try {
       const response = await fetch(
@@ -234,31 +240,60 @@ export default function ProjectCatalog({
     }
   }
 
-  function updateFilter(field: keyof Filters, value: string) {
+  function updateFilter<K extends keyof Filters>(field: K, value: Filters[K]) {
     setFilters((current) => ({
       ...current,
       [field]: value,
     }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function toggleListFilter(
+    field: "construction_types" | "floors_list" | "materials",
+    value: string,
+  ) {
+    setFilters((current) => {
+      const list = current[field];
+      const nextList = list.includes(value)
+        ? list.filter((item) => item !== value)
+        : [...list, value];
+      return { ...current, [field]: nextList };
+    });
+  }
+
+  function handleFilterSubmit() {
     loadProjects(filters, 1);
   }
 
   function resetFilters() {
     const resetValues: Filters = {
       category: initialCategory,
-      construction_type: "",
-      area_min: "",
-      area_max: "",
-      price_max: "",
-      floors: "",
+      ...EMPTY_FILTERS,
     };
 
     setFilters(resetValues);
     setOrdering("default");
     loadProjects(resetValues, 1, "default");
+  }
+
+  function removeFilterGroup(group: FilterGroupKey) {
+    const next: Filters = { ...filters };
+
+    if (group === "construction_types") next.construction_types = [];
+    else if (group === "floors_list") next.floors_list = [];
+    else if (group === "materials") next.materials = [];
+    else if (group === "size") {
+      next.size_min = "";
+      next.size_max = "";
+    } else if (group === "area") {
+      next.area_min = "";
+      next.area_max = "";
+    } else if (group === "price") {
+      next.price_min = "";
+      next.price_max = "";
+    }
+
+    setFilters(next);
+    loadProjects(next, 1);
   }
 
   function handleOrderingChange(value: Ordering) {
@@ -338,6 +373,39 @@ export default function ProjectCatalog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Живой счётчик "Показать N проектов" на кнопке фильтров: считает, сколько
+  // проектов подойдёт под ЕЩЁ НЕ применённые (staged) фильтры. Отдельный
+  // облегчённый запрос с page_size=1 — нужен только заголовок count из
+  // пагинации, сам список результатов не используется.
+  useEffect(() => {
+    if (!showFilters) return;
+
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      setIsPreviewLoading(true);
+      try {
+        const response = await fetch(
+          buildProjectsUrl(filters, 1, "default", true, lockedSize, 1)
+        );
+        if (!response.ok) throw new Error();
+        const data = (await response.json()) as PaginatedProjects;
+        if (!isCancelled) {
+          setPreviewCount(typeof data.count === "number" ? data.count : null);
+        }
+      } catch {
+        if (!isCancelled) setPreviewCount(null);
+      } finally {
+        if (!isCancelled) setIsPreviewLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, showFilters]);
+
   const visibleProjects = maxItems ? projects.slice(0, maxItems) : projects;
   const totalPages = usesPagination
     ? Math.max(1, Math.ceil(totalProjects / PAGE_SIZE))
@@ -349,6 +417,8 @@ export default function ProjectCatalog({
         pageNumber === totalPages ||
         Math.abs(pageNumber - currentPage) <= 2
     );
+
+  const activeChips = getActiveFilterChips(appliedFilters);
 
   return (
     <section className="container section catalogSection" id="projects">
@@ -362,133 +432,85 @@ export default function ProjectCatalog({
 
       <div className={showFilters ? "catalogLayout" : "catalogLayout catalogLayoutPlain"}>
         {showFilters && (
-          <aside className="catalogSidebar">
-            <div className="catalogSidebarTitle">
-              <strong>Подбор проекта</strong>
-              <span>Настройте параметры</span>
-            </div>
-
-            <form className="catalogFilters" onSubmit={handleSubmit}>
-              {showCategoryFilter && (
-                <label>
-                  <span>Категория</span>
-                  <select
-                    value={filters.category}
-                    onChange={(event) => updateFilter("category", event.target.value)}
-                  >
-                    <option value="">Все категории</option>
-
-                    {categories.map((category) => (
-                      <option value={category.slug} key={category.id}>
-                        {category.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-
-              <label>
-                <span>Тип</span>
-                <select
-                  value={filters.construction_type}
-                  onChange={(event) =>
-                    updateFilter("construction_type", event.target.value)
-                  }
-                >
-                  {constructionTypes.map((type) => (
-                    <option value={type.value} key={type.value || "all"}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                <span>Площадь от, м²</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={filters.area_min}
-                  onChange={(event) => updateFilter("area_min", event.target.value)}
-                  placeholder="40"
-                />
-              </label>
-
-              <label>
-                <span>Площадь до, м²</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={filters.area_max}
-                  onChange={(event) => updateFilter("area_max", event.target.value)}
-                  placeholder="120"
-                />
-              </label>
-
-              <label>
-                <span>Цена до, ₽</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={filters.price_max}
-                  onChange={(event) => updateFilter("price_max", event.target.value)}
-                  placeholder="1500000"
-                />
-              </label>
-
-              <label>
-                <span>Этажность</span>
-                <select
-                  value={filters.floors}
-                  onChange={(event) => updateFilter("floors", event.target.value)}
-                >
-                  <option value="">Любая</option>
-                  <option value="1">1 этаж</option>
-                  <option value="1.5">1,5 этажа</option>
-                  <option value="2">2 этажа</option>
-                </select>
-              </label>
-
-              <div className="filterActions">
-                <button className="buttonPrimary" type="submit">
-                  Показать
-                </button>
-
-                <button
-                  className="buttonGhost"
-                  type="button"
-                  onClick={resetFilters}
-                >
-                  Сбросить фильтры
-                </button>
-              </div>
-            </form>
-          </aside>
+          <CatalogFilterPanel
+            categories={categories}
+            showCategoryFilter={showCategoryFilter}
+            filters={filters}
+            previewCount={previewCount}
+            isPreviewLoading={isPreviewLoading}
+            isMobileOpen={isMobileFiltersOpen}
+            onCloseMobile={() => setIsMobileFiltersOpen(false)}
+            onUpdateFilter={updateFilter}
+            onToggleListFilter={toggleListFilter}
+            onSubmit={handleFilterSubmit}
+            onReset={resetFilters}
+          />
         )}
 
         <div className="catalogContent">
           {!isLoading && !errorMessage && (
-            <div className="catalogToolbar">
-              <span>
-                Найдено проектов: <strong>{totalProjects}</strong>
-              </span>
-              <label>
-                <span>Сортировка</span>
-                <select
-                  aria-label="Сортировка проектов"
-                  value={ordering}
-                  onChange={(event) =>
-                    handleOrderingChange(event.target.value as Ordering)
-                  }
-                >
-                  {orderingOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+            <>
+              {showFilters && activeChips.length > 0 && (
+                <div className={filterPanelStyles.chipsRow}>
+                  {activeChips.map((chip) => (
+                    <button
+                      type="button"
+                      className={filterPanelStyles.chip}
+                      key={chip.key}
+                      onClick={() => removeFilterGroup(chip.key)}
+                    >
+                      {chip.label}
+                      <span aria-hidden="true">×</span>
+                    </button>
                   ))}
-                </select>
-              </label>
-            </div>
+                  <button
+                    type="button"
+                    className={filterPanelStyles.chipReset}
+                    onClick={resetFilters}
+                  >
+                    Сбросить все
+                  </button>
+                </div>
+              )}
+
+              <div className="catalogToolbar">
+                <span className={filterPanelStyles.toolbarCount}>
+                  Найдено проектов: <strong>{totalProjects}</strong>
+                </span>
+
+                <div className={filterPanelStyles.toolbarControls}>
+                  {showFilters && (
+                    <button
+                      type="button"
+                      className={filterPanelStyles.mobileTrigger}
+                      onClick={() => setIsMobileFiltersOpen(true)}
+                    >
+                      <svg viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M3 5h14M6 10h8M8.5 15h3" />
+                      </svg>
+                      Фильтры{activeChips.length > 0 ? ` · ${activeChips.length}` : ""}
+                    </button>
+                  )}
+
+                  <label>
+                    <span>Сортировка</span>
+                    <select
+                      aria-label="Сортировка проектов"
+                      value={ordering}
+                      onChange={(event) =>
+                        handleOrderingChange(event.target.value as Ordering)
+                      }
+                    >
+                      {orderingOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </>
           )}
           {isLoading && <div className="catalogState">Загружаем проекты...</div>}
 
@@ -501,8 +523,13 @@ export default function ProjectCatalog({
             </div>
           )}
 
-          {!isLoading && visibleProjects.length > 0 && (
+          {!isLoading &&
+            (visibleProjects.length > 0 ||
+              (showCustomProjectCard && currentPage === 1)) && (
             <div className="projectGrid">
+              {showCustomProjectCard && currentPage === 1 && (
+                <CustomProjectCard />
+              )}
               {visibleProjects.map((project) => (
                 <article className="projectCard" key={project.id}>
                   <Link className="projectImage" href={`/projects/${project.slug}`}>
