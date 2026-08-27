@@ -17,6 +17,12 @@ class Lead(models.Model):
             "home_phone_consultation",
             "Консультация с главной страницы",
         )
+        HOME_HERO_POPUP = (
+            "home_hero_popup",
+            "Всплывающая форма в баннере на главной",
+        )
+        FAQ_PAGE = "faq_page", "Вопрос со страницы FAQ"
+        REVIEWS_PAGE = "reviews_page", "Заявка со страницы отзывов"
 
     name = models.CharField("Имя", max_length=255, blank=True)
     phone = models.CharField("Телефон", max_length=50, blank=True)

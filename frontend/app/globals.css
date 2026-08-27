@@ -1794,7 +1794,10 @@ h1 {
 }
 
 .homeEditorial .homeHeroGrid {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: center;
+  gap: 36px;
   min-height: 480px;
   padding: 72px 0;
 }
@@ -2389,6 +2392,11 @@ h1 {
   .homeEditorial .homeFinal {
     grid-template-columns: 1fr;
   }
+
+  .homeEditorial .homeHeroGrid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
 }
 
 @media (max-width: 680px) {
@@ -2403,8 +2411,9 @@ h1 {
   }
 
   .homeEditorial .homeHeroGrid {
-    min-height: 500px;
-    padding: 48px 0 190px;
+    min-height: 0;
+    gap: 24px;
+    padding: 40px 0 32px;
   }
 
   .homeEditorial .homeHero {

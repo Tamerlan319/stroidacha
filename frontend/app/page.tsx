@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
+import HeroLeadCard from "./components/HeroLeadCard";
 import HomePortfolioShowcase from "./components/HomePortfolioShowcase";
 import JsonLd from "./components/JsonLd";
 import LeadForm from "./components/LeadForm";
@@ -165,6 +166,8 @@ export default async function HomePage() {
               <Link href="/calculator" className="buttonSecondary">Рассчитать стоимость</Link>
             </div>
           </div>
+
+          <HeroLeadCard />
         </div>
       </section>
 
@@ -198,6 +201,7 @@ export default async function HomePage() {
       <ProjectCatalog
         initialCategory="houses"
         showFilters={false}
+        showCustomProjectCard={false}
         maxItems={6}
         eyebrow=""
         title="Проекты, которые выбирают"
