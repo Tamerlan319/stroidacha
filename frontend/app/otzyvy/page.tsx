@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import LeadForm from "../components/LeadForm";
+import YandexReviewsWidget from "../components/YandexReviewsWidget";
 import { SITE_NAME, SITE_URL } from "../lib/site";
 
 type Review = {
@@ -78,6 +79,19 @@ export default async function ReviewsPage() {
             Отзывы появятся здесь после команды импорта или добавления в Django Admin.
           </div>
         )}
+      </section>
+
+      <section className="container section reviewsSection">
+        <div className="sectionHeader">
+          <p className="eyebrow">Проверено Яндексом</p>
+          <h2>Отзывы на Яндекс Картах</h2>
+          <p>
+            Рейтинг и отзывы, которые клиенты оставляют напрямую на Яндексе —
+            обновляются автоматически, без нашего участия.
+          </p>
+        </div>
+
+        <YandexReviewsWidget />
       </section>
 
       <section className="reviewsLeadSection" id="lead-form">
