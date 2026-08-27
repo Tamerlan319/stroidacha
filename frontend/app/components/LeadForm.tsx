@@ -12,7 +12,8 @@ import {
   useState,
 } from "react";
 
-import { getWhatsAppLink, legalConfig } from "../lib/legalConfig";
+import { legalConfig } from "../lib/legalConfig";
+import SocialLinks from "./SocialLinks";
 import styles from "./LeadForm.module.css";
 
 // Пусто, если ключ не задан на сборке — тогда капча просто не рендерится
@@ -815,16 +816,10 @@ export default function LeadForm({
           {isSubmitting ? "Отправляем заявку..." : "Отправить заявку"}
         </button>
 
-        <a
-          className={styles.whatsappButton}
-          href={getWhatsAppLink(
-            "Здравствуйте! Хочу написать напрямую в WhatsApp для более быстрого ответа по проекту."
-          )}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Написать в WhatsApp
-        </a>
+        <div className={styles.altContact}>
+          <span>Или напишите нам напрямую</span>
+          <SocialLinks />
+        </div>
       </div>
 
       {status === "success" && (
