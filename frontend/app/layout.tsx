@@ -128,6 +128,23 @@ function buildSiteJsonLd(reviews: SiteReview[]) {
         areaServed: "RU",
         availableLanguage: ["Russian"],
       },
+      // Публично уже указано на /kontakty и в legalConfig.workHours —
+      // здесь просто та же информация в формате, который понимают
+      // поисковики, чтобы часы работы могли попасть в сниппет.
+      openingHoursSpecification: {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ],
+        opens: "09:00",
+        closes: "20:00",
+      },
       ...(ratingValue !== null
         ? {
             aggregateRating: {
