@@ -208,6 +208,11 @@ LEAD_NOTIFICATION_EMAILS = env.list(
 # не ломаются без реального ключа).
 SMARTCAPTCHA_SERVER_KEY = env("SMARTCAPTCHA_SERVER_KEY", default="")
 
+# Публичный адрес фронтенда — нужен там, где бэкенд сам строит ссылки на
+# страницы сайта (не на свои же API/медиа), например в YML-фиде для Яндекса
+# (см. catalog/feeds.py). Совпадает с NEXT_PUBLIC_SITE_URL у фронтенда.
+SITE_URL = env("SITE_URL", default="https://brusodel.ru")
+
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
