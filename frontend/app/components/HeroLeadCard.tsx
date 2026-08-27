@@ -3,11 +3,11 @@
 import { useState } from "react";
 
 import LeadFormModal from "./LeadFormModal";
+import SocialLinks from "./SocialLinks";
 import { SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
 import styles from "./HeroLeadCard.module.css";
 
 const benefits = [
-  "Перезвоним в течение 15 минут в рабочее время",
   "Подберём проект под участок и бюджет",
   "Расчёт бесплатный, без обязательств",
 ];
@@ -46,6 +46,8 @@ export default function HeroLeadCard() {
       <a className={styles.phone} href={`tel:${SITE_PHONE_HREF}`}>
         Или позвоните: {SITE_PHONE}
       </a>
+
+      <SocialLinks className={styles.social} />
 
       <LeadFormModal
         open={isOpen}

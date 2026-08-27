@@ -83,6 +83,10 @@
   text-decoration: underline;
 }
 
+.social {
+  justify-content: center;
+}
+
 @media (max-width: 960px) {
   .card {
     max-width: 420px;
