@@ -146,6 +146,10 @@ class PortfolioProject(models.Model):
         "Главное изображение",
         upload_to="portfolio/main/",
         blank=True,
+        help_text=(
+            "Резервный вариант. Если ниже в галерее отмечено «Главное фото», "
+            "на превью объекта используется оно, а не это изображение."
+        ),
     )
 
     is_active = models.BooleanField("Активен", default=True)
@@ -166,6 +170,27 @@ class PortfolioProject(models.Model):
 
         super().save(*args, **kwargs)
 
+    @property
+    def cover_image_file(self):
+        """Изображение для превью объекта: фото из галереи, отмеченное
+        is_cover, иначе main_image (загруженное отдельно), иначе первое
+        фото галереи по sort_order. Работает через self.images.all(), чтобы
+        переиспользовать prefetch_related("images") у API-запросов и не
+        плодить лишние запросы к БД."""
+        photos = list(self.images.all())
+        cover = next((photo for photo in photos if photo.is_cover), None)
+
+        if cover and cover.image:
+            return cover.image
+
+        if self.main_image:
+            return self.main_image
+
+        if photos and photos[0].image:
+            return photos[0].image
+
+        return None
+
 
 class PortfolioImage(models.Model):
     portfolio_project = models.ForeignKey(
@@ -180,6 +205,11 @@ class PortfolioImage(models.Model):
     )
     caption = models.CharField("Подпись", max_length=255, blank=True)
     alt_text = models.CharField("Alt-текст", max_length=255, blank=True)
+    is_cover = models.BooleanField(
+        "Главное фото",
+        default=False,
+        help_text="Показывается на превью объекта в портфолио. Отметьте только у одного фото.",
+    )
     sort_order = models.PositiveIntegerField("Сортировка", default=0)
 
     class Meta:

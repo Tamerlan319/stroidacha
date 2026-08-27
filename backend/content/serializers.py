@@ -88,6 +88,7 @@ class PortfolioImageSerializer(
             "image",
             "caption",
             "alt_text",
+            "is_cover",
             "sort_order",
         )
 
@@ -122,4 +123,6 @@ class PortfolioProjectSerializer(
         )
 
     def get_main_image(self, obj):
-        return self.get_absolute_image_url(obj, "main_image")
+        # obj.cover_image_file уже учитывает is_cover в галерее, main_image
+        # и первое фото галереи как запасные варианты — см. модель.
+        return self.get_absolute_image_url(obj, "cover_image_file")
