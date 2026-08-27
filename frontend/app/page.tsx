@@ -109,10 +109,8 @@ async function getFaqs(): Promise<FAQ[]> {
   }
 }
 
-function buildHomeJsonLd(): Record<string, unknown> {
-  return {
-    "@context": "https://schema.org",
-    "@graph": [
+function buildHomeJsonLd(faqs: FAQ[]): Record<string, unknown> {
+  const graph: Record<string, unknown>[] = [
       {
         "@type": "WebPage",
         "@id": `${SITE_URL}/#webpage`,
@@ -145,7 +143,30 @@ function buildHomeJsonLd(): Record<string, unknown> {
           })),
         },
       },
-    ],
+  ];
+
+  // FAQPage — на главной есть реальные вопросы/ответы (см. секцию
+  // "Ответы на частые вопросы"), но раньше они нигде не попадали в
+  // structured data, хотя разметка уже давно используется для отдельных
+  // SEO-страниц (см. buildLandingPageJsonLd в app/[slug]/page.tsx).
+  if (faqs.length > 0) {
+    graph.push({
+      "@type": "FAQPage",
+      "@id": `${SITE_URL}/#faq`,
+      mainEntity: faqs.slice(0, 4).map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
+        },
+      })),
+    });
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": graph,
   };
 }
 
@@ -154,7 +175,7 @@ export default async function HomePage() {
 
   return (
     <main className="homeEditorial">
-      <JsonLd data={buildHomeJsonLd()} />
+      <JsonLd data={buildHomeJsonLd(faqs)} />
 
       <section className="homeHero">
         <div className="container homeHeroGrid">

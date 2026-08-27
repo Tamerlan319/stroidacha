@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { SITE_NAME } from "../lib/site";
-
 type GuidePage = {
   id: number;
   title: string;
@@ -14,7 +12,9 @@ type GuidePage = {
 };
 
 export const metadata: Metadata = {
-  title: `Справочник по строительству домов из бруса | ${SITE_NAME}`,
+  // См. комментарий в app/faq/page.tsx — бренд добавляет шаблон title в
+  // layout.tsx, дописывать его тут второй раз не нужно.
+  title: "Справочник по строительству домов из бруса",
   description:
     "Полезные статьи о выборе бруса, строительстве, эксплуатации домов и бань, финансировании и работе компании Брусодел.",
   alternates: { canonical: "/spravochnik" },

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import LeadForm from "../components/LeadForm";
 import YandexReviewsWidget from "../components/YandexReviewsWidget";
-import { SITE_NAME, SITE_URL } from "../lib/site";
+import { SITE_URL } from "../lib/site";
 
 type Review = {
   id: number;
@@ -14,7 +14,9 @@ type Review = {
 };
 
 export const metadata: Metadata = {
-  title: `Отзывы клиентов — ${SITE_NAME}`,
+  // См. комментарий в app/faq/page.tsx — бренд добавляет шаблон title в
+  // layout.tsx, дописывать его тут второй раз не нужно.
+  title: "Отзывы клиентов",
   description:
     "Отзывы клиентов о строительстве домов и бань из бруса: сроки, качество работ и впечатления от готовых объектов.",
   alternates: { canonical: `${SITE_URL}/otzyvy` },

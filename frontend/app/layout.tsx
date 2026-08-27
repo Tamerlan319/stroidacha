@@ -116,6 +116,19 @@ function buildSiteJsonLd(reviews: SiteReview[]) {
       email: SITE_EMAIL,
       telephone: SITE_PHONE,
       taxID: "4400020680",
+      // Юридический адрес — тот же, что указан на /kontakty и /requisites.
+      // Отдельные локации (офис в Москве, производство в Чухломе) со своими
+      // часами работы — в ContactLocation (см. /api/contacts/); их вывод в
+      // виде отдельных LocalBusiness с адресом и часами работы для каждой
+      // точки — следующий шаг для локального SEO, сейчас не реализовано.
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "пер. Дорожный, д. 17, кв. 2",
+        addressLocality: "Чухлома",
+        addressRegion: "Костромская область",
+        postalCode: "157130",
+        addressCountry: "RU",
+      },
       areaServed: {
         "@type": "Country",
         name: "Россия",

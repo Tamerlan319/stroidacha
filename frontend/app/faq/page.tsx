@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import LeadForm from "../components/LeadForm";
-import { SITE_NAME, SITE_URL } from "../lib/site";
+import { SITE_URL } from "../lib/site";
 
 type FAQ = {
   id: number;
@@ -15,7 +15,10 @@ type HomepageContent = {
 };
 
 export const metadata: Metadata = {
-  title: `Вопросы и ответы — ${SITE_NAME}`,
+  // Просто заголовок страницы — бренд добавляет шаблон title в layout.tsx
+  // ("%s | Брусодел"). Раньше бренд был приписан и здесь, и в шаблоне —
+  // title дублировался: "Вопросы и ответы — Брусодел | Брусодел".
+  title: "Вопросы и ответы",
   description:
     "Ответы на частые вопросы о проектах, комплектации, сроках, оплате, доставке и строительстве домов и бань из бруса.",
   alternates: { canonical: `${SITE_URL}/faq` },
