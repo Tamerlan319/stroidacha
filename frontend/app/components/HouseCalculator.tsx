@@ -1,7 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+
+import { SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
 
 type MaterialOption = {
   code: string;
@@ -717,23 +720,38 @@ export default function HouseCalculator() {
             <p className="calculatorDisclaimer">{result.disclaimer}</p>
 
             {result.similar_projects && result.similar_projects.length > 0 && (
-              <div className="calculatorReferences">
+              <div className="calculatorSimilar">
                 <h3>Похожие проекты в каталоге</h3>
                 <p>
                   Реальные проекты близкого размера и их фактическая цена — ориентир в дополнение к расчёту выше.
                 </p>
                 {result.similar_projects.map((project) => (
-                  <Link href={`/projects/${project.slug}`} key={project.slug}>
-                    <div>
+                  <Link className="calculatorSimilarRow" href={`/projects/${project.slug}`} key={project.slug}>
+                    <span className="calculatorSimilarThumb">
+                      {project.main_image ? (
+                        <Image
+                          src={project.main_image}
+                          alt={project.title}
+                          fill
+                          sizes="52px"
+                          style={{ objectFit: "cover" }}
+                        />
+                      ) : null}
+                    </span>
+                    <span className="calculatorSimilarInfo">
                       <strong>{project.title}</strong>
                       <span>
                         {project.size_text || `${project.area} м²`}
                         {project.floor_label ? ` · ${project.floor_label}` : ""}
                       </span>
-                    </div>
+                    </span>
                     <b>{project.price_from ? formatPrice(project.price_from) : "Цена по запросу"}</b>
                   </Link>
                 ))}
+                <p className="calculatorSimilarNote">
+                  Цены проектов каталога могли измениться — точную стоимость на сегодня уточните по
+                  телефону <a href={`tel:${SITE_PHONE_HREF}`}>{SITE_PHONE}</a>.
+                </p>
               </div>
             )}
           </div>

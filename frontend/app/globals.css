@@ -4448,6 +4448,98 @@ main {
   margin-top: 16px;
 }
 
+/* Похожие проекты в результате калькулятора — свой набор классов, а не
+   переиспользование .calculatorReferences: та привязана к строкам без
+   фото (смета/допущения), а тут ещё превью-картинка в ряду. */
+.calculatorSimilar {
+  margin-top: 26px;
+  border-top: 1px solid var(--sd-border);
+  padding-top: 22px;
+}
+
+.calculatorSimilar h3 {
+  margin: 0;
+  color: var(--sd-forest);
+  font-size: 17px;
+}
+
+.calculatorSimilar > p {
+  margin: 7px 0 14px;
+  color: var(--sd-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.calculatorSimilarRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(29, 33, 27, 0.08);
+}
+
+.calculatorSimilarRow:last-of-type {
+  border-bottom: 0;
+}
+
+.calculatorSimilarThumb {
+  position: relative;
+  display: block;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #ddd6cb;
+}
+
+.calculatorSimilarInfo {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 3px;
+}
+
+.calculatorSimilarInfo strong {
+  overflow: hidden;
+  color: var(--sd-text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calculatorSimilarInfo span {
+  color: var(--sd-muted);
+  font-size: 11px;
+}
+
+.calculatorSimilarRow b {
+  flex-shrink: 0;
+  color: var(--sd-forest);
+  font-size: 13px;
+}
+
+.calculatorSimilarRow:hover strong {
+  color: var(--sd-accent);
+}
+
+/* Ненавязчивая сноска — не баннер, просто мелкий текст в подвале блока. */
+.calculatorSimilarNote {
+  margin: 12px 0 0;
+  color: var(--sd-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.calculatorSimilarNote a {
+  color: var(--sd-muted);
+  text-decoration: underline;
+}
+
+.calculatorSimilarNote a:hover {
+  color: var(--sd-forest);
+}
+
 .calculatorLeadGrid {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(380px, 1fr);
