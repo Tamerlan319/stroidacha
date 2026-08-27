@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type MaterialOption = {
@@ -36,6 +37,16 @@ type CalculatorConfig = {
 };
 
 
+type SimilarProject = {
+  slug: string;
+  title: string;
+  area: number;
+  size_text: string;
+  floor_label: string;
+  price_from: number | null;
+  main_image: string | null;
+};
+
 type CalculationResult = {
   total: number;
   price_min: number;
@@ -47,6 +58,7 @@ type CalculationResult = {
     price: number;
     note: string;
   }>;
+  similar_projects?: SimilarProject[];
   method: string;
   confidence: "high" | "medium" | "preliminary";
   calculation_mode?: "quick" | "explicit" | "verified_project";
@@ -634,7 +646,7 @@ export default function HouseCalculator() {
             <div className="calculatorResultHint">
               <strong>Это не поиск похожего дома</strong>
               <p>
-                Сначала определяются количества, затем каждая позиция умножается на историческую ставку, действующую на дату расчёта. Каталог используется только для контрольного сравнения.
+                Сначала определяются количества, затем каждая позиция умножается на историческую ставку, действующую на дату расчёта. Ниже дополнительно покажем реальные проекты каталога похожего размера — для сравнения.
               </p>
             </div>
           </div>
@@ -703,6 +715,27 @@ export default function HouseCalculator() {
             </div>
 
             <p className="calculatorDisclaimer">{result.disclaimer}</p>
+
+            {result.similar_projects && result.similar_projects.length > 0 && (
+              <div className="calculatorReferences">
+                <h3>Похожие проекты в каталоге</h3>
+                <p>
+                  Реальные проекты близкого размера и их фактическая цена — ориентир в дополнение к расчёту выше.
+                </p>
+                {result.similar_projects.map((project) => (
+                  <Link href={`/projects/${project.slug}`} key={project.slug}>
+                    <div>
+                      <strong>{project.title}</strong>
+                      <span>
+                        {project.size_text || `${project.area} м²`}
+                        {project.floor_label ? ` · ${project.floor_label}` : ""}
+                      </span>
+                    </div>
+                    <b>{project.price_from ? formatPrice(project.price_from) : "Цена по запросу"}</b>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </aside>

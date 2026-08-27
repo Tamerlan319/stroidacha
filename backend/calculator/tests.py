@@ -174,8 +174,54 @@ class CalculatorV4ApiTests(TestCase):
         response = self.client.post("/api/calculator/calculate/", self.payload(), format="json")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["method"], "exact_quantity_rate_v4")
-        self.assertEqual(response.data["references"], [])
+        # Без ProjectOffer у "похожих проектов" нет цены (и, значит, нет и
+        # самих карточек) — но расчёт основной цены это не должно ломать.
+        self.assertEqual(response.data["similar_projects"], [])
         self.assertEqual(response.data["calculation_mode"], "quick")
+
+    def test_similar_projects_shown_and_self_excluded(self):
+        close_match = Project.objects.create(
+            external_id="DB-TEST-CLOSE",
+            title="Похожий тестовый дом",
+            slug="db-test-close",
+            category=self.category,
+            construction_type=Project.ConstructionType.TIMBER,
+            area=55,
+            floors=Decimal("1.5"),
+            width=6,
+            length=6,
+        )
+        ProjectOffer.objects.create(
+            project=close_match, material=self.material, build_package=self.package,
+            base_price=900_000,
+        )
+        far_match = Project.objects.create(
+            external_id="DB-TEST-FAR",
+            title="Непохожий тестовый дом",
+            slug="db-test-far",
+            category=self.category,
+            construction_type=Project.ConstructionType.TIMBER,
+            area=400,
+            floors=Decimal("1.5"),
+            width=20,
+            length=20,
+        )
+        ProjectOffer.objects.create(
+            project=far_match, material=self.material, build_package=self.package,
+            base_price=9_000_000,
+        )
+
+        response = self.client.post(
+            "/api/calculator/calculate/", self.payload(project="DB-TEST-V4"), format="json"
+        )
+        self.assertEqual(response.status_code, 200)
+        slugs = [item["slug"] for item in response.data["similar_projects"]]
+        # Сам запрошенный проект (project=DB-TEST-V4) не должен предлагаться
+        # как "похожий на самого себя".
+        self.assertNotIn("db-test-v4", slugs)
+        # Ближайший по площади (55 против 400) должен идти первым.
+        self.assertEqual(slugs[0], "db-test-close")
+        self.assertEqual(response.data["similar_projects"][0]["price_from"], 900_000)
 
     def test_verified_technical_passport_overrides_quick_takeoff(self):
         ProjectTechnicalData.objects.create(

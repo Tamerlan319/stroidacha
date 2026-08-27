@@ -23,7 +23,7 @@ class CalculatorCalculateAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            result = HouseCalculatorService().calculate(serializer.validated_data)
+            result = HouseCalculatorService().calculate(serializer.validated_data, request=request)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 

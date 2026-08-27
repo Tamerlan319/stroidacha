@@ -137,7 +137,7 @@ class HouseCalculatorService:
             ),
         }
 
-    def calculate(self, payload: dict) -> dict:
+    def calculate(self, payload: dict, request=None) -> dict:
         payload, project, passport_fields = self._merge_project_technical(dict(payload))
 
         area = Decimal(payload["area"])
@@ -284,7 +284,10 @@ class HouseCalculatorService:
             "component_details": {key: value.get("details", {}) for key, value in component_results.items()},
             "confidence": confidence,
             "confidence_label": self._confidence_label(mode, project),
-            "references": [],
+            "similar_projects": self._similar_projects(
+                area=area, floors=floors, material=material_cfg.material,
+                exclude=project, request=request,
+            ),
             "assumptions": self._assumptions(payload, takeoff, passport_fields),
             "disclaimer": (
                 "Расчёт не ищет похожий дом. Цена складывается из количества материалов/работ и ставок на выбранную дату. "
@@ -306,6 +309,73 @@ class HouseCalculatorService:
             "price_date": price_date,
         }
         return self.calculate(payload)
+
+    def _similar_projects(self, *, area, floors, material, exclude=None, request=None, limit=4):
+        """Реальные проекты каталога, близкие по площади/этажности к введённым
+        параметрам. Это не источник цены (см. calculate()) — формула не ищет
+        похожий дом. Это отдельная витрина для сравнения: у проектов с
+        одинаковыми шириной/длиной/этажностью в каталоге встречается разброс
+        реальной цены в разы (разная планировка), так что помимо диапазона
+        формулы полезно показать, что стоят реальные дома похожего размера.
+        """
+        candidates = list(
+            Project.objects.filter(
+                is_active=True,
+                category__slug="houses",
+                construction_type=Project.ConstructionType.TIMBER,
+                area__isnull=False,
+            )
+            .exclude(pk=exclude.pk if exclude else None)
+            .select_related("category")
+            .prefetch_related("offers__material", "offers__build_package")[:400]
+        )
+        if not candidates:
+            return []
+
+        def sort_key(candidate):
+            same_floors = candidate.floors is not None and Decimal(candidate.floors) == floors
+            return (0 if same_floors else 1, abs(Decimal(candidate.area) - area))
+
+        candidates.sort(key=sort_key)
+
+        results = []
+        for candidate in candidates:
+            if len(results) >= limit:
+                break
+            price = self._project_reference_price(candidate, material)
+            if price is None:
+                continue
+            image = None
+            if candidate.main_image:
+                image = (
+                    request.build_absolute_uri(candidate.main_image.url)
+                    if request
+                    else candidate.main_image.url
+                )
+            results.append({
+                "slug": candidate.slug,
+                "title": candidate.title,
+                "area": float(candidate.area),
+                "size_text": candidate.computed_size_text,
+                "floor_label": candidate.computed_floor_label,
+                "price_from": price,
+                "main_image": image,
+            })
+        return results
+
+    def _project_reference_price(self, project, material):
+        offer = next(
+            (
+                offer for offer in project.offers.all()
+                if offer.material_id == material.id and offer.base_price is not None
+            ),
+            None,
+        )
+        if offer is None:
+            offer = next((offer for offer in project.offers.all() if offer.base_price is not None), None)
+        if offer is None:
+            return self.pricing.adjust_house_price(project.price_from, project=project)
+        return self.pricing.get_offer_price(offer)
 
     def _calculate_house(self, *, floors, material_cfg, package, takeoff, rates: CostRateService):
         lines = []
