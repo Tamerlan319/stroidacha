@@ -67,3 +67,98 @@ a:not(.btn),
   object-fit: cover;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
+
+/* Сводка и быстрые ссылки на главной странице админки
+   (templates/admin/index.html, config/admin_site.py). */
+.brusodel-dashboard {
+  margin-bottom: 22px;
+}
+
+/* Bootstrap не даёт "1/5 ширины" из коробки — 5 карточек в ряд на десктопе. */
+@media (min-width: 992px) {
+  .col-lg-2dot4 {
+    flex: 0 0 20%;
+    max-width: 20%;
+  }
+}
+
+.brusodel-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-left: 4px solid var(--brusodel-forest);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  text-decoration: none !important;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.brusodel-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.brusodel-stat-card i {
+  margin-bottom: 4px;
+  color: var(--brusodel-forest);
+  font-size: 20px;
+}
+
+.brusodel-stat-card strong {
+  font-size: 26px;
+  line-height: 1.1;
+  color: #1d211b;
+}
+
+.brusodel-stat-card span {
+  color: #6c757d;
+  font-size: 12.5px;
+}
+
+.brusodel-stat-card.brusodel-stat-warning {
+  border-left-color: var(--brusodel-accent);
+}
+
+.brusodel-stat-card.brusodel-stat-warning i {
+  color: var(--brusodel-accent);
+}
+
+.brusodel-quicklinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 20px;
+}
+
+.brusodel-quicklinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--brusodel-forest) !important;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.brusodel-quicklinks a:hover {
+  background: var(--brusodel-forest);
+  color: #fff !important;
+}
+
+.brusodel-quicklinks a i {
+  color: var(--brusodel-accent);
+}
+
+.brusodel-quicklinks a:hover i {
+  color: #fff;
+}

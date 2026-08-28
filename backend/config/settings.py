@@ -40,7 +40,10 @@ INSTALLED_APPS = [
     # Тема админки — обязательно до django.contrib.admin, иначе шаблоны
     # jazzmin не переопределят стандартные.
     "jazzmin",
-    "django.contrib.admin",
+    # Свой AdminConfig вместо голого "django.contrib.admin" — подключает
+    # BrusodelAdminSite (сводка на главной странице админки, см.
+    # config/admin_site.py), не меняя ничего в самих admin.py по проекту.
+    "config.apps.BrusodelAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -90,7 +93,11 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # templates/admin/index.html — кастомная сводка на главной странице
+        # админки (см. config/admin_site.py). DIRS проверяется раньше
+        # APP_DIRS, поэтому этот шаблон переопределяет и стандартный, и
+        # jazzmin-овский admin/index.html.
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
