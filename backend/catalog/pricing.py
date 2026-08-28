@@ -215,7 +215,7 @@ class PricingService:
         prices = [price for price in prices if price is not None]
         if prices:
             return min(prices)
-        # Только legacy fallback для ещё не нормализованных бань/гаражей.
+        # Только legacy fallback для ещё не нормализованных бань.
         return self.adjust_house_price(project.price_from, project=project)
 
     def _foundation_formula_base(self, item: ProjectFoundation) -> Decimal | None:

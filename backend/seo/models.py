@@ -58,7 +58,7 @@ class LandingPage(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="Если выбрать категорию, можно связать страницу с домами/банями/гаражами",
+        help_text="Если выбрать категорию, можно связать страницу с домами или банями",
     )
 
     related_projects = models.ManyToManyField(
