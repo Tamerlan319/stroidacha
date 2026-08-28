@@ -1,0 +1,69 @@
+/*
+ * Точечная перекраска темы jazzmin/AdminLTE под фирменные цвета сайта
+ * (те же переменные, что в frontend/app/globals.css: --sd-forest/--sd-accent).
+ * !important местами неизбежен — перекрываем встроенную Bootstrap-тему
+ * (sidebar-dark-success), а не переписываем её с нуля.
+ */
+
+:root {
+  --brusodel-forest: #1f3325;
+  --brusodel-forest-2: #15241a;
+  --brusodel-accent: #d88b3d;
+}
+
+/* Верхняя панель и бренд-блок (jazzmin 3 / AdminLTE 4 — .app-header,
+   .app-sidebar; старые классы .main-header/.main-sidebar оставлены на
+   случай отката jazzmin на 2.x, где они использовались вместо новых). */
+.app-header,
+.main-header.navbar,
+.brand-link {
+  background-color: var(--brusodel-forest) !important;
+  border-bottom-color: var(--brusodel-forest-2) !important;
+}
+
+/* Боковое меню */
+.app-sidebar,
+.main-sidebar,
+.main-sidebar::before,
+.sidebar-dark-success {
+  background-color: var(--brusodel-forest) !important;
+}
+
+.nav-sidebar .nav-link.active,
+.sidebar-dark-success .nav-sidebar > .nav-item > .nav-link.active,
+.sidebar-dark-success .nav-sidebar > .nav-item > .nav-treeview > .nav-item > .nav-link.active {
+  background-color: var(--brusodel-accent) !important;
+  color: #1d211b !important;
+}
+
+.nav-sidebar .nav-link:hover,
+.sidebar-dark-success .nav-sidebar .nav-link:hover {
+  color: var(--brusodel-accent) !important;
+}
+
+/* Акцентные кнопки/бейджи */
+.btn-success,
+.badge-success {
+  background-color: var(--brusodel-forest) !important;
+  border-color: var(--brusodel-forest) !important;
+}
+
+.btn-success:hover {
+  background-color: var(--brusodel-forest-2) !important;
+  border-color: var(--brusodel-forest-2) !important;
+}
+
+a:not(.btn),
+.nav-link.active {
+  --link-color: var(--brusodel-forest);
+}
+
+/* Небольшие превью изображений в списках/инлайнах (см. admin_utils.thumbnail) */
+.admin-thumb {
+  display: block;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}

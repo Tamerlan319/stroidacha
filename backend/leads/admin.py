@@ -22,10 +22,32 @@ def attachment_file_link(attachment):
     )
 
 
+def attachment_image_preview(attachment, size=48):
+    """Миниатюра для вложений-картинок (photo/скан от клиента).
+
+    PDF так не отрисовать (браузер не покажет PDF через <img>) — для них
+    просто прочерк, открывать по-прежнему через file_link/"Открыть".
+    """
+    if not attachment.pk or not attachment.file:
+        return "—"
+    if not (attachment.content_type or "").startswith("image/"):
+        return "—"
+
+    url = reverse("lead-attachment-download", args=[attachment.pk])
+    return format_html(
+        '<a href="{0}" target="_blank" rel="noopener">'
+        '<img src="{0}?disposition=inline" class="admin-thumb" '
+        'style="width:{1}px;height:{1}px;" loading="lazy" /></a>',
+        url,
+        size,
+    )
+
+
 class LeadAttachmentInline(admin.TabularInline):
     model = LeadAttachment
     extra = 0
     fields = (
+        "preview",
         "file_link",
         "original_name",
         "content_type",
@@ -34,6 +56,10 @@ class LeadAttachmentInline(admin.TabularInline):
     )
     readonly_fields = fields
     can_delete = True
+
+    @admin.display(description="Превью")
+    def preview(self, attachment):
+        return attachment_image_preview(attachment)
 
     @admin.display(description="Файл")
     def file_link(self, attachment):
@@ -57,6 +83,7 @@ class LeadAttachmentInline(admin.TabularInline):
 @admin.register(Lead)
 class LeadAdmin(admin.ModelAdmin):
     list_display = (
+        "attachment_preview",
         "id",
         "source",
         "phone",
@@ -82,6 +109,7 @@ class LeadAdmin(admin.ModelAdmin):
         "manager_comment",
         "attachments__original_name",
     )
+    list_select_related = ("project",)
     readonly_fields = (
         "created_at",
         "updated_at",
@@ -158,14 +186,28 @@ class LeadAdmin(admin.ModelAdmin):
         ),
     )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("attachments")
+
     @admin.display(description="Файлы")
     def attachment_count(self, lead):
-        return lead.attachments.count()
+        return len(lead.attachments.all())
+
+    @admin.display(description="Фото")
+    def attachment_preview(self, lead):
+        image_attachment = next(
+            (a for a in lead.attachments.all() if (a.content_type or "").startswith("image/")),
+            None,
+        )
+        if not image_attachment:
+            return "—"
+        return attachment_image_preview(image_attachment)
 
 
 @admin.register(LeadAttachment)
 class LeadAttachmentAdmin(admin.ModelAdmin):
     list_display = (
+        "preview",
         "id",
         "original_name",
         "lead",
@@ -180,12 +222,17 @@ class LeadAttachmentAdmin(admin.ModelAdmin):
     )
     readonly_fields = (
         "lead",
+        "preview",
         "file_link",
         "original_name",
         "content_type",
         "size",
         "created_at",
     )
+
+    @admin.display(description="Превью")
+    def preview(self, attachment):
+        return attachment_image_preview(attachment)
 
     @admin.display(description="Файл")
     def file_link(self, attachment):

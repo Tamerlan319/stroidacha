@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from config.admin_utils import thumbnail
+
 from .models import LandingPage, LandingPageFAQ, LandingPageImage
 
 
@@ -11,7 +13,12 @@ class LandingPageFAQInline(admin.TabularInline):
 class LandingPageImageInline(admin.TabularInline):
     model = LandingPageImage
     extra = 1
-    fields = ("image", "alt_text", "caption", "sort_order")
+    fields = ("preview", "image", "alt_text", "caption", "sort_order")
+    readonly_fields = ("preview",)
+
+    @admin.display(description="Превью")
+    def preview(self, obj):
+        return thumbnail(obj.image)
 
 
 @admin.register(LandingPage)
@@ -128,6 +135,11 @@ class LandingPageFAQAdmin(admin.ModelAdmin):
 
 @admin.register(LandingPageImage)
 class LandingPageImageAdmin(admin.ModelAdmin):
-    list_display = ("landing_page", "caption", "sort_order")
+    list_display = ("photo", "landing_page", "caption", "sort_order")
     list_filter = ("landing_page",)
     search_fields = ("landing_page__title", "caption", "alt_text")
+    autocomplete_fields = ("landing_page",)
+
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.image)

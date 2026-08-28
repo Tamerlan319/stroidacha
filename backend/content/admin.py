@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from config.admin_utils import thumbnail
+
 from .models import (
     Advantage,
     FAQ,
@@ -84,17 +86,24 @@ class PortfolioImageInline(admin.TabularInline):
     model = PortfolioImage
     extra = 1
     fields = (
+        "preview",
         "image",
         "caption",
         "alt_text",
         "is_cover",
         "sort_order",
     )
+    readonly_fields = ("preview",)
+
+    @admin.display(description="Превью")
+    def preview(self, obj):
+        return thumbnail(obj.image)
 
 
 @admin.register(PortfolioProject)
 class PortfolioProjectAdmin(admin.ModelAdmin):
     list_display = (
+        "photo",
         "title",
         "location",
         "area",
@@ -125,6 +134,16 @@ class PortfolioProjectAdmin(admin.ModelAdmin):
         PortfolioImageInline,
     ]
 
+    def get_queryset(self, request):
+        # cover_image_file перебирает obj.images.all() в Python — без
+        # prefetch список объектов давал бы отдельный запрос на каждую
+        # строку (см. ту же логику в catalog.ProjectAdmin.get_queryset).
+        return super().get_queryset(request).prefetch_related("images")
+
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.cover_image_file)
+
     def save_formset(self, request, form, formset, change):
         super().save_formset(request, form, formset, change)
 
@@ -151,6 +170,7 @@ class PortfolioProjectAdmin(admin.ModelAdmin):
 @admin.register(PortfolioImage)
 class PortfolioImageAdmin(admin.ModelAdmin):
     list_display = (
+        "photo",
         "portfolio_project",
         "caption",
         "is_cover",
@@ -162,3 +182,8 @@ class PortfolioImageAdmin(admin.ModelAdmin):
         "caption",
         "alt_text",
     )
+    autocomplete_fields = ("portfolio_project",)
+
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.image)

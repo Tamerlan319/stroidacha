@@ -2,6 +2,8 @@ from django.contrib import admin, messages
 from django.shortcuts import redirect, render
 from django.urls import path
 
+from config.admin_utils import thumbnail
+
 from .forms import CatalogExcelImportForm
 from .importers import CatalogImportError, import_catalog_excel
 from .models import (
@@ -77,7 +79,7 @@ class BuildPackageAdmin(admin.ModelAdmin):
 
 @admin.register(FoundationType)
 class FoundationTypeAdmin(admin.ModelAdmin):
-    list_display = ("title", "pricing_method", "unit_name", "minimum_price", "is_active", "sort_order")
+    list_display = ("photo", "title", "pricing_method", "unit_name", "minimum_price", "is_active", "sort_order")
     list_editable = ("pricing_method", "minimum_price", "is_active", "sort_order")
     search_fields = ("title", "code")
     list_filter = ("pricing_method", "is_active")
@@ -86,10 +88,14 @@ class FoundationTypeAdmin(admin.ModelAdmin):
         ("Legacy", {"fields": ("base_rate",), "classes": ("collapse",), "description": "Поле оставлено для совместимости. Новые ставки ведутся в разделе «Сметные ставки»."}),
     )
 
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.image)
+
 
 @admin.register(RoofCovering)
 class RoofCoveringAdmin(admin.ModelAdmin):
-    list_display = ("title", "minimum_price", "is_active", "sort_order")
+    list_display = ("photo", "title", "minimum_price", "is_active", "sort_order")
     list_editable = ("minimum_price", "is_active", "sort_order")
     search_fields = ("title", "code")
     fieldsets = (
@@ -97,13 +103,21 @@ class RoofCoveringAdmin(admin.ModelAdmin):
         ("Legacy", {"fields": ("rate_per_m2",), "classes": ("collapse",), "description": "Ставка оставлена для совместимости. Новые цены за м² ведутся в «Сметных ставках»."}),
     )
 
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.image)
+
 
 @admin.register(ExtraOption)
 class ExtraOptionAdmin(admin.ModelAdmin):
-    list_display = ("title", "pricing_method", "base_rate", "unit_name", "minimum_price", "is_active", "sort_order")
+    list_display = ("photo", "title", "pricing_method", "base_rate", "unit_name", "minimum_price", "is_active", "sort_order")
     list_editable = ("pricing_method", "base_rate", "minimum_price", "is_active", "sort_order")
     list_filter = ("pricing_method", "is_active")
     search_fields = ("title", "code")
+
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.image)
 
 
 class ProjectTechnicalDataInline(admin.StackedInline):
@@ -146,12 +160,23 @@ class ProjectMaterialTakeoffInline(admin.TabularInline):
 class ProjectImageInline(admin.TabularInline):
     model = ProjectImage
     extra = 1
-    fields = ("image", "is_primary", "image_type", "caption", "alt_text", "sort_order")
+    fields = ("preview", "image", "is_primary", "image_type", "caption", "alt_text", "sort_order")
+    readonly_fields = ("preview",)
+
+    @admin.display(description="Превью")
+    def preview(self, obj):
+        return thumbnail(obj.image)
 
 
 class ProjectPlanInline(admin.TabularInline):
     model = ProjectPlan
     extra = 1
+    fields = ("preview", "image", "title", "floor", "alt_text", "sort_order")
+    readonly_fields = ("preview",)
+
+    @admin.display(description="Превью")
+    def preview(self, obj):
+        return thumbnail(obj.image)
 
 
 class ProjectOfferInline(admin.TabularInline):
@@ -164,22 +189,37 @@ class ProjectOfferInline(admin.TabularInline):
 class ProjectFoundationInline(admin.TabularInline):
     model = ProjectFoundation
     extra = 0
-    fields = ("foundation", "quantity", "base_price_override", "is_price_fixed", "description", "image_override", "sort_order")
+    fields = ("preview", "foundation", "quantity", "base_price_override", "is_price_fixed", "description", "image_override", "sort_order")
+    readonly_fields = ("preview",)
     autocomplete_fields = ("foundation",)
+
+    @admin.display(description="Превью")
+    def preview(self, obj):
+        return thumbnail(obj.image_override or (obj.foundation.image if obj.foundation_id else None))
 
 
 class ProjectRoofCoveringInline(admin.TabularInline):
     model = ProjectRoofCovering
     extra = 0
-    fields = ("covering", "roof_area_override_m2", "base_price_override", "is_price_fixed", "description", "image_override", "sort_order")
+    fields = ("preview", "covering", "roof_area_override_m2", "base_price_override", "is_price_fixed", "description", "image_override", "sort_order")
+    readonly_fields = ("preview",)
     autocomplete_fields = ("covering",)
+
+    @admin.display(description="Превью")
+    def preview(self, obj):
+        return thumbnail(obj.image_override or (obj.covering.image if obj.covering_id else None))
 
 
 class ProjectExtraOptionInline(admin.TabularInline):
     model = ProjectExtraOption
     extra = 0
-    fields = ("option", "quantity", "base_price_override", "is_price_fixed", "description", "image_override", "sort_order")
+    fields = ("preview", "option", "quantity", "base_price_override", "is_price_fixed", "description", "image_override", "sort_order")
+    readonly_fields = ("preview",)
     autocomplete_fields = ("option",)
+
+    @admin.display(description="Превью")
+    def preview(self, obj):
+        return thumbnail(obj.image_override or (obj.option.image if obj.option_id else None))
 
 
 class ProjectContentSectionInline(admin.TabularInline):
@@ -190,7 +230,7 @@ class ProjectContentSectionInline(admin.TabularInline):
 
 @admin.register(SitePromotion)
 class SitePromotionAdmin(admin.ModelAdmin):
-    list_display = ("title", "code", "is_active", "sort_order")
+    list_display = ("photo", "title", "code", "is_active", "sort_order")
     list_editable = ("is_active", "sort_order")
     search_fields = ("title", "code", "description")
     prepopulated_fields = {"code": ("title",)}
@@ -198,6 +238,10 @@ class SitePromotionAdmin(admin.ModelAdmin):
         ("Акция", {"fields": ("title", "code", "description", "image", "button_label")}),
         ("Публикация", {"fields": ("is_active", "sort_order")}),
     )
+
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.image)
 
 
 @admin.register(ConstructionStep)
@@ -220,6 +264,7 @@ class ProjectPackageOverrideInline(admin.StackedInline):
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = (
+        "photo",
         "external_id",
         "title",
         "category",
@@ -265,6 +310,14 @@ class ProjectAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("offers__material", "images")
+
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        # Та же логика, что в ProjectListSerializer.get_main_image: сначала
+        # фото из галереи с отметкой "Главное изображение", иначе legacy
+        # main_image. images уже prefetch_related — без лишнего запроса.
+        primary = next((image for image in obj.images.all() if image.is_primary), None)
+        return thumbnail(primary.image if primary else obj.main_image)
 
     @admin.display(description="Этажность")
     def floor_display(self, obj):
@@ -369,16 +422,26 @@ class ProjectExtraOptionAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectImage)
 class ProjectImageAdmin(admin.ModelAdmin):
-    list_display = ("project", "is_primary", "image_type", "caption", "sort_order")
+    list_display = ("photo", "project", "is_primary", "image_type", "caption", "sort_order")
     list_filter = ("is_primary", "image_type")
     search_fields = ("project__title", "caption", "alt_text")
+    autocomplete_fields = ("project",)
+
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.image)
 
 
 @admin.register(ProjectPlan)
 class ProjectPlanAdmin(admin.ModelAdmin):
-    list_display = ("project", "title", "floor", "sort_order")
+    list_display = ("photo", "project", "title", "floor", "sort_order")
     list_filter = ("floor",)
     search_fields = ("project__title", "title", "alt_text")
+    autocomplete_fields = ("project",)
+
+    @admin.display(description="Фото")
+    def photo(self, obj):
+        return thumbnail(obj.image)
 
 
 @admin.register(ProjectTechnicalData)

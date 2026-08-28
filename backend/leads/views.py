@@ -57,9 +57,16 @@ class LeadAttachmentDownloadView(APIView):
         if not attachment.file:
             raise Http404
 
+        # ?disposition=inline — для превью-картинки в списке заявок в
+        # админке (см. leads/admin.py): та же авторизация и тот же файл,
+        # просто без Content-Disposition: attachment, чтобы браузер отрисовал
+        # <img>, а не предложил скачивание. Обычная ссылка "Открыть"
+        # продолжает скачивать как раньше.
+        as_attachment = request.query_params.get("disposition") != "inline"
+
         return FileResponse(
             attachment.file.open("rb"),
-            as_attachment=True,
+            as_attachment=as_attachment,
             filename=attachment.original_name or attachment.file.name,
             content_type=attachment.content_type or None,
         )

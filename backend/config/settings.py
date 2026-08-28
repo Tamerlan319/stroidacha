@@ -37,6 +37,9 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 # Application definition
 
 INSTALLED_APPS = [
+    # Тема админки — обязательно до django.contrib.admin, иначе шаблоны
+    # jazzmin не переопределят стандартные.
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -170,6 +173,9 @@ PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+# Проектные статические файлы, не привязанные к конкретному приложению
+# (сейчас — только логотип для админки, см. JAZZMIN_SETTINGS ниже).
+STATICFILES_DIRS = [BASE_DIR / "static_source"]
 
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
@@ -258,5 +264,112 @@ REST_FRAMEWORK = {
             "LEAD_THROTTLE_RATE",
             default="10/hour",
         ),
+    },
+}
+
+# ---------------------------------------------------------------------------
+# Тема админки (django-jazzmin). Только оформление и навигация — на права
+# доступа, поведение форм и данные не влияет.
+# ---------------------------------------------------------------------------
+JAZZMIN_SETTINGS = {
+    "site_title": "Брусодел — админка",
+    "site_header": "Брусодел",
+    "site_brand": "Брусодел",
+    "site_logo": "brand/brusoteka-logo.png",
+    "login_logo": "brand/brusoteka-logo.png",
+    "site_logo_classes": "img-circle",
+    "site_icon": "brand/brusoteka-logo.png",
+    "welcome_sign": "Панель управления сайтом «Брусодел»",
+    "copyright": 'ООО "СтройДача"',
+    "search_model": ["catalog.Project", "leads.Lead", "content.Review", "seo.LandingPage"],
+
+    "topmenu_links": [
+        {"name": "Открыть сайт", "url": "/", "new_window": True},
+        {"model": "auth.user"},
+    ],
+
+    "show_sidebar": True,
+    "navigation_expanded": False,
+    "order_with_respect_to": [
+        "catalog",
+        "content",
+        "leads",
+        "seo",
+        "calculator",
+        "auth",
+    ],
+
+    # Иконки — Font Awesome 5 (идёт вместе с jazzmin), группы моделей без
+    # своей иконки получают default_icon_children ниже.
+    "icons": {
+        "auth": "fas fa-user-shield",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+
+        "catalog.Project": "fas fa-home",
+        "catalog.ProjectCategory": "fas fa-folder-open",
+        "catalog.Material": "fas fa-tree",
+        "catalog.BuildPackage": "fas fa-box-open",
+        "catalog.FoundationType": "fas fa-layer-group",
+        "catalog.RoofCovering": "fas fa-umbrella",
+        "catalog.ExtraOption": "fas fa-plus-circle",
+        "catalog.CostRate": "fas fa-ruble-sign",
+        "catalog.PricingSettings": "fas fa-percentage",
+        "catalog.PricingRule": "fas fa-sliders-h",
+        "catalog.SitePromotion": "fas fa-bullhorn",
+        "catalog.ConstructionStep": "fas fa-list-ol",
+        "catalog.ProjectOffer": "fas fa-tags",
+        "catalog.ProjectImage": "fas fa-images",
+        "catalog.ProjectPlan": "fas fa-drafting-compass",
+
+        "content.Review": "fas fa-star",
+        "content.PortfolioProject": "fas fa-camera-retro",
+        "content.FAQ": "fas fa-question-circle",
+        "content.Advantage": "fas fa-check-circle",
+        "content.WorkStep": "fas fa-tasks",
+        "content.ContactLocation": "fas fa-map-marker-alt",
+        "content.SocialLink": "fas fa-share-alt",
+
+        "leads.Lead": "fas fa-inbox",
+        "leads.LeadAttachment": "fas fa-paperclip",
+
+        "seo.LandingPage": "fas fa-file-alt",
+
+        "calculator.HouseCostProfile": "fas fa-calculator",
+        "calculator.CalculatorMaterial": "fas fa-tree",
+        "calculator.CalculatorFoundation": "fas fa-layer-group",
+        "calculator.CalculatorRoofCovering": "fas fa-umbrella",
+        "calculator.CalculatorSettings": "fas fa-sliders-h",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    "related_modal_active": True,
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {
+        "leads.Lead": "vertical_tabs",
+    },
+
+    "custom_css": "admin/brusodel-admin.css",
+    "show_ui_builder": False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar": "navbar-dark",
+    "navbar_fixed": True,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-success",
+    "sidebar_nav_flat_style": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "theme": "flatly",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-success",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
     },
 }
