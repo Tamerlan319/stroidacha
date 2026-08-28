@@ -370,7 +370,12 @@ JAZZMIN_UI_TWEAKS = {
     "layout_boxed": False,
     "footer_fixed": False,
     "theme": "flatly",
-    "dark_mode_theme": None,
+    # "dark_mode_theme" (jazzmin 2.x) отключён в 3.x — заменён на этот ключ.
+    # Форсируем light: фирменные цвета в brusodel-admin.css настроены и
+    # проверены только под светлую тему, "auto" мог бы среагировать на
+    # тёмную тему ОС и показать нетронутую тёмную AdminLTE вперемешку с
+    # нашими зелёными переопределениями.
+    "default_theme_mode": "light",
     "button_classes": {
         "primary": "btn-success",
         "secondary": "btn-secondary",
