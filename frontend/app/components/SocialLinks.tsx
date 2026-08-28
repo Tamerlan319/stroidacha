@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 
+import { reachGoal } from "../lib/metrika";
 import { useSocialLinks } from "./SocialLinksProvider";
 
 const PLATFORM_META: Record<string, { title: string; iconSrc: string }> = {
@@ -46,6 +47,7 @@ export default function SocialLinks({ className = "" }: SocialLinksProps) {
             rel="noopener noreferrer"
             target="_blank"
             title={meta.title}
+            onClick={() => reachGoal("messenger_click", { platform: item.platform })}
           >
             <Image
               alt=""

@@ -8,8 +8,7 @@ import {
   getServerCookieConsentSnapshot,
   subscribeToCookieConsent,
 } from "./CookieBanner";
-
-const METRIKA_ID = 111986431;
+import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 
 export default function YandexMetrika() {
   const consent = useSyncExternalStore(

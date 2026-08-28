@@ -1,13 +1,9 @@
 import Link from "next/link";
 
-import {
-  CATALOG_LINKS,
-  SITE_EMAIL,
-  SITE_PHONE,
-  SITE_PHONE_HREF,
-} from "../lib/site";
+import { CATALOG_LINKS, SITE_EMAIL } from "../lib/site";
 import BrandMark from "./BrandMark";
 import FooterLegalBlock from "./FooterLegalBlock";
+import FooterPhoneLink from "./FooterPhoneLink";
 
 type LandingPage = {
   id: number;
@@ -93,7 +89,7 @@ export default async function SiteFooter() {
           <ul className="footerContacts">
             <li>
               <span>Телефон</span>
-              <a href={`tel:${SITE_PHONE_HREF}`}>{SITE_PHONE}</a>
+              <FooterPhoneLink />
             </li>
             <li>
               <span>Email</span>

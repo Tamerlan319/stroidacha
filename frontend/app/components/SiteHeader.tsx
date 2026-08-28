@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { reachGoal } from "../lib/metrika";
 import { CATALOG_LINKS, SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
 import BrandMark from "./BrandMark";
 import SiteIcon from "./SiteIcon";
@@ -152,7 +153,11 @@ export default function SiteHeader() {
 
           <div className={headerStyles.contactActions}>
             <div className="sdHeaderContacts">
-              <a className="sdPhone" href={`tel:${SITE_PHONE_HREF}`}>
+              <a
+                className="sdPhone"
+                href={`tel:${SITE_PHONE_HREF}`}
+                onClick={() => reachGoal("phone_click", { location: "header" })}
+              >
                 {SITE_PHONE}
               </a>
               <small>Ежедневно с 9:00 до 20:00</small>
@@ -162,6 +167,7 @@ export default function SiteHeader() {
               className={headerStyles.callButton}
               href={`tel:${SITE_PHONE_HREF}`}
               aria-label={`Позвонить по номеру ${SITE_PHONE}`}
+              onClick={() => reachGoal("phone_click", { location: "header_call_button" })}
             >
               <svg aria-hidden="true" viewBox="0 0 24 24">
                 <path d="M7.2 3.5 10 7.1 8.5 9.4c1.4 2.7 3.4 4.7 6.1 6.1l2.3-1.5 3.6 2.8-.8 2.7c-.2.7-.9 1.1-1.6 1-7.7-1-13.6-6.9-14.6-14.6-.1-.7.3-1.4 1-1.6l2.7-.8Z" />
@@ -517,7 +523,13 @@ export default function SiteHeader() {
               <div className="sdMobileContactRow">
                 <div>
                   <small>Звоните — поможем с выбором</small>
-                  <a href={`tel:${SITE_PHONE_HREF}`} onClick={closeMenu}>
+                  <a
+                    href={`tel:${SITE_PHONE_HREF}`}
+                    onClick={() => {
+                      reachGoal("phone_click", { location: "header_mobile_menu" });
+                      closeMenu();
+                    }}
+                  >
                     {SITE_PHONE}
                   </a>
                   <span>Ежедневно с 9:00 до 20:00</span>

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { reachGoal } from "../lib/metrika";
 import { SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
 
 type MaterialOption = {
@@ -341,6 +342,7 @@ export default function HouseCalculator() {
       }
 
       setResult(data as CalculationResult);
+      reachGoal("calculator_completed");
     } catch (calculationError) {
       setResult(null);
       setError(
@@ -750,7 +752,14 @@ export default function HouseCalculator() {
                 ))}
                 <p className="calculatorSimilarNote">
                   Цены проектов каталога могли измениться — точную стоимость на сегодня уточните по
-                  телефону <a href={`tel:${SITE_PHONE_HREF}`}>{SITE_PHONE}</a>.
+                  телефону{" "}
+                  <a
+                    href={`tel:${SITE_PHONE_HREF}`}
+                    onClick={() => reachGoal("phone_click", { location: "calculator_result" })}
+                  >
+                    {SITE_PHONE}
+                  </a>
+                  .
                 </p>
               </div>
             )}

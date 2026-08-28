@@ -10,6 +10,11 @@ export const SITE_PHONE = "+7 967 680-18-12";
 export const SITE_PHONE_HREF = "+79676801812";
 export const SITE_EMAIL = "brusodel@yandex.ru";
 
+// Счётчик Яндекс.Метрики — используется и в самом теге (YandexMetrika.tsx),
+// и при отправке целей (lib/metrika.ts). Один счётчик на весь сайт, поэтому
+// константа общая, а не продублирована в обоих местах.
+export const YANDEX_METRIKA_ID = 111986431;
+
 export const CATALOG_LINKS = [
   {
     title: "Дома из бруса",

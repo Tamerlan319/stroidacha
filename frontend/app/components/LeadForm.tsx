@@ -13,6 +13,7 @@ import {
 } from "react";
 
 import { legalConfig } from "../lib/legalConfig";
+import { reachGoal } from "../lib/metrika";
 import SocialLinks from "./SocialLinks";
 import styles from "./LeadForm.module.css";
 
@@ -527,6 +528,7 @@ export default function LeadForm({
       setTouched({});
       setErrors({});
       setStatus("success");
+      reachGoal("lead_submit", { source });
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
