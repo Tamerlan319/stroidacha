@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import Link from "next/link";
+
 import JsonLd from "../../components/JsonLd";
 import LeadForm from "../../components/LeadForm";
 import ImageLightbox from "../../components/ImageLightbox";
@@ -67,6 +69,20 @@ type ProjectPlan = {
   alt_text: string;
   sort_order: number;
 };
+
+type SimilarProject = {
+  id: number;
+  external_id: string | null;
+  title: string;
+  slug: string;
+  category: ProjectCategory;
+  area: string | number | null;
+  floor_label: string;
+  size_text: string;
+  price_from: string | number | null;
+  short_description: string;
+  main_image: string | null;
+};
 type Project = {
   id: number;
   external_id: string | null;
@@ -91,6 +107,7 @@ type Project = {
   illustrated_options: ProjectIllustratedOption[];
   promotions: ProjectPromotion[];
   work_steps: ProjectWorkStep[];
+  similar_projects: SimilarProject[];
 };
 type PageProps = {
   params: Promise<{
@@ -154,7 +171,6 @@ function getCategoryPageSlug(categorySlug: string) {
   const map: Record<string, string> = {
     houses: "doma-iz-brusa",
     baths: "bani-iz-brusa",
-    garages: "garazhi-pod-klyuch",
   };
 
   return map[categorySlug] || categorySlug;
@@ -409,6 +425,7 @@ export default async function ProjectPage({ params }: PageProps) {
   const illustratedOptionGroups = groupByTitle(project.illustrated_options || []);
   const promotions = project.promotions || [];
   const workSteps = project.work_steps || [];
+  const similarProjects = project.similar_projects || [];
   return (
     <main className="projectPage">
       <JsonLd data={jsonLd} />
@@ -554,6 +571,59 @@ export default async function ProjectPage({ params }: PageProps) {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+      {similarProjects.length > 0 && (
+        <section className="container section">
+          <div className="sectionHeader">
+            <p className="eyebrow">Похожие проекты</p>
+            <h2>Другие варианты в категории «{project.category.title}»</h2>
+          </div>
+
+          <div className="projectGrid">
+            {similarProjects.map((similar) => (
+              <article className="projectCard" key={similar.id}>
+                <Link className="projectImage" href={`/projects/${similar.slug}`}>
+                  {similar.main_image ? (
+                    <Image
+                      src={similar.main_image}
+                      alt={similar.title}
+                      fill
+                      sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                      style={{ objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div className="imagePlaceholder">Фото проекта</div>
+                  )}
+                  <span className="projectBadge">{similar.category.title}</span>
+                </Link>
+
+                <div className="projectBody">
+                  <div className="projectTop">
+                    <span>{similar.size_text || "Размер уточняется"}</span>
+                    {similar.area && <span>{similar.area} м²</span>}
+                  </div>
+
+                  <h3>{similar.title}</h3>
+
+                  <p>
+                    {similar.short_description ||
+                      "Описание проекта скоро появится."}
+                  </p>
+
+                  <div className="projectSpecs">
+                    {similar.floor_label && <span>{similar.floor_label}</span>}
+                    {similar.external_id && <span>{similar.external_id}</span>}
+                  </div>
+
+                  <div className="projectFooter">
+                    <strong>{formatPrice(similar.price_from)}</strong>
+                    <Link href={`/projects/${similar.slug}`}>Подробнее</Link>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       )}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.db.models import Prefetch
 from rest_framework import serializers
 
 from .models import (
@@ -220,6 +221,7 @@ class ProjectDetailSerializer(ProjectListSerializer):
     technical = serializers.SerializerMethodField()
     promotions = serializers.SerializerMethodField()
     work_steps = serializers.SerializerMethodField()
+    similar_projects = serializers.SerializerMethodField()
 
     class Meta(ProjectListSerializer.Meta):
         fields = ProjectListSerializer.Meta.fields + (
@@ -236,6 +238,7 @@ class ProjectDetailSerializer(ProjectListSerializer):
             "technical",
             "promotions",
             "work_steps",
+            "similar_projects",
         )
 
     def get_images(self, obj):
@@ -257,6 +260,32 @@ class ProjectDetailSerializer(ProjectListSerializer):
     def get_work_steps(self, obj):
         items = ConstructionStep.objects.filter(is_active=True).order_by("sort_order", "id")
         return ConstructionStepSerializer(items, many=True).data
+
+    def get_similar_projects(self, obj):
+        # Другие проекты той же категории (дома к домам, бани к баням) —
+        # ближе по площади и этажности к текущему, а не просто последние
+        # добавленные. offers/images прогреты отдельно: это новая, не
+        # связанная с queryset обзора выборка, prefetch представления на
+        # неё не распространяется.
+        offers_qs = ProjectOffer.objects.select_related("material", "build_package")
+        candidates = list(
+            Project.objects.filter(is_active=True, category_id=obj.category_id)
+            .exclude(pk=obj.pk)
+            .select_related("category")
+            .prefetch_related("images", Prefetch("offers", queryset=offers_qs))
+        )
+
+        if obj.area:
+            candidates.sort(
+                key=lambda p: (
+                    0 if p.floors == obj.floors else 1,
+                    abs((p.area or 0) - obj.area),
+                )
+            )
+        else:
+            candidates.sort(key=lambda p: (p.sort_order, p.id))
+
+        return ProjectListSerializer(candidates[:4], many=True, context=self.context).data
 
     def _foundation_payload(self, item: ProjectFoundation, *, illustrated=False):
         pricing = self.get_pricing_service()
