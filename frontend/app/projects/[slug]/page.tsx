@@ -426,7 +426,6 @@ export default async function ProjectPage({ params }: PageProps) {
   return (
     <main className="projectPage">
       <JsonLd data={jsonLd} />
-      <Breadcrumbs items={buildBreadcrumbItems(project)} />
       <section
         className="projectHero projectHeroCover"
         style={
@@ -472,6 +471,7 @@ export default async function ProjectPage({ params }: PageProps) {
           </aside>
         </div>
       </section>
+      <Breadcrumbs items={buildBreadcrumbItems(project)} />
       {(projectMedia.length > 0 || priceSections.length > 0) && (
         <ProjectGalleryWithPrices
           images={projectMedia}

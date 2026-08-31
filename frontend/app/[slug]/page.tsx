@@ -290,7 +290,6 @@ export default async function LandingPageRoute({ params }: PageProps) {
   return (
     <main>
       <JsonLd data={jsonLd} />
-      <Breadcrumbs items={buildBreadcrumbItems(page)} />
       <section className="landingHero">
         <div className="container landingHeroInner">
           <div>
@@ -321,6 +320,8 @@ export default async function LandingPageRoute({ params }: PageProps) {
           </div>
         </div>
       </section>
+
+      <Breadcrumbs items={buildBreadcrumbItems(page)} />
 
       {catalogCategory && (
         <ProjectCatalog
