@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import Breadcrumbs, { BreadcrumbItem } from "../components/Breadcrumbs";
 import LeadForm from "../components/LeadForm";
 import ProjectCatalog from "../components/ProjectCatalog";
 import RichText from "../components/RichText";
@@ -139,6 +140,31 @@ async function getSiblingPages(
   }
 }
 
+function buildBreadcrumbItems(page: LandingPage): BreadcrumbItem[] {
+  const items: BreadcrumbItem[] = [{ name: "Главная", href: "/" }];
+
+  if (page.category) {
+    // Хаб-страница ("Дома из бруса") сама себе не родитель — крошку между
+    // "Главная" и её h1 вставляем только для дочерних страниц раздела
+    // (размерных, региональных и т.д.), у которых slug хаба другой.
+    const hubSlug = Object.entries(landingCategoryBySlug).find(
+      ([, category]) => category.slug === page.category!.slug,
+    )?.[0];
+
+    if (hubSlug && hubSlug !== page.slug) {
+      items.push({ name: page.category.title, href: `/${hubSlug}` });
+    }
+  }
+
+  items.push({ name: page.h1 });
+  return items;
+}
+
+function absoluteBreadcrumbUrl(href: string | undefined, fallback: string): string {
+  if (!href) return fallback;
+  return href === "/" ? SITE_URL : `${SITE_URL}${href}`;
+}
+
 function buildLandingPageJsonLd(page: LandingPage) {
   const pageUrl = `${SITE_URL}/${page.slug}`;
 
@@ -160,20 +186,12 @@ function buildLandingPageJsonLd(page: LandingPage) {
     {
       "@type": "BreadcrumbList",
       "@id": `${pageUrl}#breadcrumbs`,
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Главная",
-          item: SITE_URL,
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: page.h1,
-          item: pageUrl,
-        },
-      ],
+      itemListElement: buildBreadcrumbItems(page).map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.name,
+        item: absoluteBreadcrumbUrl(item.href, pageUrl),
+      })),
     },
   ];
 
@@ -272,6 +290,7 @@ export default async function LandingPageRoute({ params }: PageProps) {
   return (
     <main>
       <JsonLd data={jsonLd} />
+      <Breadcrumbs items={buildBreadcrumbItems(page)} />
       <section className="landingHero">
         <div className="container landingHeroInner">
           <div>

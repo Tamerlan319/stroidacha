@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import Link from "next/link";
 
+import Breadcrumbs, { BreadcrumbItem } from "../../components/Breadcrumbs";
 import JsonLd from "../../components/JsonLd";
 import LeadForm from "../../components/LeadForm";
 import ImageLightbox from "../../components/ImageLightbox";
@@ -244,11 +245,21 @@ function formatContentHeading(title: string) {
   return title;
 }
 
+function buildBreadcrumbItems(project: Project): BreadcrumbItem[] {
+  return [
+    { name: "Главная", href: "/" },
+    { name: project.category.title, href: `/${getCategoryPageSlug(project.category.slug)}` },
+    { name: project.title },
+  ];
+}
+
+function absoluteBreadcrumbUrl(href: string | undefined, fallback: string): string {
+  if (!href) return fallback;
+  return href === "/" ? SITE_URL : `${SITE_URL}${href}`;
+}
+
 function buildProjectJsonLd(project: Project): Record<string, unknown> {
   const pageUrl = `${SITE_URL}/projects/${project.slug}`;
-  const categoryPageUrl = `${SITE_URL}/${getCategoryPageSlug(
-    project.category.slug
-  )}`;
   const description = getProjectDescription(project);
   const images = getProjectImages(project);
   const price = normalizePrice(project.price_from);
@@ -293,26 +304,12 @@ function buildProjectJsonLd(project: Project): Record<string, unknown> {
     {
       "@type": "BreadcrumbList",
       "@id": `${pageUrl}#breadcrumbs`,
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Главная",
-          item: SITE_URL,
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: project.category.title,
-          item: categoryPageUrl,
-        },
-        {
-          "@type": "ListItem",
-          position: 3,
-          name: project.title,
-          item: pageUrl,
-        },
-      ],
+      itemListElement: buildBreadcrumbItems(project).map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.name,
+        item: absoluteBreadcrumbUrl(item.href, pageUrl),
+      })),
     },
     product,
   ];
@@ -429,6 +426,7 @@ export default async function ProjectPage({ params }: PageProps) {
   return (
     <main className="projectPage">
       <JsonLd data={jsonLd} />
+      <Breadcrumbs items={buildBreadcrumbItems(project)} />
       <section
         className="projectHero projectHeroCover"
         style={

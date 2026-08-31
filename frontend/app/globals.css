@@ -7766,3 +7766,48 @@ main {
     width: 100%;
   }
 }
+
+/* Хлебные крошки — Breadcrumbs.tsx. Строятся из того же массива, что
+   BreadcrumbList в JSON-LD конкретной страницы, поэтому здесь только
+   отображение, без собственной логики иерархии. */
+.breadcrumbs {
+  padding: 16px 20px 0;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.breadcrumbs li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumbs a {
+  color: var(--sd-muted);
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  color: var(--sd-forest);
+  text-decoration: underline;
+}
+
+.breadcrumbs span[aria-current="page"] {
+  color: var(--sd-forest);
+  font-weight: 600;
+}
+
+.breadcrumbsDivider {
+  color: var(--sd-muted);
+  opacity: 0.45;
+}
