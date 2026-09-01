@@ -84,9 +84,14 @@ AUTHENTICATION_BACKENDS = [
 
 # Блокировка входа в админку после подряд неудачных попыток — вместо
 # неограниченного числа попыток подобрать пароль, которое было раньше.
-AXES_FAILURE_LIMIT = 5
+AXES_FAILURE_LIMIT = 3
 AXES_COOLOFF_TIME = 1  # час
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
+
+# Путь до Django admin — не хардкодим "admin/": автоматические сканеры
+# перебирают именно стандартные пути в первую очередь, независимо от
+# пароля. Реальное значение живёт только в .env(.prod), не в репозитории.
+ADMIN_URL_PATH = env("ADMIN_URL_PATH", default="admin/")
 
 ROOT_URLCONF = 'config.urls'
 
