@@ -64,7 +64,12 @@ brusodel.ru, www.brusodel.ru {
 		reverse_proxy backend:8000
 	}
 
-	handle /admin/* {
+	# Путь читается из ADMIN_URL_PATH (backend/.env.prod) тем же именем, что
+	# и в Django settings.py — сканеры ботов проверяют буквально "/admin/"
+	# независимо от пароля, поэтому сам путь не хардкодим здесь так же, как
+	# не хардкодим его в urls.py. Без переменной (например, локально) —
+	# откатывается на "admin/".
+	handle /{$ADMIN_URL_PATH:admin/}* {
 		reverse_proxy backend:8000
 	}
 
