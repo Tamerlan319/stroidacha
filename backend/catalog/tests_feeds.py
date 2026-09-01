@@ -106,6 +106,21 @@ class RealtyFeedTests(TestCase):
 
         self.assertEqual(offer.findtext("set-ids"), "s-baths")
 
+    def test_categories_element_present_and_before_offers(self):
+        root = self.fetch_feed()
+        shop = root.find("shop")
+
+        category = shop.find("categories/category")
+        self.assertIsNotNone(category)
+        self.assertEqual(category.get("id"), "3")
+        self.assertEqual(category.text, "Дом")
+
+        # Яндекс отдельно проверяет порядок: categories должен идти раньше
+        # offers, иначе фид не проходит валидацию целиком.
+        children = list(shop)
+        tags = [child.tag for child in children]
+        self.assertLess(tags.index("categories"), tags.index("offers"))
+
     def test_sets_declared_for_used_categories_only(self):
         root = self.fetch_feed()
         set_ids = {s.get("id") for s in root.findall("shop/sets/set")}

@@ -80,6 +80,14 @@ def build_realty_feed(request: HttpRequest) -> bytes:
     currencies = SubElement(shop, "currencies")
     SubElement(currencies, "currency", {"id": "RUR", "rate": "1"})
 
+    # Обязательный элемент по спецификации YML — каждый offer/categoryId
+    # должен ссылаться на что-то, объявленное здесь, и categories должен
+    # идти строго до offers. Раньше этого блока не было вообще: Яндекс
+    # ругался и на порядок элементов, и общей ошибкой парсера — categories
+    # у него просто не находился.
+    categories_el = SubElement(shop, "categories")
+    _add(categories_el, "category", "Дом", id=REALTY_CATEGORY_ID)
+
     used_category_slugs = {project.category.slug for project in projects}
     sets_el = SubElement(shop, "sets")
     for slug, (set_id, name, path) in CATEGORY_SETS.items():
