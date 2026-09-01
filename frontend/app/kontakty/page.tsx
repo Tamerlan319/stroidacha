@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import ContactMap from "../components/ContactMap";
 import LeadForm from "../components/LeadForm";
+import SiteIcon from "../components/SiteIcon";
 
 const description =
   "Контакты компании Брусодел: офис, производство, телефон, email, режим работы и карта проезда.";
@@ -57,6 +58,20 @@ async function getContacts(): Promise<ContactLocation[]> {
   }
 
   return response.json();
+}
+
+// Значения location_type сейчас — "office"/"production" (см. content.
+// ContactLocation.LocationType), но набор может вырасти (склад, шоурум) —
+// незнакомый тип просто получает нейтральную иконку, а не падает.
+const LOCATION_TYPE_ICON: Record<string, string> = {
+  office: "house",
+  production: "factory",
+  warehouse: "truck",
+  showroom: "blueprint",
+};
+
+function getLocationIcon(locationType: string) {
+  return LOCATION_TYPE_ICON[locationType] || "house";
 }
 
 function getPrimaryContact(contacts: ContactLocation[]) {
@@ -136,7 +151,10 @@ export default async function ContactsPage() {
                 </div>
 
                 <div className="contactLocationBody">
-                  <p className="eyebrow">{contact.location_type_display}</p>
+                  <span className="contactLocationBadge">
+                    <SiteIcon name={getLocationIcon(contact.location_type)} />
+                    {contact.location_type_display}
+                  </span>
                   <h3>{contact.title}</h3>
 
                   {contact.short_description && (
