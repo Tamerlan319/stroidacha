@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
+import ContactMap from "../components/ContactMap";
 import LeadForm from "../components/LeadForm";
 
 const description =
@@ -115,8 +117,9 @@ export default async function ContactsPage() {
           <p className="eyebrow">Где нас найти</p>
           <h2>Офис, производство и склад</h2>
           <p>
-            Контактные точки управляются через Django-админку. Можно добавить
-            офис, производство, склад или шоурум.
+            Принимаем в московском офисе по предварительной записи, а
+            собственное производство и склад материалов — в Костромской
+            области.
           </p>
         </div>
 
@@ -125,17 +128,11 @@ export default async function ContactsPage() {
             {contacts.map((contact) => (
               <article className="contactLocationCard" key={contact.id}>
                 <div className="contactMap">
-                  {contact.map_embed_url ? (
-                    <iframe
-                      src={contact.map_embed_url}
-                      title={contact.title}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="contactMapPlaceholder">
-                      Карта пока не добавлена
-                    </div>
-                  )}
+                  <ContactMap
+                    embedUrl={contact.map_embed_url}
+                    linkUrl={contact.map_link_url}
+                    title={contact.title}
+                  />
                 </div>
 
                 <div className="contactLocationBody">
@@ -196,6 +193,28 @@ export default async function ContactsPage() {
             Content → Контактные точки.
           </div>
         )}
+      </section>
+
+      <section className="container section contactsTrustSection">
+        <div className="contactsTrustCard">
+          <p className="eyebrow">О компании</p>
+          <h2>«Брусодел» — бренд ООО «СтройДача»</h2>
+          <p>
+            Строим дома и бани из бруса под ключ с 2009 года. Собственное
+            производство и склад материалов — в Костромской области, там же
+            изготавливаем брус для домокомплектов. Приём и консультации в
+            Москве — по предварительной записи, все юридические вопросы и
+            договор оформляются на ООО «СтройДача».
+          </p>
+          <p>
+            Даём гарантию 3 года на выполненные работы и конструкцию дома.
+            Реквизиты и полная выписка из ЕГРЮЛ — на отдельной странице,
+            если нужно свериться перед заключением договора.
+          </p>
+          <Link className="buttonSecondary" href="/vypiska-iz-egryul">
+            Реквизиты и выписка из ЕГРЮЛ →
+          </Link>
+        </div>
       </section>
 
       <section className="container section">
