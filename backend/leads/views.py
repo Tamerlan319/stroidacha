@@ -19,6 +19,14 @@ class LeadCreateAPIView(CreateAPIView):
     queryset = Lead.objects.all()
     serializer_class = LeadCreateSerializer
     permission_classes = [AllowAny]
+    # DRF без явного переопределения аутентификации по умолчанию включает
+    # SessionAuthentication, которая требует CSRF-токен на POST у любого
+    # запроса с сессионной кукой — даже у AllowAny-вьюхи. Форма шлёт обычный
+    # fetch() без токена, это публичная анонимная отправка без входа в
+    # аккаунт, поэтому сессионная аутентификация тут не нужна вовсе (не
+    # трогает LeadAttachmentDownloadView — та защищена IsAdminUser и
+    # обязана остаться на сессии администратора).
+    authentication_classes = []
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     # Публичный AllowAny-эндпоинт без лимита раньше можно было заваливать
     # фейковыми заявками или файлами по 20 МБ без охлаждения. Лимит — по IP
