@@ -11,10 +11,14 @@ brusodel.ru, www.brusodel.ru {
 	# Источники подобраны под реально используемые скрипты/встройки:
 	# Яндекс Метрика (components/YandexMetrika.tsx), встроенная карта на
 	# главной и в контактах (yandex.ru/map-widget), JSON-LD (components/
-	# JsonLd.tsx). 'unsafe-inline' в script-src — вынужденный компромисс:
-	# без него ломается не только Метрика и JSON-LD, но и собственный
-	# инлайн-скрипт гидратации Next.js App Router (__next_f). Без nonce-
-	# инфраструктуры в Next.js (отдельная задача) строгий CSP без
+	# JsonLd.tsx), Яндекс SmartCaptcha (components/LeadForm.tsx — виджет
+	# грузится с smartcaptcha.yandexcloud.net, это отдельный от *.yandex.ru
+	# домен, поэтому нужен собственный *.yandexcloud.net во всех трёх
+	# директивах: сам скрипт, его обращения к серверу капчи и виджет
+	# challenge'а во фрейме). 'unsafe-inline' в script-src — вынужденный
+	# компромисс: без него ломается не только Метрика и JSON-LD, но и
+	# собственный инлайн-скрипт гидратации Next.js App Router (__next_f).
+	# Без nonce-инфраструктуры в Next.js (отдельная задача) строгий CSP без
 	# unsafe-inline положит сайт. CSP всё равно полезен: он не даёт
 	# подгрузить скрипт/фрейм/XHR с произвольного стороннего хоста, если
 	# где-то удастся внедрить <script src="https://evil.example/x.js">.
@@ -25,7 +29,7 @@ brusodel.ru, www.brusodel.ru {
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.yandex.ru https://*.yandex.net; frame-src https://yandex.ru https://*.yandex.ru; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://*.yandexcloud.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.yandex.ru https://*.yandex.net https://*.yandexcloud.net; frame-src https://yandex.ru https://*.yandex.ru https://*.yandexcloud.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
 	}
 
 	# Статика Django (в основном админка) — имена файлов не хэшируются по
