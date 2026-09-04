@@ -90,12 +90,40 @@ def get_db() -> sqlite3.Connection:
             admin_chat_id INTEGER PRIMARY KEY,
             user_chat_id INTEGER
         );
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_chat_id INTEGER NOT NULL,
+            direction TEXT NOT NULL,
+            text TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(user_chat_id, created_at);
         """
     )
     return conn
 
 
+def log_message(user_chat_id: int, direction: str, text: str) -> None:
+    """direction: 'in' — от пользователя, 'out' — от админа."""
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO messages (user_chat_id, direction, text, created_at) VALUES (?, ?, ?, ?)",
+            (user_chat_id, direction, text, int(time.time())),
+        )
+
+
+def get_recent_messages(user_chat_id: int, limit: int = 8) -> list[dict]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT direction, text, created_at FROM messages "
+            "WHERE user_chat_id = ? ORDER BY created_at DESC LIMIT ?",
+            (user_chat_id, limit),
+        ).fetchall()
+    return [dict(row) for row in reversed(rows)]
+
+
 def touch_conversation(user_chat_id: int, user_label: str, preview: str) -> None:
+    preview = preview[:120]
     with get_db() as conn:
         conn.execute(
             """
@@ -188,10 +216,11 @@ def describe_sender(message: Message) -> str:
 
 
 def preview_of(message: Message) -> str:
+    """Полный текст для лога переписки — обрезка только на отображении."""
     if message.text:
-        return message.text[:120]
+        return message.text
     if message.caption:
-        return f"[медиа] {message.caption[:100]}"
+        return f"[медиа] {message.caption}"
     if message.photo:
         return "[фото]"
     if message.document:
@@ -261,13 +290,23 @@ def build_conversation_view(user_chat_id: int) -> tuple[str, InlineKeyboardMarku
             inline_keyboard=[[InlineKeyboardButton(text="🔙 К списку", callback_data="inbox:all:0")]]
         )
 
-    text = (
-        f"💬 {conv['user_label']}\n"
-        f"Последнее сообщение ({humanize_ago(conv['last_message_at'])}): "
-        f"«{conv['last_message_preview']}»\n\n"
+    lines = [f"💬 {conv['user_label']}", ""]
+    history = get_recent_messages(user_chat_id, limit=8)
+    if history:
+        for msg in history:
+            who = "🧑 Клиент" if msg["direction"] == "in" else "🧑‍💼 Вы"
+            body = msg["text"]
+            if len(body) > 200:
+                body = body[:200] + "…"
+            lines.append(f"{who} ({humanize_ago(msg['created_at'])}): {body}")
+    else:
+        lines.append("(сообщений пока нет)")
+    lines.append("")
+    lines.append(
         "Пишите ответ прямо сюда, обычным сообщением — он уйдёт этому "
         "пользователю, пока диалог открыт."
     )
+    text = "\n".join(lines)
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -290,6 +329,7 @@ async def deliver_to_user(source: Message, user_chat_id: int) -> bool:
         logger.exception("Не удалось отправить ответ пользователю %s", user_chat_id)
         return False
     set_status(user_chat_id, "active")
+    log_message(user_chat_id, "out", preview_of(source))
     return True
 
 
@@ -399,7 +439,9 @@ async def handle_admin_default(message: Message) -> None:
 async def handle_user_message(message: Message) -> None:
     """Любое сообщение от постороннего пользователя -> пересылаем админу."""
     label = describe_sender(message)
-    touch_conversation(message.chat.id, label, preview_of(message))
+    text = preview_of(message)
+    touch_conversation(message.chat.id, label, text)
+    log_message(message.chat.id, "in", text)
 
     forwarded = await bot.forward_message(
         chat_id=ADMIN_CHAT_ID,
