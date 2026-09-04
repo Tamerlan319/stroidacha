@@ -116,6 +116,62 @@ docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
 `SMARTCAPTCHA_SERVER_KEY` без `NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY` (или
 наоборот) не имеет смысла — заполняйте оба сразу.
 
+## Telegram-бот обратной связи
+
+Отдельный от сайта бот: пользователь пишет боту в Telegram → сообщение
+приходит вам в личку → отвечаете через "Reply" на пересланное сообщение →
+ответ уходит пользователю от лица бота. Без интеграции с CRM сайта — своя
+маленькая SQLite внутри контейнера `telegram-bot`, к Django и Postgres
+отношения не имеет.
+
+Bot API Telegram с российских IP часто недоступен напрямую, поэтому бот
+ходит в интернет только через socks5 sidecar-контейнер `xray` (VPN-подписка).
+Это не имеет отношения к остальному стеку: backend, frontend, БД и Caddy как
+работали напрямую, так и работают — в отдельной docker-сети `bot_net` с
+ботом не состоят и через xray не ходят.
+
+1. **VPN-конфиг для xray.** Нужна любая V2Ray/VLESS-подписка (Reality,
+   VMess, Trojan — xray умеет всё). Возьмите ссылку-подписку своего
+   провайдера, скачайте с неё конфиг под xray-core (многие сервисы отдают
+   его прямо по ссылке при GET-запросе — см. `xray/config.json.example` для
+   формата) и положите как `xray/config.json` **на сервере**, рядом с
+   `docker-compose.prod.yml`. В git этот файл не попадает (см.
+   `.gitignore`) — он содержит доступ к платной подписке, как и
+   `backend/.env.prod`.
+
+2. **Бот в Telegram.** Напишите @BotFather → `/newbot` → получите токен.
+   Затем узнайте свой числовой `chat_id` (например, через @userinfobot —
+   напишите ему, он ответит вашим id) и впишите оба значения в
+   `backend/.env.prod`:
+
+   ```
+   TELEGRAM_BOT_TOKEN=...
+   TELEGRAM_ADMIN_CHAT_ID=...
+   ```
+
+3. Разверните обычным пайплайном (push в `main`) или вручную:
+
+   ```bash
+   docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+     up -d --build xray telegram-bot
+   ```
+
+4. Проверьте, что бот подключился:
+
+   ```bash
+   docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+     logs --tail=50 telegram-bot
+   ```
+
+   Должна быть строка `Подключились к Telegram как @имя_бота` — без неё
+   либо не тот токен, либо xray не пробивается наружу (проверьте
+   `logs xray`). Дальше — просто напишите боту что-нибудь с телефона и
+   ответьте через Reply в своём чате с ним.
+
+Если сервер сменит VPN-подписку или конкретный узел перестанет отвечать —
+достаточно обновить `xray/config.json` и перезапустить один контейнер:
+`docker compose ... restart xray`, остальной сайт это не затрагивает.
+
 ## Резервные копии
 
 `scripts/deploy.sh` дампит Postgres при каждом деплое. Дамп содержит все

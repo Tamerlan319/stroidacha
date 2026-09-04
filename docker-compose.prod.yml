@@ -129,8 +129,41 @@ services:
         condition: service_healthy
     mem_limit: 128m
 
+  # --- Telegram-бот обратной связи (см. DEPLOYMENT.md) ---
+  # Отдельная пара контейнеров в отдельной сети bot_net, без доступа к
+  # default (backend/db/caddy/frontend) и наоборот: сайт как работал напрямую,
+  # так и работает, через VPN ходит только сам бот.
+
+  xray:
+    image: teddysun/xray:latest
+    container_name: brusoteka_xray
+    restart: unless-stopped
+    volumes:
+      # Реальный конфиг — только на сервере, не в git (см. .gitignore и
+      # xray/config.json.example). Не запустится, пока файла нет.
+      - ./xray/config.json:/etc/xray/config.json:ro
+    networks:
+      - bot_net
+    mem_limit: 128m
+
+  telegram-bot:
+    build:
+      context: ./telegram-bot
+    container_name: brusoteka_telegram_bot
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.prod
+    depends_on:
+      - xray
+    volumes:
+      - telegram_bot_data:/app/data
+    networks:
+      - bot_net
+    mem_limit: 128m
+
 networks:
   default:
+  bot_net:
 
 volumes:
   postgres_data:
@@ -139,3 +172,4 @@ volumes:
   static_data:
   caddy_data:
   caddy_config:
+  telegram_bot_data:

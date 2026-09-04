@@ -6,6 +6,10 @@ __pycache__/
 .env.*
 !backend/.env.prod.example
 
+# Реальный VPN-конфиг для xray-сайдкара telegram-бота — содержит доступ к
+# платной подписке, живёт только на сервере. Шаблон: xray/config.json.example.
+xray/config.json
+
 # Django
 media/
 private_media/

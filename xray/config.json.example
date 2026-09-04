@@ -1,0 +1,45 @@
+{
+  "_comment": "Шаблон. Реальный файл xray/config.json — только на сервере, в git не попадает (см. .gitignore) — содержит доступ к платной VPN-подписке. Как получить: см. DEPLOYMENT.md > 'Telegram-бот обратной связи'.",
+  "log": { "loglevel": "warning" },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "port": 10808,
+      "listen": "0.0.0.0",
+      "protocol": "socks",
+      "settings": { "udp": true, "auth": "noauth" }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "CHANGE_ME_SERVER_ADDRESS",
+            "port": 443,
+            "users": [
+              {
+                "id": "CHANGE_ME_UUID_FROM_YOUR_VPN_SUBSCRIPTION",
+                "encryption": "none",
+                "flow": "xtls-rprx-vision"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "CHANGE_ME_SNI",
+          "publicKey": "CHANGE_ME_PUBLIC_KEY",
+          "shortId": "CHANGE_ME_SHORT_ID",
+          "fingerprint": "chrome"
+        }
+      },
+      "fragment": { "packets": "1-3", "length": "50-100", "interval": "10-20" }
+    }
+  ]
+}
