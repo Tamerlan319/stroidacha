@@ -19,7 +19,7 @@ const FALLBACK_LINKS = [
   { platform: "vk", url: "https://vk.com/" },
   { platform: "max", url: "https://max.ru/" },
   { platform: "whatsapp", url: "https://api.whatsapp.com/send?phone=79676801812" },
-  { platform: "telegram", url: "https://t.me/+79676801812" },
+  { platform: "telegram", url: "https://t.me/brusodel_bot" },
 ];
 
 type SocialLinksProps = {
