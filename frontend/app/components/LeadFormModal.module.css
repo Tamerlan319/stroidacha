@@ -1,15 +1,23 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  /* Выше шапки сайта (та — 10000), иначе шапка перекрывает верх модалки. */
+  z-index: 10010;
   display: flex;
-  align-items: center;
+  /* Было center — если форма выше экрана, центрирование уводит её верх
+     (и кнопку закрытия) за пределы видимой прокручиваемой области. */
+  align-items: flex-start;
   justify-content: center;
   overflow-y: auto;
+  /* Без явного overflow-x браузер сам включает overflow-x:auto, если
+     overflow-y задан — модалку можно было утащить вбок на тач-экранах. */
+  overflow-x: hidden;
   background: rgba(15, 22, 16, 0.62);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  padding: 40px 16px;
+  /* Верхний отступ учитывает высоту шапки (73px), чтобы кнопка закрытия
+     не наезжала на неё визуально. */
+  padding: 96px 16px 40px;
 }
 
 .panel {
@@ -56,6 +64,14 @@
 
 @media (max-width: 480px) {
   .overlay {
-    padding: 34px 12px;
+    padding: 88px 12px 34px;
+  }
+
+  /* Чуть меньше "вылет" за край панели, чтобы не подходить впритык к краю
+     экрана на узких телефонах — overflow-x:hidden и так подстрахует, но
+     так кнопка не будет частично обрезана. */
+  .closeButton {
+    top: -8px;
+    right: -8px;
   }
 }
