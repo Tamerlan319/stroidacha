@@ -26,10 +26,17 @@ brusodel.ru, www.brusodel.ru {
 		-Server
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://*.yandexcloud.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.yandex.ru https://*.yandex.net https://*.yandexcloud.net; frame-src https://yandex.ru https://*.yandex.ru https://*.yandexcloud.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		# X-Frame-Options убран намеренно (не забыт): он умеет только
+		# DENY/SAMEORIGIN, а с 1 октября плеер Вебвизора и карта кликов
+		# грузят сайт в iframe именно с webvisor.com — отдельного от
+		# *.yandex.ru домена, под него нужно точечное разрешение, а не
+		# полный запрет или "тот же домен". CSP frame-ancestors ниже умеет
+		# перечислить конкретный источник и по спеке имеет приоритет над
+		# X-Frame-Options во всех современных браузерах, так что держать
+		# оба смысла не имеет — только путаница.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://*.yandexcloud.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.yandex.ru https://*.yandex.net https://*.yandexcloud.net; frame-src https://yandex.ru https://*.yandex.ru https://*.yandexcloud.net; frame-ancestors 'self' https://webvisor.com; base-uri 'self'; form-action 'self'; object-src 'none'"
 	}
 
 	# Статика Django (в основном админка) — имена файлов не хэшируются по
