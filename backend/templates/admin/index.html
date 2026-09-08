@@ -37,12 +37,12 @@ index.html — иначе extends нашёл бы этот же файл и за
         </div>
 
         <div class="brusodel-quicklinks">
-            <a href="/admin/catalog/project/add/"><i class="fas fa-plus-circle"></i> Добавить проект</a>
-            <a href="/admin/content/portfolioproject/add/"><i class="fas fa-plus-circle"></i> Добавить объект портфолио</a>
-            <a href="/admin/content/review/add/"><i class="fas fa-plus-circle"></i> Добавить отзыв</a>
-            <a href="/admin/leads/lead/?is_processed__exact=0"><i class="fas fa-inbox"></i> Необработанные заявки</a>
-            <a href="/admin/catalog/costrate/"><i class="fas fa-ruble-sign"></i> Сметные ставки</a>
-            <a href="/admin/content/sociallink/"><i class="fas fa-share-alt"></i> Ссылки на соцсети</a>
+            <a href="{% url 'admin:catalog_project_add' %}"><i class="fas fa-plus-circle"></i> Добавить проект</a>
+            <a href="{% url 'admin:content_portfolioproject_add' %}"><i class="fas fa-plus-circle"></i> Добавить объект портфолио</a>
+            <a href="{% url 'admin:content_review_add' %}"><i class="fas fa-plus-circle"></i> Добавить отзыв</a>
+            <a href="{% url 'admin:leads_lead_changelist' %}?is_processed__exact=0"><i class="fas fa-inbox"></i> Необработанные заявки</a>
+            <a href="{% url 'admin:catalog_costrate_changelist' %}"><i class="fas fa-ruble-sign"></i> Сметные ставки</a>
+            <a href="{% url 'admin:content_sociallink_changelist' %}"><i class="fas fa-share-alt"></i> Ссылки на соцсети</a>
             <a href="/" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Открыть сайт</a>
         </div>
     </div>

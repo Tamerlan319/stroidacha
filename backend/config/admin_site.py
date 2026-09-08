@@ -6,6 +6,7 @@ templates/admin/index.html). Права доступа, регистрацию �
 from datetime import timedelta
 
 from django.contrib.admin import AdminSite
+from django.urls import reverse
 from django.utils import timezone
 
 
@@ -25,39 +26,44 @@ class BrusodelAdminSite(AdminSite):
 
         week_ago = timezone.now() - timedelta(days=7)
 
+        # reverse(), не строковый литерал "/admin/..." — иначе ссылки ломаются
+        # при любой смене ADMIN_URL_PATH (см. settings.py), что и произошло.
+        leads_url = reverse("admin:leads_lead_changelist")
+        project_url = reverse("admin:catalog_project_changelist")
+
         return [
             {
                 "label": "Необработанные заявки",
                 "value": Lead.objects.filter(is_processed=False).count(),
-                "url": "/admin/leads/lead/?is_processed__exact=0",
+                "url": f"{leads_url}?is_processed__exact=0",
                 "icon": "fas fa-inbox",
                 "tone": "warning",
             },
             {
                 "label": "Заявки за 7 дней",
                 "value": Lead.objects.filter(created_at__gte=week_ago).count(),
-                "url": "/admin/leads/lead/",
+                "url": leads_url,
                 "icon": "fas fa-chart-line",
                 "tone": "info",
             },
             {
                 "label": "Активные проекты",
                 "value": Project.objects.filter(is_active=True).count(),
-                "url": "/admin/catalog/project/?is_active__exact=1",
+                "url": f"{project_url}?is_active__exact=1",
                 "icon": "fas fa-home",
                 "tone": "success",
             },
             {
                 "label": "Объекты портфолио",
                 "value": PortfolioProject.objects.filter(is_active=True).count(),
-                "url": "/admin/content/portfolioproject/",
+                "url": reverse("admin:content_portfolioproject_changelist"),
                 "icon": "fas fa-camera-retro",
                 "tone": "success",
             },
             {
                 "label": "Отзывы",
                 "value": Review.objects.filter(is_active=True).count(),
-                "url": "/admin/content/review/",
+                "url": reverse("admin:content_review_changelist"),
                 "icon": "fas fa-star",
                 "tone": "success",
             },
