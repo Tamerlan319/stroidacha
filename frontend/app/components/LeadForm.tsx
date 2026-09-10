@@ -14,6 +14,7 @@ import {
 
 import { legalConfig } from "../lib/legalConfig";
 import { reachGoal } from "../lib/metrika";
+import { getUtmValue } from "../lib/utm";
 import SocialLinks from "./SocialLinks";
 import styles from "./LeadForm.module.css";
 
@@ -295,15 +296,6 @@ export default function LeadForm({
     () => attachments.reduce((sum, file) => sum + file.size, 0),
     [attachments]
   );
-
-  function getUtmValue(name: string) {
-    if (typeof window === "undefined") {
-      return "";
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name) || "";
-  }
 
   function clearFormStatus() {
     if (status !== "idle") {

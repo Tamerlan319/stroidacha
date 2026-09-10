@@ -155,6 +155,24 @@ function buildProjectsUrl(
 // нет), но при чтении принимаем и повторяющиеся параметры вида
 // ?type=timber&type=frame — так URL переживёт ручную правку.
 
+// Ключи адреса, которыми управляет каталог. Всё остальное в query (utm_*,
+// yclid и прочие параметры рекламы) syncBrowserUrl обязан оставлять
+// нетронутым. Список должен совпадать с Clean-param в app/robots.txt.
+const CATALOG_URL_KEYS = [
+  "category",
+  "type",
+  "floors",
+  "material",
+  "size_min",
+  "size_max",
+  "area_min",
+  "area_max",
+  "price_min",
+  "price_max",
+  "ordering",
+  "page",
+] as const;
+
 function filtersToSearchParams(
   filters: Filters,
   ordering: Ordering,
@@ -297,18 +315,23 @@ export default function ProjectCatalog({
       return;
     }
 
-    const query = filtersToSearchParams(
+    // Меняем только свои ключи. Раньше адрес пересобирался из одних
+    // фильтров, и стоило посетителю с рекламы тронуть фильтр или сортировку,
+    // как utm_* и yclid из адреса пропадали — а вместе с ними и источник
+    // заявки.
+    for (const key of CATALOG_URL_KEYS) {
+      url.searchParams.delete(key);
+    }
+    filtersToSearchParams(
       nextFilters,
       nextOrdering,
       page,
       initialCategory,
-    ).toString();
+    ).forEach((value, key) => {
+      url.searchParams.set(key, value);
+    });
 
-    window.history.replaceState(
-      {},
-      "",
-      `${url.pathname}${query ? `?${query}` : ""}${url.hash}`,
-    );
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
   }
 
   async function loadProjects(
