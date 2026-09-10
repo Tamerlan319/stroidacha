@@ -1,0 +1,21 @@
+# Статический файл вместо app/robots.ts: типизированный MetadataRoute.Robots
+# в Next поддерживает только allow/disallow/crawlDelay/sitemap/host, а нам
+# нужна яндексовая директива Clean-param. Домен здесь захардкожен — при
+# смене домена править вручную.
+#
+# Clean-param убирает из индексации параметры фильтров каталога (см.
+# ProjectCatalog.tsx): они нужны людям, чтобы делиться ссылкой на подборку,
+# но для поиска это тысячи почти одинаковых адресов. Путь к админке сюда
+# намеренно НЕ добавлен — robots.txt публичен, и указывать в нём
+# обфусцированный адрес значило бы выдать его всем сканерам разом.
+
+User-Agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /media/leads/
+
+Clean-param: category&type&floors&material&size_min&size_max&area_min&area_max&price_min&price_max&ordering&page
+
+Host: https://brusodel.ru
+Sitemap: https://brusodel.ru/sitemap.xml

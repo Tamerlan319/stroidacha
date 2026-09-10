@@ -141,6 +141,91 @@ function buildProjectsUrl(
   return query ? `${apiUrl}/projects/?${query}` : `${apiUrl}/projects/`;
 }
 
+// --- Фильтры в адресной строке -------------------------------------------
+//
+// Нужно, чтобы отфильтрованную выборку можно было переслать, положить в
+// закладки и вернуться к ней кнопкой "Назад", а также чтобы вести рекламу
+// сразу на нужный срез каталога без отдельной посадочной страницы.
+//
+// Для SEO это НЕ плюс: фасетная навигация плодит тысячи почти одинаковых
+// адресов. Защита — canonical на чистый адрес страницы (см. metadata в
+// app/[slug]/page.tsx) плюс Clean-param в robots.txt.
+//
+// Списки пишем через запятую (значения — латинские слаги, запятых внутри
+// нет), но при чтении принимаем и повторяющиеся параметры вида
+// ?type=timber&type=frame — так URL переживёт ручную правку.
+
+function filtersToSearchParams(
+  filters: Filters,
+  ordering: Ordering,
+  page: number,
+  initialCategory: string,
+) {
+  const params = new URLSearchParams();
+
+  // Категорию пишем, только если пользователь сменил её сам: на странице
+  // категории она задана самим адресом, дублировать её в query незачем.
+  if (filters.category && filters.category !== initialCategory) {
+    params.set("category", filters.category);
+  }
+  if (filters.construction_types.length) {
+    params.set("type", filters.construction_types.join(","));
+  }
+  if (filters.floors_list.length) {
+    params.set("floors", filters.floors_list.join(","));
+  }
+  if (filters.materials.length) {
+    params.set("material", filters.materials.join(","));
+  }
+  if (filters.size_min) params.set("size_min", filters.size_min);
+  if (filters.size_max) params.set("size_max", filters.size_max);
+  if (filters.area_min) params.set("area_min", filters.area_min);
+  if (filters.area_max) params.set("area_max", filters.area_max);
+  if (filters.price_min) params.set("price_min", filters.price_min);
+  if (filters.price_max) params.set("price_max", filters.price_max);
+
+  if (ordering !== "default") params.set("ordering", ordering);
+  if (page > 1) params.set("page", String(page));
+
+  return params;
+}
+
+function filtersFromSearchParams(search: string, initialCategory: string) {
+  const params = new URLSearchParams(search);
+  const readList = (key: string) =>
+    params
+      .getAll(key)
+      .flatMap((value) => value.split(","))
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+  const filters: Filters = {
+    category: params.get("category") || initialCategory,
+    construction_types: readList("type"),
+    floors_list: readList("floors"),
+    materials: readList("material"),
+    size_min: params.get("size_min") || "",
+    size_max: params.get("size_max") || "",
+    area_min: params.get("area_min") || "",
+    area_max: params.get("area_max") || "",
+    price_min: params.get("price_min") || "",
+    price_max: params.get("price_max") || "",
+  };
+
+  const orderingParam = params.get("ordering") || "";
+  const ordering: Ordering = orderingOptions.some(
+    (option) => option.value === orderingParam,
+  )
+    ? (orderingParam as Ordering)
+    : "default";
+
+  return {
+    filters,
+    ordering,
+    page: Math.max(1, Number(params.get("page")) || 1),
+  };
+}
+
 export default function ProjectCatalog({
   initialCategory = "",
   showCategoryFilter = true,
@@ -190,15 +275,40 @@ export default function ProjectCatalog({
     setTotalProjects(data.count);
   }
 
-  function updateBrowserPage(page: number) {
+  function syncBrowserUrl(
+    nextFilters: Filters,
+    page: number,
+    nextOrdering: Ordering,
+  ) {
     if (!usesPagination || typeof window === "undefined") return;
+
     const url = new URL(window.location.href);
-    if (page > 1) {
-      url.searchParams.set("page", String(page));
-    } else {
-      url.searchParams.delete("page");
+
+    // На размерной странице (/doma-iz-brusa-6x6) размер задан самим слагом,
+    // и писать фильтры в query нельзя: получился бы адрес, который сам себе
+    // противоречит. Там по-прежнему синхронизируем только страницу.
+    if (lockedSize) {
+      if (page > 1) {
+        url.searchParams.set("page", String(page));
+      } else {
+        url.searchParams.delete("page");
+      }
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+      return;
     }
-    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+
+    const query = filtersToSearchParams(
+      nextFilters,
+      nextOrdering,
+      page,
+      initialCategory,
+    ).toString();
+
+    window.history.replaceState(
+      {},
+      "",
+      `${url.pathname}${query ? `?${query}` : ""}${url.hash}`,
+    );
   }
 
   async function loadProjects(
@@ -228,7 +338,7 @@ export default function ProjectCatalog({
       const data = (await response.json()) as Project[] | PaginatedProjects;
       applyProjectsResponse(data);
       setCurrentPage(nextPage);
-      updateBrowserPage(nextPage);
+      syncBrowserUrl(nextFilters, nextPage, nextOrdering);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -312,8 +422,21 @@ export default function ProjectCatalog({
 
     async function initialLoad() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      // Восстанавливаем состояние из адреса: человек мог прийти по
+      // пересланной ссылке, нажать "Назад" или просто обновить страницу.
+      // На размерных страницах фильтры в адрес не пишутся (см.
+      // syncBrowserUrl), поэтому там читаем только номер страницы.
+      const fromUrl =
+        usesPagination && !lockedSize
+          ? filtersFromSearchParams(window.location.search, initialCategory)
+          : null;
+
+      const startFilters = fromUrl?.filters ?? initialFilters;
+      const startOrdering: Ordering = fromUrl?.ordering ?? "default";
       const pageFromUrl = usesPagination
-        ? Math.max(
+        ? fromUrl?.page ??
+          Math.max(
             1,
             Number(new URLSearchParams(window.location.search).get("page")) || 1
           )
@@ -324,9 +447,9 @@ export default function ProjectCatalog({
           fetch(`${apiUrl}/categories/`),
           fetch(
             buildProjectsUrl(
-              initialFilters,
+              startFilters,
               pageFromUrl,
-              "default",
+              startOrdering,
               usesPagination,
               lockedSize
             )
@@ -349,6 +472,10 @@ export default function ProjectCatalog({
           setCategories(categoriesData);
           applyProjectsResponse(projectsData);
           setCurrentPage(pageFromUrl);
+          // Панель фильтров и чипсы должны показывать то же, что в адресе.
+          setFilters(startFilters);
+          setAppliedFilters(startFilters);
+          setOrdering(startOrdering);
         }
       } catch (error) {
         if (!isCancelled) {
