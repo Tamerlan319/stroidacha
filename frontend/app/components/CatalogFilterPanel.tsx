@@ -43,11 +43,20 @@ export const EMPTY_FILTERS: Omit<Filters, "category"> = {
   price_max: "",
 };
 
-const constructionTypeOptions = [
-  { value: "timber", label: "Дом из бруса" },
-  { value: "frame", label: "Каркасный дом" },
-  { value: "log", label: "Дом из бревна" },
-];
+// Сейчас строим только из бруса: «Каркасный дом» и «Дом из бревна» убраны
+// из фильтра (таких проектов в каталоге нет; сама модель construction_type
+// эти значения по-прежнему знает). Подпись зависит от каталога — в банях
+// «Дом из бруса» выглядел ошибкой.
+export const CONSTRUCTION_TYPE_VALUES = ["timber"];
+
+function getConstructionTypeOptions(category: string) {
+  return [
+    {
+      value: "timber",
+      label: category === "baths" ? "Баня из бруса" : "Дом из бруса",
+    },
+  ];
+}
 
 const floorsOptions = [
   { value: "1", label: "1 этаж", chipLabel: "1 этаж" },
@@ -73,13 +82,14 @@ export function getActiveFilterChips(
   const chips: { key: FilterGroupKey; label: string }[] = [];
 
   if (filters.construction_types.length) {
+    const typeOptions = getConstructionTypeOptions(filters.category);
     chips.push({
       key: "construction_types",
       label: filters.construction_types
         .map(
           (value) =>
-            constructionTypeOptions.find((option) => option.value === value)
-              ?.label || value
+            typeOptions.find((option) => option.value === value)?.label ||
+            value
         )
         .join(", "),
     });
@@ -340,7 +350,7 @@ export default function CatalogFilterPanel({
         onToggle={() => toggleSection("type")}
       >
         <CheckboxList
-          options={constructionTypeOptions}
+          options={getConstructionTypeOptions(filters.category)}
           selected={filters.construction_types}
           onToggle={(value) => onToggleListFilter("construction_types", value)}
         />

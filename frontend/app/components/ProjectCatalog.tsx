@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import CatalogFilterPanel, {
+  CONSTRUCTION_TYPE_VALUES,
   EMPTY_FILTERS,
   Filters,
   FilterGroupKey,
@@ -219,7 +220,12 @@ function filtersFromSearchParams(search: string, initialCategory: string) {
 
   const filters: Filters = {
     category: params.get("category") || initialCategory,
-    construction_types: readList("type"),
+    // Старые ссылки с ?type=frame / ?type=log (эти варианты убраны из
+    // фильтра) иначе открывали бы пустой каталог без галочки, которую
+    // можно снять.
+    construction_types: readList("type").filter((value) =>
+      CONSTRUCTION_TYPE_VALUES.includes(value),
+    ),
     floors_list: readList("floors"),
     materials: readList("material"),
     size_min: params.get("size_min") || "",
