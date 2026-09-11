@@ -3,25 +3,30 @@
 import {
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type WheelEvent as ReactWheelEvent,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 
-import styles from "./ImageLightbox.module.css";
+import styles from "./LightboxViewer.module.css";
 
-export type ProjectLightboxImage = {
+// Единый полноэкранный просмотр картинок: галерея проекта
+// (ProjectGalleryWithPrices), планировки и портфолио (ImageLightbox). Раньше
+// это были две почти одинаковые копии по ~700 строк — любое исправление
+// приходилось вносить дважды.
+
+export type LightboxImage = {
   id: string | number;
   src: string;
   alt: string;
   caption?: string;
 };
 
-type ProjectGalleryLightboxProps = {
-  images: ProjectLightboxImage[];
+type LightboxViewerProps = {
+  images: LightboxImage[];
   activeIndex: number;
   onActiveIndexChange: (index: number) => void;
   onClose: () => void;
@@ -46,11 +51,17 @@ type PinchStart = {
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
 const ZOOM_STEP = 0.5;
-const DOUBLE_TAP_SCALE = 2.5;
+const CLICK_ZOOM_SCALE = 2.5;
+// Щипок или Ctrl+колесо почти до исходного размера — считаем, что человек
+// хотел вернуться к целой картинке, а не застрять на 103% без стрелок.
+const SNAP_TO_FIT_SCALE = 1.05;
+const WHEEL_ZOOM_SPEED = 0.0025;
+const KEYBOARD_PAN_STEP = 80;
 const HORIZONTAL_SWIPE_DISTANCE = 48;
 const VERTICAL_CLOSE_DISTANCE = 90;
 const SWIPE_MAX_DURATION = 700;
 const TAP_MAX_DISTANCE = 12;
+const TAP_MAX_DURATION = 260;
 const DOUBLE_TAP_DELAY = 320;
 
 function clamp(value: number, minimum: number, maximum: number) {
@@ -68,15 +79,18 @@ function getCenter(first: Point, second: Point): Point {
   };
 }
 
-export default function ProjectGalleryLightbox({
+export default function LightboxViewer({
   images,
   activeIndex,
   onActiveIndexChange,
   onClose,
-}: ProjectGalleryLightboxProps) {
+}: LightboxViewerProps) {
   const [scale, setScale] = useState(MIN_SCALE);
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
+  const [isGesturing, setIsGesturing] = useState(false);
+  const titleId = useId();
 
+  const overlayRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -84,16 +98,30 @@ export default function ProjectGalleryLightbox({
   const offsetRef = useRef(offset);
   const pointersRef = useRef<Map<number, Point>>(new Map());
   const pointerStartRef = useRef<PointerStart | null>(null);
+  const pointerStartedOnImageRef = useRef(false);
   const panLastPointRef = useRef<Point | null>(null);
   const pinchStartRef = useRef<PinchStart | null>(null);
   const ignoreNextOverlayClickRef = useRef(false);
   const lastTapRef = useRef<PointerStart | null>(null);
+
+  // Родитель передаёт onClose/onActiveIndexChange стрелочными функциями —
+  // новыми на каждый рендер. Держим последние в ref, иначе эффекты ниже
+  // (блокировка прокрутки страницы, клавиатура) перезапускались бы при
+  // каждом перелистывании: страница под просмотром дёргалась, а фокус
+  // прыгал на крестик.
+  const onCloseRef = useRef(onClose);
+  const onActiveIndexChangeRef = useRef(onActiveIndexChange);
 
   const safeIndex = images.length
     ? Math.min(Math.max(activeIndex, 0), images.length - 1)
     : 0;
   const safeIndexRef = useRef(safeIndex);
   const activeImage = images[safeIndex] ?? null;
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    onActiveIndexChangeRef.current = onActiveIndexChange;
+  }, [onClose, onActiveIndexChange]);
 
   useEffect(() => {
     safeIndexRef.current = safeIndex;
@@ -116,18 +144,13 @@ export default function ProjectGalleryLightbox({
         return { x: 0, y: 0 };
       }
 
-      const displayedWidth = image.offsetWidth;
-      const displayedHeight = image.offsetHeight;
-      const stageWidth = stage.clientWidth;
-      const stageHeight = stage.clientHeight;
-
       const maximumX = Math.max(
         0,
-        (displayedWidth * nextScale - stageWidth) / 2,
+        (image.offsetWidth * nextScale - stage.clientWidth) / 2,
       );
       const maximumY = Math.max(
         0,
-        (displayedHeight * nextScale - stageHeight) / 2,
+        (image.offsetHeight * nextScale - stage.clientHeight) / 2,
       );
 
       return {
@@ -138,18 +161,21 @@ export default function ProjectGalleryLightbox({
     [],
   );
 
+  const commitView = useCallback((nextScale: number, nextOffset: Point) => {
+    scaleRef.current = nextScale;
+    offsetRef.current = nextOffset;
+    setScale(nextScale);
+    setOffset(nextOffset);
+  }, []);
+
   const applyZoom = useCallback(
     (nextScale: number, focalPoint?: Point) => {
       const clampedScale = clamp(nextScale, MIN_SCALE, MAX_SCALE);
       const currentScale = scaleRef.current;
       const currentOffset = offsetRef.current;
 
-      if (clampedScale === MIN_SCALE) {
-        const zeroOffset = { x: 0, y: 0 };
-        scaleRef.current = MIN_SCALE;
-        offsetRef.current = zeroOffset;
-        setScale(MIN_SCALE);
-        setOffset(zeroOffset);
+      if (clampedScale < SNAP_TO_FIT_SCALE) {
+        commitView(MIN_SCALE, { x: 0, y: 0 });
         return;
       }
 
@@ -175,51 +201,76 @@ export default function ProjectGalleryLightbox({
         };
       }
 
-      const clampedOffset = getClampedOffset(nextOffset, clampedScale);
-      scaleRef.current = clampedScale;
-      offsetRef.current = clampedOffset;
-      setScale(clampedScale);
-      setOffset(clampedOffset);
+      commitView(clampedScale, getClampedOffset(nextOffset, clampedScale));
+    },
+    [commitView, getClampedOffset],
+  );
+
+  const resetZoom = useCallback(() => {
+    commitView(MIN_SCALE, { x: 0, y: 0 });
+  }, [commitView]);
+
+  const toggleZoom = useCallback(
+    (point: Point) => {
+      if (scaleRef.current > MIN_SCALE) {
+        resetZoom();
+      } else {
+        applyZoom(CLICK_ZOOM_SCALE, point);
+      }
+    },
+    [applyZoom, resetZoom],
+  );
+
+  // Сдвиг увеличенной картинки — колесом, стрелками, перетаскиванием.
+  // Картинка целиком помещается в окно, пока не увеличена, так что двигать
+  // её имеет смысл только при масштабе больше 100%.
+  const panBy = useCallback(
+    (deltaX: number, deltaY: number) => {
+      if (scaleRef.current <= MIN_SCALE) return;
+
+      const nextOffset = getClampedOffset({
+        x: offsetRef.current.x + deltaX,
+        y: offsetRef.current.y + deltaY,
+      });
+
+      offsetRef.current = nextOffset;
+      setOffset(nextOffset);
     },
     [getClampedOffset],
   );
 
-  const resetZoom = useCallback(() => {
-    applyZoom(MIN_SCALE);
-  }, [applyZoom]);
-
   const resetInteractionState = useCallback(() => {
-    const zeroOffset = { x: 0, y: 0 };
-
-    scaleRef.current = MIN_SCALE;
-    offsetRef.current = zeroOffset;
-    setScale(MIN_SCALE);
-    setOffset(zeroOffset);
+    commitView(MIN_SCALE, { x: 0, y: 0 });
     pointersRef.current.clear();
     pointerStartRef.current = null;
+    pointerStartedOnImageRef.current = false;
     panLastPointRef.current = null;
     pinchStartRef.current = null;
     lastTapRef.current = null;
     ignoreNextOverlayClickRef.current = false;
-  }, []);
+    setIsGesturing(false);
+  }, [commitView]);
 
   const showPrevious = useCallback(() => {
     if (images.length < 2) return;
     resetInteractionState();
-    const currentIndex = safeIndexRef.current;
-    onActiveIndexChange((currentIndex - 1 + images.length) % images.length);
-  }, [images.length, onActiveIndexChange, resetInteractionState]);
+    onActiveIndexChangeRef.current(
+      (safeIndexRef.current - 1 + images.length) % images.length,
+    );
+  }, [images.length, resetInteractionState]);
 
   const showNext = useCallback(() => {
     if (images.length < 2) return;
     resetInteractionState();
-    const currentIndex = safeIndexRef.current;
-    onActiveIndexChange((currentIndex + 1) % images.length);
-  }, [images.length, onActiveIndexChange, resetInteractionState]);
+    onActiveIndexChangeRef.current((safeIndexRef.current + 1) % images.length);
+  }, [images.length, resetInteractionState]);
 
+  const close = useCallback(() => {
+    onCloseRef.current();
+  }, []);
+
+  // Блокировка прокрутки страницы под просмотром — один раз на открытие.
   useEffect(() => {
-    if (images.length === 0) return;
-
     const body = document.body;
     const html = document.documentElement;
     const scrollY = window.scrollY;
@@ -264,20 +315,67 @@ export default function ProjectGalleryLightbox({
     html.style.touchAction = "none";
     html.style.overscrollBehavior = "none";
 
+    const focusFrame = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+
+      body.style.position = previousBodyStyles.position;
+      body.style.top = previousBodyStyles.top;
+      body.style.right = previousBodyStyles.right;
+      body.style.bottom = previousBodyStyles.bottom;
+      body.style.left = previousBodyStyles.left;
+      body.style.width = previousBodyStyles.width;
+      body.style.height = previousBodyStyles.height;
+      body.style.overflow = previousBodyStyles.overflow;
+      body.style.touchAction = previousBodyStyles.touchAction;
+      body.style.overscrollBehavior = previousBodyStyles.overscrollBehavior;
+
+      html.style.overflow = previousHtmlStyles.overflow;
+      html.style.height = previousHtmlStyles.height;
+      html.style.touchAction = previousHtmlStyles.touchAction;
+      html.style.overscrollBehavior = previousHtmlStyles.overscrollBehavior;
+      html.style.scrollBehavior = "auto";
+      window.scrollTo(0, scrollY);
+      html.style.scrollBehavior = previousHtmlStyles.scrollBehavior;
+      previouslyFocusedElement?.focus({ preventScroll: true });
+    };
+  }, []);
+
+  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        close();
         return;
       }
 
-      if (event.key === "ArrowLeft" && scaleRef.current === MIN_SCALE) {
+      if (event.key.startsWith("Arrow") && scaleRef.current > MIN_SCALE) {
+        event.preventDefault();
+        panBy(
+          event.key === "ArrowLeft"
+            ? KEYBOARD_PAN_STEP
+            : event.key === "ArrowRight"
+              ? -KEYBOARD_PAN_STEP
+              : 0,
+          event.key === "ArrowUp"
+            ? KEYBOARD_PAN_STEP
+            : event.key === "ArrowDown"
+              ? -KEYBOARD_PAN_STEP
+              : 0,
+        );
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
         event.preventDefault();
         showPrevious();
         return;
       }
 
-      if (event.key === "ArrowRight" && scaleRef.current === MIN_SCALE) {
+      if (event.key === "ArrowRight") {
         event.preventDefault();
         showNext();
         return;
@@ -302,38 +400,45 @@ export default function ProjectGalleryLightbox({
     }
 
     document.addEventListener("keydown", handleKeyDown);
-    const focusFrame = window.requestAnimationFrame(() => {
-      closeButtonRef.current?.focus({ preventScroll: true });
-    });
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [applyZoom, close, panBy, resetZoom, showNext, showPrevious]);
 
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      window.cancelAnimationFrame(focusFrame);
+  // Колесо: у увеличенной картинки — прокрутка (двумя пальцами по тачпаду
+  // тоже), Ctrl/⌘ + колесо и щипок на тачпаде — масштаб. Раньше колесо
+  // всегда меняло масштаб, и увеличенную картинку нельзя было «прокрутить».
+  // Слушатель нативный и не пассивный: React вешает onWheel пассивным, а без
+  // preventDefault Ctrl+колесо масштабирует всю страницу браузера.
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
 
-      body.style.position = previousBodyStyles.position;
-      body.style.top = previousBodyStyles.top;
-      body.style.right = previousBodyStyles.right;
-      body.style.bottom = previousBodyStyles.bottom;
-      body.style.left = previousBodyStyles.left;
-      body.style.width = previousBodyStyles.width;
-      body.style.height = previousBodyStyles.height;
-      body.style.overflow = previousBodyStyles.overflow;
-      body.style.touchAction = previousBodyStyles.touchAction;
-      body.style.overscrollBehavior = previousBodyStyles.overscrollBehavior;
+    function handleWheel(event: WheelEvent) {
+      event.preventDefault();
 
-      html.style.overflow = previousHtmlStyles.overflow;
-      html.style.height = previousHtmlStyles.height;
-      html.style.touchAction = previousHtmlStyles.touchAction;
-      html.style.overscrollBehavior = previousHtmlStyles.overscrollBehavior;
-      html.style.scrollBehavior = "auto";
-      window.scrollTo(0, scrollY);
-      html.style.scrollBehavior = previousHtmlStyles.scrollBehavior;
-      previouslyFocusedElement?.focus({ preventScroll: true });
-    };
-  }, [applyZoom, images.length, onClose, resetZoom, showNext, showPrevious]);
+      const unit =
+        event.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? 16
+          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? window.innerHeight
+            : 1;
+
+      if (event.ctrlKey || event.metaKey) {
+        applyZoom(
+          scaleRef.current * Math.exp(-event.deltaY * unit * WHEEL_ZOOM_SPEED),
+          { x: event.clientX, y: event.clientY },
+        );
+        return;
+      }
+
+      panBy(-event.deltaX * unit, -event.deltaY * unit);
+    }
+
+    overlay.addEventListener("wheel", handleWheel, { passive: false });
+    return () => overlay.removeEventListener("wheel", handleWheel);
+  }, [applyZoom, panBy]);
 
   useEffect(() => {
-    if (images.length < 2 || typeof window === "undefined") return;
+    if (images.length < 2) return;
 
     const previousIndex = (safeIndex - 1 + images.length) % images.length;
     const nextIndex = (safeIndex + 1) % images.length;
@@ -341,6 +446,7 @@ export default function ProjectGalleryLightbox({
     [images[previousIndex], images[nextIndex]].forEach((image) => {
       if (!image) return;
       const preloadedImage = new window.Image();
+      preloadedImage.decoding = "async";
       preloadedImage.src = image.src;
     });
   }, [images, safeIndex]);
@@ -364,12 +470,17 @@ export default function ProjectGalleryLightbox({
 
     if (target instanceof Element && target.closest("button, a")) return;
 
+    // Флаг прошлого жеста не должен пережить начало нового — иначе
+    // следующий клик по фону «съедался» бы и просмотр не закрывался.
+    ignoreNextOverlayClickRef.current = false;
+
     const point = { x: event.clientX, y: event.clientY };
     pointersRef.current.set(event.pointerId, point);
     event.currentTarget.setPointerCapture?.(event.pointerId);
 
     if (pointersRef.current.size === 1) {
       pointerStartRef.current = { ...point, time: Date.now() };
+      pointerStartedOnImageRef.current = target === imageRef.current;
       panLastPointRef.current = point;
       pinchStartRef.current = null;
       return;
@@ -389,6 +500,7 @@ export default function ProjectGalleryLightbox({
       pointerStartRef.current = null;
       panLastPointRef.current = null;
       ignoreNextOverlayClickRef.current = true;
+      setIsGesturing(true);
     }
   }
 
@@ -413,7 +525,6 @@ export default function ProjectGalleryLightbox({
         MIN_SCALE,
         MAX_SCALE,
       );
-
       const stageBounds = stageRef.current?.getBoundingClientRect();
       let nextOffset = {
         x: pinchStart.offset.x + (currentCenter.x - pinchStart.center.x),
@@ -439,11 +550,7 @@ export default function ProjectGalleryLightbox({
         };
       }
 
-      const clampedOffset = getClampedOffset(nextOffset, nextScale);
-      scaleRef.current = nextScale;
-      offsetRef.current = clampedOffset;
-      setScale(nextScale);
-      setOffset(clampedOffset);
+      commitView(nextScale, getClampedOffset(nextOffset, nextScale));
       return;
     }
 
@@ -452,25 +559,27 @@ export default function ProjectGalleryLightbox({
       scaleRef.current > MIN_SCALE &&
       panLastPointRef.current
     ) {
-      const delta = {
-        x: point.x - panLastPointRef.current.x,
-        y: point.y - panLastPointRef.current.y,
-      };
-      const nextOffset = getClampedOffset({
-        x: offsetRef.current.x + delta.x,
-        y: offsetRef.current.y + delta.y,
-      });
+      const deltaX = point.x - panLastPointRef.current.x;
+      const deltaY = point.y - panLastPointRef.current.y;
+      const start = pointerStartRef.current;
 
       panLastPointRef.current = point;
-      offsetRef.current = nextOffset;
-      setOffset(nextOffset);
-      ignoreNextOverlayClickRef.current = true;
+      panBy(deltaX, deltaY);
+
+      if (
+        start &&
+        Math.hypot(point.x - start.x, point.y - start.y) > TAP_MAX_DISTANCE
+      ) {
+        ignoreNextOverlayClickRef.current = true;
+        if (!isGesturing) setIsGesturing(true);
+      }
     }
   }
 
   function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
     const releasedPoint = pointersRef.current.get(event.pointerId);
     const pointerStart = pointerStartRef.current;
+    const wasPinching = pinchStartRef.current !== null;
 
     pointersRef.current.delete(event.pointerId);
 
@@ -479,11 +588,17 @@ export default function ProjectGalleryLightbox({
       panLastPointRef.current = remainingPoint;
       pointerStartRef.current = { ...remainingPoint, time: Date.now() };
       pinchStartRef.current = null;
+      if (wasPinching && scaleRef.current < SNAP_TO_FIT_SCALE) resetZoom();
       return;
     }
 
     panLastPointRef.current = null;
     pinchStartRef.current = null;
+    setIsGesturing(false);
+
+    if (wasPinching && scaleRef.current < SNAP_TO_FIT_SCALE) {
+      resetZoom();
+    }
 
     if (!pointerStart || !releasedPoint) {
       pointerStartRef.current = null;
@@ -492,6 +607,12 @@ export default function ProjectGalleryLightbox({
 
     pointerStartRef.current = null;
 
+    // Клик по самой картинке не закрывает просмотр, куда бы браузер ни
+    // отправил click при захвате указателя (setPointerCapture на оверлее).
+    if (pointerStartedOnImageRef.current) {
+      ignoreNextOverlayClickRef.current = true;
+    }
+
     const deltaX = releasedPoint.x - pointerStart.x;
     const deltaY = releasedPoint.y - pointerStart.y;
     const absoluteX = Math.abs(deltaX);
@@ -499,28 +620,35 @@ export default function ProjectGalleryLightbox({
     const duration = Date.now() - pointerStart.time;
     const movedDistance = Math.hypot(deltaX, deltaY);
 
-    if (movedDistance <= TAP_MAX_DISTANCE && duration <= 260) {
+    if (movedDistance <= TAP_MAX_DISTANCE && duration <= TAP_MAX_DURATION) {
+      const now = Date.now();
       const lastTap = lastTapRef.current;
-      const isDoubleTap =
+      const isRepeatTap =
         lastTap !== null &&
-        Date.now() - lastTap.time <= DOUBLE_TAP_DELAY &&
-        Math.hypot(
-          releasedPoint.x - lastTap.x,
-          releasedPoint.y - lastTap.y,
-        ) <= 36;
+        now - lastTap.time <= DOUBLE_TAP_DELAY &&
+        Math.hypot(releasedPoint.x - lastTap.x, releasedPoint.y - lastTap.y) <=
+          36;
 
-      if (isDoubleTap) {
-        if (scaleRef.current > MIN_SCALE) {
-          resetZoom();
-        } else {
-          applyZoom(DOUBLE_TAP_SCALE, releasedPoint);
+      // Мышь: курсор над картинкой — «лупа», значит один клик и увеличивает
+      // (раньше работал только двойной). Второй клик двойного клика
+      // пропускаем, чтобы он тут же не отменил первый.
+      if (event.pointerType === "mouse") {
+        lastTapRef.current = { ...releasedPoint, time: now };
+        if (pointerStartedOnImageRef.current && !isRepeatTap) {
+          toggleZoom(releasedPoint);
         }
+        return;
+      }
+
+      // Палец: одиночное касание ничего не делает, двойное — масштаб.
+      if (isRepeatTap) {
+        toggleZoom(releasedPoint);
         lastTapRef.current = null;
         ignoreNextOverlayClickRef.current = true;
         return;
       }
 
-      lastTapRef.current = { ...releasedPoint, time: Date.now() };
+      lastTapRef.current = { ...releasedPoint, time: now };
     }
 
     if (scaleRef.current > MIN_SCALE) return;
@@ -542,7 +670,7 @@ export default function ProjectGalleryLightbox({
       absoluteY > absoluteX * 1.15
     ) {
       ignoreNextOverlayClickRef.current = true;
-      onClose();
+      close();
       return;
     }
 
@@ -556,6 +684,7 @@ export default function ProjectGalleryLightbox({
     pointerStartRef.current = null;
     panLastPointRef.current = null;
     pinchStartRef.current = null;
+    setIsGesturing(false);
   }
 
   function handleOverlayClick(event: MouseEvent<HTMLDivElement>) {
@@ -565,46 +694,38 @@ export default function ProjectGalleryLightbox({
     }
 
     if (event.defaultPrevented) return;
-    onClose();
-  }
-
-  function handleWheel(event: ReactWheelEvent<HTMLDivElement>) {
-    event.preventDefault();
-    const zoomDelta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
-
-    applyZoom(scaleRef.current + zoomDelta, {
-      x: event.clientX,
-      y: event.clientY,
-    });
+    close();
   }
 
   if (!activeImage || typeof document === "undefined") return null;
 
+  const isZoomed = scale > MIN_SCALE;
+
   return createPortal(
     <div
+      ref={overlayRef}
       className={styles.overlay}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="project-gallery-lightbox-title"
+      aria-labelledby={titleId}
       onClick={handleOverlayClick}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      onWheel={handleWheel}
     >
-      <h2 id="project-gallery-lightbox-title" className={styles.srOnly}>
-        Просмотр фотографий проекта
+      <h2 id={titleId} className={styles.srOnly}>
+        Просмотр изображений
       </h2>
 
       <button
         ref={closeButtonRef}
         className={styles.closeButton}
         type="button"
-        aria-label="Закрыть просмотр фотографий"
+        aria-label="Закрыть просмотр"
         onClick={(event) => {
           event.stopPropagation();
-          onClose();
+          close();
         }}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -616,30 +737,23 @@ export default function ProjectGalleryLightbox({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={imageRef}
-          className={styles.image}
+          key={activeImage.src}
+          className={`${styles.image} ${
+            isGesturing ? styles.imageGesturing : ""
+          }`}
           src={activeImage.src}
           alt={activeImage.alt}
+          decoding="async"
           draggable={false}
           style={{
             transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
-            cursor: scale > MIN_SCALE ? "grab" : "zoom-in",
+            cursor: isZoomed ? (isGesturing ? "grabbing" : "grab") : "zoom-in",
           }}
           onClick={(event) => event.stopPropagation()}
-          onDoubleClick={(event) => {
-            event.stopPropagation();
-            if (scaleRef.current > MIN_SCALE) {
-              resetZoom();
-            } else {
-              applyZoom(DOUBLE_TAP_SCALE, {
-                x: event.clientX,
-                y: event.clientY,
-              });
-            }
-          }}
         />
       </div>
 
-      {images.length > 1 && scale === MIN_SCALE && (
+      {images.length > 1 && !isZoomed && (
         <>
           <button
             className={`${styles.arrowButton} ${styles.previousButton}`}
@@ -676,8 +790,8 @@ export default function ProjectGalleryLightbox({
       >
         <button
           type="button"
-          aria-label="Уменьшить фотографию"
-          disabled={scale <= MIN_SCALE}
+          aria-label="Уменьшить"
+          disabled={!isZoomed}
           onClick={() => applyZoom(scaleRef.current - ZOOM_STEP)}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -687,15 +801,15 @@ export default function ProjectGalleryLightbox({
         <button
           className={styles.zoomValue}
           type="button"
-          aria-label="Вернуть исходный размер фотографии"
-          disabled={scale <= MIN_SCALE}
+          aria-label="Показать изображение целиком"
+          disabled={!isZoomed}
           onClick={resetZoom}
         >
           {Math.round(scale * 100)}%
         </button>
         <button
           type="button"
-          aria-label="Увеличить фотографию"
+          aria-label="Увеличить"
           disabled={scale >= MAX_SCALE}
           onClick={() => applyZoom(scaleRef.current + ZOOM_STEP)}
         >

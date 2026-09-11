@@ -15,7 +15,7 @@ type LeadFormModalProps = {
 };
 
 // Всплывающее окно с формой заявки поверх любой страницы. Логика
-// блокировки скролла и фокуса повторяет ImageLightbox.tsx — единый
+// блокировки скролла и фокуса повторяет LightboxViewer.tsx — единый
 // проверенный паттерн модалки для всего сайта.
 export default function LeadFormModal({
   open,

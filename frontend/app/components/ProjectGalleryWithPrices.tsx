@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from "react";
 
-import ProjectGalleryLightbox from "./ProjectGalleryLightbox";
+import LightboxViewer from "./LightboxViewer";
 import styles from "./ProjectGalleryWithPrices.module.css";
 
 export type ProjectMediaItem = {
@@ -309,7 +309,7 @@ export default function ProjectGalleryWithPrices({
       </div>
 
       {lightboxOpen && hasGallery && (
-        <ProjectGalleryLightbox
+        <LightboxViewer
           images={images}
           activeIndex={safeIndex}
           onActiveIndexChange={setSelectedIndex}
