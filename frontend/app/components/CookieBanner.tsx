@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
+import {
+  getServerMetrikaFrameSnapshot,
+  isInsideMetrikaFrame,
+  subscribeToMetrikaFrame,
+} from "../lib/metrika";
 import styles from "./CookieBanner.module.css";
 
 export const COOKIE_CONSENT_STORAGE_KEY = "brusoteka-cookie-consent";
@@ -50,7 +55,19 @@ export default function CookieBanner() {
     getCookieConsentSnapshot,
     getServerCookieConsentSnapshot
   );
+  const insideMetrikaFrame = useSyncExternalStore(
+    subscribeToMetrikaFrame,
+    isInsideMetrikaFrame,
+    getServerMetrikaFrameSnapshot
+  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Во фрейме интерфейса Метрики страницу смотрит владелец счётчика, а не
+  // посетитель (см. lib/metrika.ts) — баннер там только закрывал бы часть
+  // карты кликов.
+  if (insideMetrikaFrame) {
+    return null;
+  }
 
   const isOpen = consent === null || isSettingsOpen;
 

@@ -8,6 +8,11 @@ import {
   getServerCookieConsentSnapshot,
   subscribeToCookieConsent,
 } from "./CookieBanner";
+import {
+  getServerMetrikaFrameSnapshot,
+  isInsideMetrikaFrame,
+  subscribeToMetrikaFrame,
+} from "../lib/metrika";
 import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 
 export default function YandexMetrika() {
@@ -16,13 +21,18 @@ export default function YandexMetrika() {
     getCookieConsentSnapshot,
     getServerCookieConsentSnapshot
   );
+  const insideMetrikaFrame = useSyncExternalStore(
+    subscribeToMetrikaFrame,
+    isInsideMetrikaFrame,
+    getServerMetrikaFrameSnapshot
+  );
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
 
   const isLocalSite =
     siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1");
 
-  if (consent !== "all" || isLocalSite) {
+  if ((consent !== "all" && !insideMetrikaFrame) || isLocalSite) {
     return null;
   }
 
