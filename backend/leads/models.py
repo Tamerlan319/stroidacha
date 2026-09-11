@@ -49,7 +49,10 @@ class Lead(models.Model):
         blank=True,
     )
 
-    page_url = models.URLField("Страница заявки", blank=True)
+    # Не 200 по умолчанию: адрес захода из Директа (UTM с ключевой фразой на
+    # кириллице в %-кодировке + yclid) или из поиска Яндекса (etext) легко
+    # длиннее, и из-за этого заявки отклонялись (см. LeadMetadataField).
+    page_url = models.URLField("Страница заявки", max_length=2000, blank=True)
     utm_source = models.CharField("UTM source", max_length=255, blank=True)
     utm_medium = models.CharField("UTM medium", max_length=255, blank=True)
     utm_campaign = models.CharField("UTM campaign", max_length=255, blank=True)

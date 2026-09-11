@@ -10,6 +10,10 @@ type Props = {
   className?: string;
 };
 
+// Короче, чем в LeadForm: блок в шапке узкий. Телефон — чтобы заявку,
+// которую не удалось отправить, человек не потерял молча.
+const submitFailedMessage = `Не отправилось. Позвоните: ${legalConfig.phoneDisplay}`;
+
 function getPhoneDigits(value: string) {
   let digits = value.replace(/\D/g, "");
 
@@ -115,17 +119,19 @@ export default function HeaderQuickCallback({
       });
 
       if (!response.ok) {
-        throw new Error("Не удалось отправить заявку.");
+        throw new Error(submitFailedMessage);
       }
 
       setPhone("");
       setStatus("success");
     } catch (submitError) {
       setStatus("error");
+      // TypeError — сбой самого fetch (нет сети): браузерный текст
+      // по-английски, вместо него — своё сообщение с телефоном.
       setError(
-        submitError instanceof Error
+        submitError instanceof Error && !(submitError instanceof TypeError)
           ? submitError.message
-          : "Не удалось отправить заявку."
+          : submitFailedMessage
       );
     } finally {
       setIsSubmitting(false);

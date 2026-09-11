@@ -58,8 +58,37 @@ def normalize_russian_phone(value):
     )
 
 
+class LeadMetadataField(serializers.CharField):
+    """Служебное поле заявки, которого нет в форме: адрес страницы, UTM-метки.
+
+    Слишком длинное значение обрезается до размера колонки, а не отклоняет
+    заявку целиком. Иначе человек получает ошибку по полю, которое не видит
+    и не может исправить: так терялись заявки с заходов из поиска Яндекса
+    (длинный etext в адресе) и из Директа (utm_term на кириллице + yclid) —
+    адрес страницы не влезал в 200 символов, сервер отвечал 400.
+    """
+
+    def __init__(self, model_field_name, **kwargs):
+        self.limit = Lead._meta.get_field(model_field_name).max_length
+        kwargs.setdefault("required", False)
+        kwargs.setdefault("allow_blank", True)
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        return super().to_internal_value(data)[: self.limit]
+
+
 class LeadCreateSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(trim_whitespace=True, max_length=50)
+    page_url = LeadMetadataField("page_url")
+    utm_source = LeadMetadataField("utm_source")
+    utm_medium = LeadMetadataField("utm_medium")
+    utm_campaign = LeadMetadataField("utm_campaign")
+    utm_content = LeadMetadataField("utm_content")
+    utm_term = LeadMetadataField("utm_term")
+    # Та же логика, что у LeadMetadataField: неизвестный источник (новая форма
+    # на фронте раньше, чем бэкенд узнал о её source) не должен терять заявку.
+    source = serializers.CharField(required=False, allow_blank=True)
     message = serializers.CharField(
         required=False,
         allow_blank=True,
@@ -85,7 +114,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         allow_blank=True,
         max_length=50,
     )
-    project_slug = serializers.SlugField(
+    project_slug = serializers.CharField(
         write_only=True,
         required=False,
         allow_blank=True,
@@ -123,6 +152,18 @@ class LeadCreateSerializer(serializers.ModelSerializer):
 
     def validate_phone(self, value):
         return normalize_russian_phone(value)
+
+    def validate_page_url(self, value):
+        # Не http(s) — не отклоняем заявку, просто не сохраняем адрес: в
+        # админке он выводится ссылкой, javascript:/data: там не нужны.
+        if value and not value.lower().startswith(("https://", "http://")):
+            return ""
+        return value
+
+    def validate_source(self, value):
+        if value in Lead.Source.values:
+            return value
+        return Lead.Source.CONTACT_FORM
 
     def validate_consent_accepted(self, value):
         if not value:
@@ -199,12 +240,12 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         )
 
         if project_slug:
-            try:
-                validated_data["project"] = Project.objects.get(slug=project_slug)
-            except Project.DoesNotExist:
-                raise serializers.ValidationError(
-                    {"project_slug": "Проект с таким slug не найден."}
-                )
+            # Проект могли снять с публикации или переименовать, пока у
+            # человека открыта страница, — заявка важнее ссылки на проект
+            # (адрес страницы всё равно сохранится в page_url).
+            validated_data["project"] = Project.objects.filter(
+                slug=project_slug
+            ).first()
 
         request = self.context.get("request")
         if request:

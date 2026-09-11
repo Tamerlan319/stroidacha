@@ -193,6 +193,10 @@ function validateField(
   return "";
 }
 
+// Заявку, которую не удалось отправить, человек не должен потерять молча —
+// всегда оставляем ему телефон.
+const SUBMIT_FAILED_MESSAGE = `Не удалось отправить заявку. Позвоните нам: ${legalConfig.phoneDisplay} — или напишите в мессенджер.`;
+
 function parseApiErrors(data: unknown): {
   fields: FieldErrors;
   general: string;
@@ -200,7 +204,7 @@ function parseApiErrors(data: unknown): {
   if (!data || typeof data !== "object") {
     return {
       fields: {},
-      general: "Не удалось отправить заявку. Попробуйте ещё раз.",
+      general: SUBMIT_FAILED_MESSAGE,
     };
   }
 
@@ -214,6 +218,8 @@ function parseApiErrors(data: unknown): {
 
     if (key === "phone" || key === "message" || key === "attachments") {
       fields[key] = message;
+    } else if (key === "consent_accepted") {
+      fields.consent = message;
     } else if (key === "smartcaptcha_token") {
       fields.captcha = message;
     } else if (key === "non_field_errors" || key === "detail") {
@@ -221,9 +227,16 @@ function parseApiErrors(data: unknown): {
     }
   }
 
+  // "Проверьте отмеченные поля" — только если какое-то поле правда отмечено.
+  // Ошибка по полю, которого в форме нет (так было с page_url), раньше
+  // оставляла человека с этой фразой и без единой подсказки, что исправлять.
+  const hasFieldErrors = Object.keys(fields).length > 0;
+
   return {
     fields,
-    general: general || "Проверьте отмеченные поля.",
+    general:
+      general ||
+      (hasFieldErrors ? "Проверьте отмеченные поля." : SUBMIT_FAILED_MESSAGE),
   };
 }
 
@@ -526,10 +539,12 @@ export default function LeadForm({
       }
     } catch (error) {
       setStatus("error");
+      // TypeError — сбой самого fetch (нет сети, обрыв): его сообщение
+      // браузерное и по-английски, показываем своё с телефоном.
       setGeneralError(
-        error instanceof Error
+        error instanceof Error && !(error instanceof TypeError)
           ? error.message
-          : "Произошла ошибка при отправке заявки."
+          : SUBMIT_FAILED_MESSAGE
       );
     } finally {
       setIsSubmitting(false);
