@@ -1,43 +1,23 @@
 "use client";
 
 import Script from "next/script";
-import { useSyncExternalStore } from "react";
 
-import {
-  getCookieConsentSnapshot,
-  subscribeToCookieConsent,
-} from "./CookieBanner";
-import { isInsideMetrikaFrame } from "../lib/metrika";
 import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 
-// Метрика включается сразу при входе на сайт, без предварительного согласия
-// (баннер — уведомление с кнопкой «Отказаться»), и не грузится только у тех,
-// кто отказался от аналитики. Во фрейме интерфейса Метрики — всегда, см.
-// lib/metrika.ts.
-function getMetrikaEnabledSnapshot(): boolean {
-  return getCookieConsentSnapshot() !== "essential" || isInsideMetrikaFrame();
-}
-
-// false, а не "включено по умолчанию": на сервере выбор посетителя неизвестен,
-// и если отрендерить тег уже при гидратации, отказавшемуся посетителю tag.js
-// успеет загрузиться раньше, чем клиент прочитает его отказ.
-function getServerMetrikaEnabledSnapshot(): boolean {
-  return false;
-}
-
+// Метрика грузится у всех посетителей сразу: cookie-баннера и согласия на
+// сайте нет по решению владельца, своё согласие он планирует сделать позже.
+// Если оно вернётся — карта кликов, аналитика форм и Вебвизор открывают сайт
+// во фрейме интерфейса Метрики, где хранилище отделено браузером от обычного
+// визита и согласия нет никогда. Там счётчик должен грузиться без него,
+// иначе Метрика пишет «Не установлен код счётчика» (так уже было и
+// исправлялось — см. историю этого файла и lib/metrika.ts).
 export default function YandexMetrika() {
-  const enabled = useSyncExternalStore(
-    subscribeToCookieConsent,
-    getMetrikaEnabledSnapshot,
-    getServerMetrikaEnabledSnapshot
-  );
-
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
 
   const isLocalSite =
     siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1");
 
-  if (!enabled || isLocalSite) {
+  if (isLocalSite) {
     return null;
   }
 

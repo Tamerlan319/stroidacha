@@ -1,9 +1,9 @@
 import { YANDEX_METRIKA_ID } from "./site";
 
-// Тонкая обёртка над window.ym для отправки целей (см. YandexMetrika.tsx —
-// сам тег не грузится у отказавшихся от аналитики и в деве, поэтому window.ym
-// есть не всегда — reachGoal в этих случаях должен молча ничего не делать, а
-// не падать.
+// Тонкая обёртка над window.ym для отправки целей (см. YandexMetrika.tsx).
+// window.ym есть не всегда — в деве тег не грузится, а у части посетителей
+// его режут блокировщики рекламы, — reachGoal в этих случаях должен молча
+// ничего не делать, а не падать.
 declare global {
   interface Window {
     ym?: (...args: unknown[]) => void;
@@ -16,44 +16,4 @@ export function reachGoal(goal: string, params?: Record<string, unknown>) {
   }
 
   window.ym(YANDEX_METRIKA_ID, "reachGoal", goal, params);
-}
-
-// Карта кликов/ссылок/скроллинга, аналитика форм и плеер Вебвизора
-// открывают сайт во фрейме и ждут, что внутри загрузится счётчик — иначе
-// пишут «Не установлен код счётчика». Смотрит страницу там не посетитель, а
-// владелец счётчика из своего кабинета, поэтому во фрейме счётчик грузится
-// всегда (даже если там однажды нажали «Отказаться» — хранилище фрейма
-// браузер держит отдельно от обычного визита), а cookie-баннер не
-// показывается. Какие сайты вообще могут встроить нас во фрейм, решает CSP
-// frame-ancestors в caddy/Caddyfile; здесь родитель дополнительно
-// сверяется с доменами Метрики, чтобы чужой сайт с iframe не мог спрятать
-// баннер и включить счётчик отказавшемуся посетителю, даже если заголовок
-// когда-нибудь ослабят.
-const METRIKA_FRAME_PARENT =
-  /^https?:\/\/([^/]+\.)?(webvisor\.com|(metrika|metrica|metr|analytics)\.yandex(\.[a-z]{2,3}){0,2}|(metrika|metrica)\.ya\.ru)(\/|$)/;
-
-export function isInsideMetrikaFrame(): boolean {
-  if (typeof window === "undefined" || window.self === window.top) {
-    return false;
-  }
-
-  // ancestorOrigins есть в Chromium и Safari; Firefox его не знает, там
-  // остаётся referrer — адрес страницы, встроившей фрейм.
-  const ancestors = window.location.ancestorOrigins as
-    | DOMStringList
-    | undefined;
-  const parent =
-    ancestors && ancestors.length > 0 ? ancestors[0] : document.referrer;
-
-  return METRIKA_FRAME_PARENT.test(parent);
-}
-
-// Родитель фрейма за время жизни страницы не меняется — подписываться не
-// на что, но useSyncExternalStore нужна функция подписки.
-export function subscribeToMetrikaFrame(): () => void {
-  return () => undefined;
-}
-
-export function getServerMetrikaFrameSnapshot(): false {
-  return false;
 }

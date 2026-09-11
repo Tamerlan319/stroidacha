@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 
 import "./globals.css";
 
-import CookieBanner from "./components/CookieBanner";
 import JsonLd from "./components/JsonLd";
 import MobileHorizontalLock from "./components/MobileScrollFix";
 import SiteFooter from "./components/SiteFooter";
@@ -255,7 +254,6 @@ export default async function RootLayout({
           {children}
 
           <SiteFooter />
-          <CookieBanner />
           <YandexMetrika />
         </SocialLinksProvider>
       </body>
