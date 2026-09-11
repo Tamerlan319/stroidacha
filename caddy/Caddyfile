@@ -51,8 +51,9 @@ brusodel.ru, www.brusodel.ru {
 	# оттуда редиректит на http), а источник http:// в CSP по спеке
 	# покрывает и https, наоборот — нет.
 	#
-	# Счётчик внутри такого фрейма загружается без cookie-согласия — см.
-	# isInsideMetrikaFrame в frontend/app/lib/metrika.ts.
+	# Счётчик внутри такого фрейма загружается всегда, даже если в нём
+	# нажимали «Отказаться», — см. isInsideMetrikaFrame в
+	# frontend/app/lib/metrika.ts.
 	#
 	# Отдельный header с match по text/html — не случайность: CSP действует
 	# только на документы, а с полным списком Метрики заголовок весит ~4 КБ,

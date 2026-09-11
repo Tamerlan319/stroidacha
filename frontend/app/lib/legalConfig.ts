@@ -11,7 +11,11 @@ export const legalConfig = {
   phoneDigits: "79676801812",
   email: "brusodel@yandex.ru",
   privacyEmail: "brusodel@yandex.ru",
-  consentVersion: "2026-08-03",
+  // Поднимать при каждом изменении текста политики (/privacy) или согласия
+  // (/consent-personal-data): уходит с каждой заявкой и показывает, с какой
+  // редакцией документов человек соглашался. 2026-09-11 — Метрика включается
+  // без предварительного согласия, с возможностью отказа.
+  consentVersion: "2026-09-11",
   // Держите в согласии с LEAD_RETENTION_MONTHS в backend/.env.prod — это
   // просто текст политики, отдельного API для этого значения нет.
   retentionMonths: 24,

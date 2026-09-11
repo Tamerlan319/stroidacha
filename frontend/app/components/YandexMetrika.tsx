@@ -5,26 +5,31 @@ import { useSyncExternalStore } from "react";
 
 import {
   getCookieConsentSnapshot,
-  getServerCookieConsentSnapshot,
   subscribeToCookieConsent,
 } from "./CookieBanner";
-import {
-  getServerMetrikaFrameSnapshot,
-  isInsideMetrikaFrame,
-  subscribeToMetrikaFrame,
-} from "../lib/metrika";
+import { isInsideMetrikaFrame } from "../lib/metrika";
 import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 
+// Метрика включается сразу при входе на сайт, без предварительного согласия
+// (баннер — уведомление с кнопкой «Отказаться»), и не грузится только у тех,
+// кто отказался от аналитики. Во фрейме интерфейса Метрики — всегда, см.
+// lib/metrika.ts.
+function getMetrikaEnabledSnapshot(): boolean {
+  return getCookieConsentSnapshot() !== "essential" || isInsideMetrikaFrame();
+}
+
+// false, а не "включено по умолчанию": на сервере выбор посетителя неизвестен,
+// и если отрендерить тег уже при гидратации, отказавшемуся посетителю tag.js
+// успеет загрузиться раньше, чем клиент прочитает его отказ.
+function getServerMetrikaEnabledSnapshot(): boolean {
+  return false;
+}
+
 export default function YandexMetrika() {
-  const consent = useSyncExternalStore(
+  const enabled = useSyncExternalStore(
     subscribeToCookieConsent,
-    getCookieConsentSnapshot,
-    getServerCookieConsentSnapshot
-  );
-  const insideMetrikaFrame = useSyncExternalStore(
-    subscribeToMetrikaFrame,
-    isInsideMetrikaFrame,
-    getServerMetrikaFrameSnapshot
+    getMetrikaEnabledSnapshot,
+    getServerMetrikaEnabledSnapshot
   );
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
@@ -32,7 +37,7 @@ export default function YandexMetrika() {
   const isLocalSite =
     siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1");
 
-  if ((consent !== "all" && !insideMetrikaFrame) || isLocalSite) {
+  if (!enabled || isLocalSite) {
     return null;
   }
 

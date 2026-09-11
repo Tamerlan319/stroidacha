@@ -13,6 +13,11 @@ import styles from "./CookieBanner.module.css";
 export const COOKIE_CONSENT_STORAGE_KEY = "brusoteka-cookie-consent";
 export const COOKIE_CONSENT_EVENT = "brusoteka-cookie-consent-changed";
 
+// Баннер — уведомление, а не запрос согласия: Яндекс Метрика работает с
+// первого захода (YandexMetrika.tsx). null — посетитель ещё ничего не
+// выбрал, "all" — нажал «Понятно», "essential" — отказался от аналитики.
+// Значения и ключ хранилища остались от прежней схемы «сначала согласие»,
+// чтобы уже сделанный выбор (в том числе отказ) не сбросился.
 export type CookieConsentValue = "all" | "essential";
 
 export function getCookieConsentSnapshot(): CookieConsentValue | null {
@@ -20,9 +25,14 @@ export function getCookieConsentSnapshot(): CookieConsentValue | null {
     return null;
   }
 
-  const value = window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
-
-  return value === "all" || value === "essential" ? value : null;
+  try {
+    const value = window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
+    return value === "all" || value === "essential" ? value : null;
+  } catch {
+    // Браузер запретил хранилище сайту — без выбора, но и без падения
+    // всей страницы (снимок читается при каждом рендере).
+    return null;
+  }
 }
 
 export function getServerCookieConsentSnapshot(): null {
@@ -72,13 +82,25 @@ export default function CookieBanner() {
   const isOpen = consent === null || isSettingsOpen;
 
   function saveConsent(value: CookieConsentValue) {
-    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, value);
+    try {
+      window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, value);
+    } catch {
+      // Хранилище запрещено — выбор проживёт только до перезагрузки.
+    }
     window.dispatchEvent(
       new CustomEvent<CookieConsentValue>(COOKIE_CONSENT_EVENT, {
         detail: value,
       })
     );
     setIsSettingsOpen(false);
+
+    // К моменту отказа Метрика на странице уже работает, а выгрузить
+    // загруженный tag.js нельзя — убранный из дерева <Script> его не
+    // останавливает. Отказ вступает в силу сразу только перезагрузкой:
+    // после неё YandexMetrika счётчик уже не отрисует.
+    if (value === "essential" && typeof window.ym === "function") {
+      window.location.reload();
+    }
   }
 
   return (
@@ -86,17 +108,17 @@ export default function CookieBanner() {
       {isOpen && (
         <div className={styles.banner} role="dialog" aria-live="polite">
           <div className={styles.content}>
-            <strong>Настройки cookie</strong>
+            <strong>Мы используем cookie</strong>
             <p>
-              Необходимые cookie обеспечивают работу сайта. Яндекс Метрика
-              включается только после вашего согласия. Подробнее — в{" "}
-              <Link href="/cookies">политике cookie</Link>.
+              Сайт использует cookie и Яндекс Метрику для анализа посещаемости.
+              Продолжая пользоваться сайтом, вы соглашаетесь с этим. Подробнее —
+              в <Link href="/cookies">политике cookie</Link>.
             </p>
           </div>
 
           <div className={styles.actions}>
             <button type="button" onClick={() => saveConsent("essential")}>
-              Только необходимые
+              Отказаться
             </button>
 
             <button
@@ -104,7 +126,7 @@ export default function CookieBanner() {
               type="button"
               onClick={() => saveConsent("all")}
             >
-              Принять аналитику
+              Понятно
             </button>
           </div>
         </div>
