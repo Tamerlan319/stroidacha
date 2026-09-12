@@ -1,6 +1,7 @@
 /* Размеры, фон и бейдж самой ссылки — .projectImage в globals.css. */
 
-.track {
+.track,
+.rail {
   position: absolute;
   inset: 0;
 }
@@ -54,35 +55,42 @@
   transform: scale(1.25);
 }
 
-/* Телефоны и планшеты: наведения нет — кадры листаются свайпом. Трек сам
-   прокручивается по горизонтали, поэтому body { touch-action: pan-y } на
-   узких экранах ему не мешает. */
+/* Телефоны и планшеты: наведения нет — кадры листаются свайпом. Свайп
+   считает ProjectCardMedia.tsx: touch-action: pan-y оставляет браузеру только
+   вертикальную прокрутку страницы, горизонтальное движение пальца целиком
+   достаётся карточке. Лента кадров сдвигается на --slide-index кадров плюс
+   --drag-offset, пока палец тянет кадр. */
 @media (hover: none), (pointer: coarse) {
   .track {
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    touch-action: pan-x pan-y;
+    overflow: hidden;
+    touch-action: pan-y;
   }
 
-  .track::-webkit-scrollbar {
-    display: none;
+  .rail {
+    display: flex;
+    transform: translate3d(
+      calc(var(--slide-index, 0) * -100% + var(--drag-offset, 0px)),
+      0,
+      0
+    );
+    transition: transform 0.28s ease;
+  }
+
+  .rail[data-dragging="true"] {
+    transition: none;
   }
 
   .slide {
     position: relative;
     flex: 0 0 100%;
     opacity: 1;
-    scroll-snap-align: start;
     transition: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .slide,
+  .rail,
   .dots i {
     transition: none;
   }
