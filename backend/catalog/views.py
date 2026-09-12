@@ -1,7 +1,10 @@
 from django.db.models import Case, IntegerField, Prefetch, When
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .filters import CatalogQuery, build_facets, matching_project_ids
 from .models import (
     Project,
     ProjectCategory,
@@ -44,90 +47,22 @@ class ProjectListAPIView(ListAPIView):
     pagination_class = OptionalProjectPagination
 
     def get_queryset(self):
+        # Категория, featured и точный размер посадочной страницы (width/length)
+        # ограничивают саму выборку — см. CatalogQuery.base_queryset.
+        query = CatalogQuery.from_params(self.request.query_params)
         queryset = (
-            Project.objects.filter(is_active=True)
+            query.base_queryset()
             .select_related("category")
             .prefetch_related("images", "plans", Prefetch("offers", queryset=OFFER_LIST_QS))
             .order_by("sort_order", "-created_at")
         )
-
-        category = self.request.query_params.get("category")
-        construction_type = self.request.query_params.get("construction_type")
-        featured = self.request.query_params.get("featured")
-        area_min = self.request.query_params.get("area_min")
-        area_max = self.request.query_params.get("area_max")
-        price_min = self.request.query_params.get("price_min")
-        price_max = self.request.query_params.get("price_max")
-        floors = self.request.query_params.get("floors")
-        material = self.request.query_params.get("material")
-        size_min = self.request.query_params.get("size_min")
-        size_max = self.request.query_params.get("size_max")
-        width = self.request.query_params.get("width")
-        length = self.request.query_params.get("length")
         ordering = self.request.query_params.get("ordering", "default")
 
-        def split_values(raw):
-            return [item.strip() for item in raw.split(",") if item.strip()]
-
-        if category:
-            queryset = queryset.filter(category__slug=category)
-        if construction_type:
-            # Поддерживает несколько значений через запятую — фильтр каталога
-            # позволяет отметить сразу "Брус" и "Каркас" галочками.
-            queryset = queryset.filter(construction_type__in=split_values(construction_type))
-        if featured in ("1", "true", "yes", "да"):
-            queryset = queryset.filter(is_featured=True)
-        if area_min:
-            queryset = queryset.filter(area__gte=area_min)
-        if area_max:
-            queryset = queryset.filter(area__lte=area_max)
-        if floors:
-            queryset = queryset.filter(floors__in=split_values(floors))
-        if material:
-            # У проекта нет прямого поля material — материал приходит через
-            # ProjectOffer (проект может продаваться в нескольких материалах).
-            # distinct() нужен, чтобы проект с несколькими подходящими
-            # предложениями не задваивался в выдаче.
-            queryset = queryset.filter(
-                offers__material__kind__in=split_values(material)
-            ).distinct()
-        # "Размер" в фильтре каталога — один диапазон, применяется и к ширине,
-        # и к длине (например, 6–10 м покажет 6х8, 7х9, но не 5х12).
-        if size_min:
-            queryset = queryset.filter(width__gte=size_min, length__gte=size_min)
-        if size_max:
-            queryset = queryset.filter(width__lte=size_max, length__lte=size_max)
-        # Точный фильтр по размеру footprint (например, "6x6"). Используется
-        # размерными SEO-страницами (LandingPage.filter_width/filter_length),
-        # чтобы каталог на такой странице показывал только проекты этого
-        # размера, а не весь каталог категории.
-        if width:
-            queryset = queryset.filter(width=width)
-        if length:
-            queryset = queryset.filter(length=length)
-
-        # Эффективная цена зависит от нескольких коэффициентов и может быть
-        # вычислена только единым PricingService. Для текущего каталога (~сотни
-        # проектов) этот проход предсказуем и исключает рассинхрон с калькулятором.
-        if price_min or price_max:
-            try:
-                min_value = int(price_min) if price_min else None
-                max_value = int(price_max) if price_max else None
-            except (TypeError, ValueError):
-                return queryset
-
-            pricing = PricingService()
-            matching_ids = []
-            for project in queryset:
-                effective = pricing.get_project_price_from(project)
-                if effective is None:
-                    continue
-                if min_value is not None and effective < min_value:
-                    continue
-                if max_value is not None and effective > max_value:
-                    continue
-                matching_ids.append(project.pk)
-            queryset = queryset.filter(pk__in=matching_ids)
+        # Фильтры посетителя (тип, этажность, материал, размер, площадь, цена)
+        # отбираются той же функцией, что считает цифры в панели фильтров
+        # (/api/projects/facets/), — иначе цифра и выдача могли бы разойтись.
+        if query.has_visitor_filters:
+            queryset = queryset.filter(pk__in=matching_project_ids(query))
 
         ordering_fields = {
             "default": ("sort_order", "-created_at"),
@@ -165,6 +100,18 @@ class ProjectListAPIView(ListAPIView):
             queryset = queryset.order_by(*ordering_fields.get(ordering, ordering_fields["default"]))
 
         return queryset
+
+
+class ProjectFacetsAPIView(APIView):
+    """Варианты фильтров каталога и сколько проектов найдётся с каждым из них.
+
+    Параметры те же, что у списка проектов. Панель фильтров запрашивает их при
+    каждом изменении, ещё до «Показать»: цифры напротив вариантов, число на
+    кнопке и границы ползунков размера, площади и цены.
+    """
+
+    def get(self, request):
+        return Response(build_facets(CatalogQuery.from_params(request.query_params)))
 
 
 class ProjectDetailAPIView(RetrieveAPIView):

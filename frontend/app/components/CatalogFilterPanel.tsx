@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useId } from "react";
 
 import styles from "./CatalogFilterPanel.module.css";
 
@@ -31,6 +31,10 @@ export type FilterGroupKey =
   | "floors_list"
   | "materials";
 
+export type RangeFilterKey = "size" | "area" | "price";
+
+type ListFilterKey = "construction_types" | "floors_list" | "materials";
+
 export const EMPTY_FILTERS: Omit<Filters, "category"> = {
   construction_types: [],
   floors_list: [],
@@ -43,53 +47,70 @@ export const EMPTY_FILTERS: Omit<Filters, "category"> = {
   price_max: "",
 };
 
-// Сейчас строим только из бруса: «Каркасный дом» и «Дом из бревна» убраны
-// из фильтра (таких проектов в каталоге нет; сама модель construction_type
-// эти значения по-прежнему знает). Подпись зависит от каталога — в банях
-// «Дом из бруса» выглядел ошибкой.
-export const CONSTRUCTION_TYPE_VALUES = ["timber"];
+// Ответ /api/projects/facets/: варианты фильтров берутся из самих проектов
+// (новый материал или этажность появятся в панели без правки кода), count —
+// сколько проектов будет, если отметить вариант вдобавок к остальному.
+export type FacetOption = {
+  value: string;
+  label: string;
+  count: number;
+};
 
-function getConstructionTypeOptions(category: string) {
-  return [
-    {
-      value: "timber",
-      label: category === "baths" ? "Баня из бруса" : "Дом из бруса",
-    },
-  ];
+export type FacetRange = {
+  min: number;
+  max: number;
+  step: number;
+};
+
+export type CatalogFacets = {
+  total: number;
+  construction_types: FacetOption[];
+  floors: FacetOption[];
+  materials: FacetOption[];
+  ranges: {
+    size: FacetRange | null;
+    area: FacetRange | null;
+    price: FacetRange | null;
+  };
+};
+
+function formatNumber(value: number | string) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString("ru-RU") : String(value);
 }
 
-const floorsOptions = [
-  { value: "1", label: "1 этаж", chipLabel: "1 этаж" },
-  { value: "1.5", label: "1 + мансарда", chipLabel: "мансарда" },
-  { value: "2", label: "2 этажа", chipLabel: "2 этажа" },
-];
+// В каталоге бань «Дом из бруса» выглядел бы ошибкой.
+function constructionTypeLabel(value: string, label: string, category: string) {
+  if (value !== "timber") return label;
+  return category === "baths" ? "Баня из бруса" : "Дом из бруса";
+}
 
-const materialOptions = [
-  { value: "profiled", label: "Брус профилированный" },
-  { value: "dry", label: "Брус камерной сушки" },
-  { value: "regular", label: "Обычный брус" },
-];
+function optionLabel(options: FacetOption[] | undefined, value: string) {
+  return options?.find((option) => option.value === value)?.label ?? value;
+}
 
 function formatRangeChip(min: string, max: string, unit: string) {
-  if (min && max) return `${min}–${max} ${unit}`;
-  if (min) return `от ${min} ${unit}`;
-  return `до ${max} ${unit}`;
+  if (min && max) return `${formatNumber(min)}–${formatNumber(max)} ${unit}`;
+  if (min) return `от ${formatNumber(min)} ${unit}`;
+  return `до ${formatNumber(max)} ${unit}`;
 }
 
 export function getActiveFilterChips(
-  filters: Filters
+  filters: Filters,
+  facets: CatalogFacets | null
 ): { key: FilterGroupKey; label: string }[] {
   const chips: { key: FilterGroupKey; label: string }[] = [];
 
   if (filters.construction_types.length) {
-    const typeOptions = getConstructionTypeOptions(filters.category);
     chips.push({
       key: "construction_types",
       label: filters.construction_types
-        .map(
-          (value) =>
-            typeOptions.find((option) => option.value === value)?.label ||
-            value
+        .map((value) =>
+          constructionTypeLabel(
+            value,
+            optionLabel(facets?.construction_types, value),
+            filters.category
+          )
         )
         .join(", "),
     });
@@ -120,11 +141,7 @@ export function getActiveFilterChips(
     chips.push({
       key: "floors_list",
       label: filters.floors_list
-        .map(
-          (value) =>
-            floorsOptions.find((option) => option.value === value)
-              ?.chipLabel || value
-        )
+        .map((value) => optionLabel(facets?.floors, value))
         .join(", "),
     });
   }
@@ -133,11 +150,7 @@ export function getActiveFilterChips(
     chips.push({
       key: "materials",
       label: filters.materials
-        .map(
-          (value) =>
-            materialOptions.find((option) => option.value === value)?.label ||
-            value
-        )
+        .map((value) => optionLabel(facets?.materials, value))
         .join(", "),
     });
   }
@@ -145,110 +158,227 @@ export function getActiveFilterChips(
   return chips;
 }
 
-type FilterSectionProps = {
+type SectionProps = {
   title: string;
-  isOpen: boolean;
-  onToggle: () => void;
+  unit?: string;
   children: ReactNode;
 };
 
-function FilterSection({ title, isOpen, onToggle, children }: FilterSectionProps) {
-  return (
-    <div className={styles.section}>
-      <button
-        type="button"
-        className={styles.sectionHeader}
-        onClick={onToggle}
-        aria-expanded={isOpen}
-      >
-        <span>{title}</span>
-        <svg
-          className={isOpen ? styles.chevronOpen : styles.chevron}
-          viewBox="0 0 20 20"
-          aria-hidden="true"
-        >
-          <path d="m5.5 7.5 4.5 5 4.5-5" />
-        </svg>
-      </button>
+function FilterSection({ title, unit, children }: SectionProps) {
+  const titleId = useId();
 
-      {isOpen && <div className={styles.sectionBody}>{children}</div>}
+  return (
+    <div className={styles.section} role="group" aria-labelledby={titleId}>
+      <p className={styles.sectionTitle} id={titleId}>
+        {title}
+        {unit && <small>{unit}</small>}
+      </p>
+      {children}
     </div>
   );
 }
 
-type CheckboxListProps = {
-  options: { value: string; label: string }[];
+type OptionsProps = {
+  options: FacetOption[];
   selected: string[];
   onToggle: (value: string) => void;
 };
 
-function CheckboxList({ options, selected, onToggle }: CheckboxListProps) {
+// Вариант, с которым ничего не найдётся, виден, но недоступен — пока его не
+// отметили (иначе отмеченный по старой ссылке вариант было бы не снять).
+function isUnavailable(option: FacetOption, selected: string[]) {
+  return option.count === 0 && !selected.includes(option.value);
+}
+
+function PillOptions({ options, selected, onToggle }: OptionsProps) {
   return (
-    <div className={styles.checkboxList}>
-      {options.map((option) => (
-        <label className={styles.checkboxRow} key={option.value}>
-          <input
-            type="checkbox"
-            checked={selected.includes(option.value)}
-            onChange={() => onToggle(option.value)}
-          />
-          <span>{option.label}</span>
-        </label>
-      ))}
+    <div className={styles.pills}>
+      {options.map((option) => {
+        const checked = selected.includes(option.value);
+        const unavailable = isUnavailable(option, selected);
+
+        return (
+          <label
+            key={option.value}
+            className={[
+              styles.pill,
+              checked ? styles.pillChecked : "",
+              unavailable ? styles.optionUnavailable : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <input
+              className={styles.hiddenCheckbox}
+              type="checkbox"
+              checked={checked}
+              disabled={unavailable}
+              onChange={() => onToggle(option.value)}
+            />
+            <span>{option.label}</span>
+            <em className={styles.count}>{option.count}</em>
+          </label>
+        );
+      })}
     </div>
   );
 }
 
-type RangeInputsProps = {
+function CheckboxOptions({ options, selected, onToggle }: OptionsProps) {
+  return (
+    <div className={styles.checkboxList}>
+      {options.map((option) => {
+        const unavailable = isUnavailable(option, selected);
+
+        return (
+          <label
+            key={option.value}
+            className={`${styles.checkboxRow} ${
+              unavailable ? styles.optionUnavailable : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={selected.includes(option.value)}
+              disabled={unavailable}
+              onChange={() => onToggle(option.value)}
+            />
+            <span className={styles.optionLabel}>{option.label}</span>
+            <em className={styles.count}>{option.count}</em>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function parseValue(value: string) {
+  if (!value) return null;
+  const number = Number(value.replace(",", "."));
+  return Number.isFinite(number) ? number : null;
+}
+
+function sanitizeTypedValue(value: string, wholeNumbers: boolean) {
+  if (wholeNumbers) return value.replace(/\D/g, "");
+
+  const [whole, ...fraction] = value
+    .replace(",", ".")
+    .replace(/[^\d.]/g, "")
+    .split(".");
+  return fraction.length ? `${whole}.${fraction.join("")}` : whole;
+}
+
+type RangeFilterProps = {
+  title: string;
   unit: string;
+  range: FacetRange | null;
   minValue: string;
   maxValue: string;
-  minPlaceholder?: string;
-  maxPlaceholder?: string;
-  onChangeMin: (value: string) => void;
-  onChangeMax: (value: string) => void;
+  wholeNumbers?: boolean;
+  onChange: (min: string, max: string) => void;
 };
 
-function RangeInputs({
+// Ползунок с двумя бегунками и поля «от / до» для точного значения. Шкала
+// приходит с бэкенда (catalog/filters.py): до самого большого проекта
+// выборки, размер и площадь — от 1. Бегунок у края шкалы — это «без
+// ограничения»: пустое значение, фильтр не применяется.
+function RangeFilter({
+  title,
   unit,
+  range,
   minValue,
   maxValue,
-  minPlaceholder,
-  maxPlaceholder,
-  onChangeMin,
-  onChangeMax,
-}: RangeInputsProps) {
+  wholeNumbers = false,
+  onChange,
+}: RangeFilterProps) {
+  const hasScale = Boolean(range && range.max > range.min);
+  if (!hasScale && !minValue && !maxValue) return null;
+
+  const scaleMin = range?.min ?? 0;
+  const scaleMax = range?.max ?? 0;
+  const span = scaleMax - scaleMin || 1;
+  const clampToScale = (value: number) =>
+    Math.min(Math.max(value, scaleMin), scaleMax);
+  const low = clampToScale(parseValue(minValue) ?? scaleMin);
+  const high = clampToScale(parseValue(maxValue) ?? scaleMax);
+  const from = Math.min(low, high);
+  const to = Math.max(low, high);
+  const fromPercent = ((from - scaleMin) / span) * 100;
+  const toPercent = ((to - scaleMin) / span) * 100;
+
+  const display = (value: string) =>
+    wholeNumbers && value ? formatNumber(value) : value.replace(".", ",");
+
   return (
-    <div className={styles.rangeRow}>
-      <label className={styles.rangeField}>
-        <span>от</span>
-        <span className={styles.rangeInputBox}>
+    <FilterSection title={title} unit={unit}>
+      {hasScale && (
+        <div className={styles.slider}>
+          <span className={styles.sliderTrack}>
+            <span
+              className={styles.sliderFill}
+              style={{ left: `${fromPercent}%`, right: `${100 - toPercent}%` }}
+            />
+          </span>
           <input
-            type="number"
-            min="0"
-            inputMode="decimal"
-            value={minValue}
-            placeholder={minPlaceholder}
-            onChange={(event) => onChangeMin(event.target.value)}
+            className={styles.sliderInput}
+            type="range"
+            min={scaleMin}
+            max={scaleMax}
+            step={range?.step}
+            value={from}
+            // Бегунки сошлись у правого края — сверху должен быть левый, иначе
+            // его не сдвинуть.
+            style={{ zIndex: fromPercent > 50 ? 3 : 2 }}
+            aria-label={`${title}: от`}
+            aria-valuetext={`от ${formatNumber(from)} ${unit}`}
+            onChange={(event) => {
+              const value = Math.min(Number(event.target.value), to);
+              onChange(value <= scaleMin ? "" : String(value), maxValue);
+            }}
           />
-          <em>{unit}</em>
-        </span>
-      </label>
-      <label className={styles.rangeField}>
-        <span>до</span>
-        <span className={styles.rangeInputBox}>
           <input
-            type="number"
-            min="0"
-            inputMode="decimal"
-            value={maxValue}
-            placeholder={maxPlaceholder}
-            onChange={(event) => onChangeMax(event.target.value)}
+            className={styles.sliderInput}
+            type="range"
+            min={scaleMin}
+            max={scaleMax}
+            step={range?.step}
+            value={to}
+            style={{ zIndex: 2 }}
+            aria-label={`${title}: до`}
+            aria-valuetext={`до ${formatNumber(to)} ${unit}`}
+            onChange={(event) => {
+              const value = Math.max(Number(event.target.value), from);
+              onChange(minValue, value >= scaleMax ? "" : String(value));
+            }}
           />
-          <em>{unit}</em>
-        </span>
-      </label>
-    </div>
+        </div>
+      )}
+
+      <div className={styles.rangeInputs}>
+        <input
+          className={styles.rangeInput}
+          type="text"
+          inputMode={wholeNumbers ? "numeric" : "decimal"}
+          value={display(minValue)}
+          placeholder={hasScale ? `от ${formatNumber(scaleMin)}` : "от"}
+          aria-label={`${title}, ${unit}: от`}
+          onChange={(event) =>
+            onChange(sanitizeTypedValue(event.target.value, wholeNumbers), maxValue)
+          }
+        />
+        <input
+          className={styles.rangeInput}
+          type="text"
+          inputMode={wholeNumbers ? "numeric" : "decimal"}
+          value={display(maxValue)}
+          placeholder={hasScale ? `до ${formatNumber(scaleMax)}` : "до"}
+          aria-label={`${title}, ${unit}: до`}
+          onChange={(event) =>
+            onChange(minValue, sanitizeTypedValue(event.target.value, wholeNumbers))
+          }
+        />
+      </div>
+    </FilterSection>
   );
 }
 
@@ -256,15 +386,13 @@ type CatalogFilterPanelProps = {
   categories: ProjectCategory[];
   showCategoryFilter: boolean;
   filters: Filters;
-  previewCount: number | null;
-  isPreviewLoading: boolean;
+  facets: CatalogFacets | null;
+  isFacetsLoading: boolean;
   isMobileOpen: boolean;
   onCloseMobile: () => void;
   onUpdateFilter: <K extends keyof Filters>(field: K, value: Filters[K]) => void;
-  onToggleListFilter: (
-    field: "construction_types" | "floors_list" | "materials",
-    value: string
-  ) => void;
+  onUpdateRange: (field: RangeFilterKey, min: string, max: string) => void;
+  onToggleListFilter: (field: ListFilterKey, value: string) => void;
   onSubmit: () => void;
   onReset: () => void;
 };
@@ -273,24 +401,16 @@ export default function CatalogFilterPanel({
   categories,
   showCategoryFilter,
   filters,
-  previewCount,
-  isPreviewLoading,
+  facets,
+  isFacetsLoading,
   isMobileOpen,
   onCloseMobile,
   onUpdateFilter,
+  onUpdateRange,
   onToggleListFilter,
   onSubmit,
   onReset,
 }: CatalogFilterPanelProps) {
-  const [openSections, setOpenSections] = useState({
-    type: true,
-    size: true,
-    area: true,
-    price: true,
-    floors: true,
-    material: true,
-  });
-
   useEffect(() => {
     if (!isMobileOpen) return;
 
@@ -309,24 +429,28 @@ export default function CatalogFilterPanel({
     };
   }, [isMobileOpen, onCloseMobile]);
 
-  function toggleSection(key: keyof typeof openSections) {
-    setOpenSections((current) => ({ ...current, [key]: !current[key] }));
-  }
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit();
     onCloseMobile();
   }
 
-  const showButtonLabel = isPreviewLoading
-    ? "Считаем…"
-    : previewCount !== null
-    ? `Показать ${previewCount} ${pluralizeProjects(previewCount)}`
+  const showButtonLabel = facets
+    ? `Показать ${facets.total} ${pluralizeProjects(facets.total)}`
     : "Показать проекты";
 
+  // «Тип» с единственным вариантом ничего не отбирает — не занимаем им место.
+  const typeOptions = (facets?.construction_types ?? []).map((option) => ({
+    ...option,
+    label: constructionTypeLabel(option.value, option.label, filters.category),
+  }));
+  const showTypeFilter =
+    typeOptions.length > 1 || filters.construction_types.length > 0;
+
   const filterGroups = (
-    <>
+    <div
+      className={`${styles.groups} ${isFacetsLoading ? styles.counting : ""}`}
+    >
       {showCategoryFilter && (
         <label className={styles.plainSelect}>
           <span>Категория</span>
@@ -344,88 +468,78 @@ export default function CatalogFilterPanel({
         </label>
       )}
 
-      <FilterSection
-        title="Тип"
-        isOpen={openSections.type}
-        onToggle={() => toggleSection("type")}
-      >
-        <CheckboxList
-          options={getConstructionTypeOptions(filters.category)}
-          selected={filters.construction_types}
-          onToggle={(value) => onToggleListFilter("construction_types", value)}
-        />
-      </FilterSection>
+      {facets === null ? (
+        <div className={styles.skeleton} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      ) : (
+        <>
+          {showTypeFilter && (
+            <FilterSection title="Тип">
+              <CheckboxOptions
+                options={typeOptions}
+                selected={filters.construction_types}
+                onToggle={(value) =>
+                  onToggleListFilter("construction_types", value)
+                }
+              />
+            </FilterSection>
+          )}
 
-      <FilterSection
-        title="Размер"
-        isOpen={openSections.size}
-        onToggle={() => toggleSection("size")}
-      >
-        <RangeInputs
-          unit="м"
-          minValue={filters.size_min}
-          maxValue={filters.size_max}
-          minPlaceholder="6"
-          maxPlaceholder="10"
-          onChangeMin={(value) => onUpdateFilter("size_min", value)}
-          onChangeMax={(value) => onUpdateFilter("size_max", value)}
-        />
-      </FilterSection>
+          <RangeFilter
+            title="Размер"
+            unit="м"
+            range={facets.ranges.size}
+            minValue={filters.size_min}
+            maxValue={filters.size_max}
+            onChange={(min, max) => onUpdateRange("size", min, max)}
+          />
 
-      <FilterSection
-        title="Площадь"
-        isOpen={openSections.area}
-        onToggle={() => toggleSection("area")}
-      >
-        <RangeInputs
-          unit="м²"
-          minValue={filters.area_min}
-          maxValue={filters.area_max}
-          minPlaceholder="50"
-          maxPlaceholder="120"
-          onChangeMin={(value) => onUpdateFilter("area_min", value)}
-          onChangeMax={(value) => onUpdateFilter("area_max", value)}
-        />
-      </FilterSection>
+          <RangeFilter
+            title="Площадь"
+            unit="м²"
+            range={facets.ranges.area}
+            minValue={filters.area_min}
+            maxValue={filters.area_max}
+            wholeNumbers
+            onChange={(min, max) => onUpdateRange("area", min, max)}
+          />
 
-      <FilterSection
-        title="Цена"
-        isOpen={openSections.price}
-        onToggle={() => toggleSection("price")}
-      >
-        <RangeInputs
-          unit="₽"
-          minValue={filters.price_min}
-          maxValue={filters.price_max}
-          onChangeMin={(value) => onUpdateFilter("price_min", value)}
-          onChangeMax={(value) => onUpdateFilter("price_max", value)}
-        />
-      </FilterSection>
+          <RangeFilter
+            title="Цена"
+            unit="₽"
+            range={facets.ranges.price}
+            minValue={filters.price_min}
+            maxValue={filters.price_max}
+            wholeNumbers
+            onChange={(min, max) => onUpdateRange("price", min, max)}
+          />
 
-      <FilterSection
-        title="Этажность"
-        isOpen={openSections.floors}
-        onToggle={() => toggleSection("floors")}
-      >
-        <CheckboxList
-          options={floorsOptions}
-          selected={filters.floors_list}
-          onToggle={(value) => onToggleListFilter("floors_list", value)}
-        />
-      </FilterSection>
+          {facets.floors.length > 0 && (
+            <FilterSection title="Этажность">
+              <PillOptions
+                options={facets.floors}
+                selected={filters.floors_list}
+                onToggle={(value) => onToggleListFilter("floors_list", value)}
+              />
+            </FilterSection>
+          )}
 
-      <FilterSection
-        title="Материал"
-        isOpen={openSections.material}
-        onToggle={() => toggleSection("material")}
-      >
-        <CheckboxList
-          options={materialOptions}
-          selected={filters.materials}
-          onToggle={(value) => onToggleListFilter("materials", value)}
-        />
-      </FilterSection>
-    </>
+          {facets.materials.length > 0 && (
+            <FilterSection title="Материал">
+              <CheckboxOptions
+                options={facets.materials}
+                selected={filters.materials}
+                onToggle={(value) => onToggleListFilter("materials", value)}
+              />
+            </FilterSection>
+          )}
+        </>
+      )}
+    </div>
   );
 
   return (

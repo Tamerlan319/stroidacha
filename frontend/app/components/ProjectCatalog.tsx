@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import CatalogFilterPanel, {
-  CONSTRUCTION_TYPE_VALUES,
+  CatalogFacets,
   EMPTY_FILTERS,
   Filters,
   FilterGroupKey,
   ProjectCategory,
+  RangeFilterKey,
   getActiveFilterChips,
 } from "./CatalogFilterPanel";
 import filterPanelStyles from "./CatalogFilterPanel.module.css";
@@ -50,6 +51,8 @@ type PaginatedProjects = {
   previous: string | null;
   results: Project[];
 };
+
+type LockedSize = { width?: number; length?: number };
 
 type ProjectCatalogProps = {
   initialCategory?: string;
@@ -100,15 +103,9 @@ const orderingOptions: { value: Ordering; label: string }[] = [
   { value: "title", label: "По названию" },
 ];
 
-function buildProjectsUrl(
-  filters: Filters,
-  page = 1,
-  ordering: Ordering = "default",
-  paginate = true,
-  lockedSize?: { width?: number; length?: number },
-  pageSize: number = PAGE_SIZE,
-) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+// Параметры отбора — общие для списка проектов и для счётчиков в панели
+// фильтров (/projects/facets/), чтобы цифра на кнопке совпадала с выдачей.
+function buildFilterParams(filters: Filters, lockedSize?: LockedSize) {
   const params = new URLSearchParams();
 
   if (filters.category) params.set("category", filters.category);
@@ -135,17 +132,39 @@ function buildProjectsUrl(
     params.set("length", String(lockedSize.length));
   }
 
+  return params;
+}
+
+function withQuery(path: string, params: URLSearchParams) {
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+function buildProjectsUrl(
+  filters: Filters,
+  page = 1,
+  ordering: Ordering = "default",
+  paginate = true,
+  lockedSize?: LockedSize,
+) {
+  const params = buildFilterParams(filters, lockedSize);
+
   if (ordering !== "default") {
     params.set("ordering", ordering);
   }
   if (paginate) {
     params.set("page", String(page));
-    params.set("page_size", String(pageSize));
+    params.set("page_size", String(PAGE_SIZE));
   }
 
-  const query = params.toString();
+  return withQuery(`${process.env.NEXT_PUBLIC_API_URL}/projects/`, params);
+}
 
-  return query ? `${apiUrl}/projects/?${query}` : `${apiUrl}/projects/`;
+function buildFacetsUrl(filters: Filters, lockedSize?: LockedSize) {
+  return withQuery(
+    `${process.env.NEXT_PUBLIC_API_URL}/projects/facets/`,
+    buildFilterParams(filters, lockedSize),
+  );
 }
 
 // --- Фильтры в адресной строке -------------------------------------------
@@ -179,6 +198,15 @@ const CATALOG_URL_KEYS = [
   "ordering",
   "page",
 ] as const;
+
+// Раньше материал в адресе был типом бруса (profiled и т. п.), теперь это
+// группа материалов из базы (catalog/filters.py → material_group_value).
+// Старые ссылки переводим на новые значения.
+const LEGACY_MATERIAL_VALUES: Record<string, string> = {
+  regular: "obychnyy-brus",
+  profiled: "profilirovannyy-brus",
+  dry: "brus-kamernoy-sushki",
+};
 
 function filtersToSearchParams(
   filters: Filters,
@@ -226,14 +254,18 @@ function filtersFromSearchParams(search: string, initialCategory: string) {
 
   const filters: Filters = {
     category: params.get("category") || initialCategory,
-    // Старые ссылки с ?type=frame / ?type=log (эти варианты убраны из
-    // фильтра) иначе открывали бы пустой каталог без галочки, которую
-    // можно снять.
-    construction_types: readList("type").filter((value) =>
-      CONSTRUCTION_TYPE_VALUES.includes(value),
-    ),
+    // Значения, которых нет среди проектов (например, ?type=frame по старой
+    // ссылке), бэкенд всё равно вернёт в вариантах панели — галочку можно
+    // снять, пустой каталог не «застревает».
+    construction_types: readList("type"),
     floors_list: readList("floors"),
-    materials: readList("material"),
+    materials: Array.from(
+      new Set(
+        readList("material").map(
+          (value) => LEGACY_MATERIAL_VALUES[value] ?? value,
+        ),
+      ),
+    ),
     size_min: params.get("size_min") || "",
     size_max: params.get("size_max") || "",
     area_min: params.get("area_min") || "",
@@ -256,6 +288,84 @@ function filtersFromSearchParams(search: string, initialCategory: string) {
   };
 }
 
+// --- Возврат к каталогу кнопкой «Назад» ----------------------------------
+//
+// Проекты каталог грузит уже в браузере. Раньше после «Назад» страница
+// открывалась с «Загружаем проекты…», браузеру было некуда вернуть прокрутку,
+// и человек оказывался не там, где был. Теперь последний показанный список и
+// позиция прокрутки лежат в sessionStorage по адресу страницы: при возврате
+// по истории (или обновлении страницы) каталог сразу рисует тот же список и
+// встаёт на то же место, а свежие данные подтягиваются в фоне.
+
+type CatalogView = {
+  projects: Project[];
+  totalProjects: number;
+  currentPage: number;
+  filters: Filters;
+  ordering: Ordering;
+};
+
+type CatalogViewSnapshot = CatalogView & {
+  scrollY: number;
+  savedAt: number;
+};
+
+const VIEW_SNAPSHOT_PREFIX = "catalog-view:";
+const VIEW_SNAPSHOT_TTL_MS = 30 * 60 * 1000;
+// Сколько после popstate ждём монтирования каталога, чтобы считать это
+// возвратом по истории, а не обычным переходом по ссылке.
+const HISTORY_RETURN_WINDOW_MS = 5000;
+
+let lastPopStateAt = 0;
+let isFirstCatalogMount = true;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", () => {
+    lastPopStateAt = Date.now();
+  });
+}
+
+function currentViewKey() {
+  return `${VIEW_SNAPSHOT_PREFIX}${window.location.pathname}${window.location.search}`;
+}
+
+function readViewSnapshot(key: string): CatalogViewSnapshot | null {
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+
+    const snapshot = JSON.parse(raw) as CatalogViewSnapshot;
+    if (
+      !Array.isArray(snapshot.projects) ||
+      Date.now() - snapshot.savedAt > VIEW_SNAPSHOT_TTL_MS
+    ) {
+      return null;
+    }
+    return snapshot;
+  } catch {
+    return null;
+  }
+}
+
+function writeViewSnapshot(key: string, view: CatalogView, scrollY: number) {
+  try {
+    const snapshot: CatalogViewSnapshot = { ...view, scrollY, savedAt: Date.now() };
+    window.sessionStorage.setItem(key, JSON.stringify(snapshot));
+  } catch {
+    // Приватный режим или переполненное хранилище — позицию просто не вернём.
+  }
+}
+
+function scrollInstantly(top: number) {
+  // У html плавная прокрутка (globals.css) — возврат на место должен быть
+  // мгновенным, без «отмотки».
+  const html = document.documentElement;
+  const previousScrollBehavior = html.style.scrollBehavior;
+  html.style.scrollBehavior = "auto";
+  window.scrollTo(0, top);
+  html.style.scrollBehavior = previousScrollBehavior;
+}
+
 export default function ProjectCatalog({
   initialCategory = "",
   showCategoryFilter = true,
@@ -263,7 +373,7 @@ export default function ProjectCatalog({
   maxItems,
   eyebrow = "Каталог",
   title = "Популярные проекты",
-  description = "Выберите готовый проект или отправьте свой — менеджер поможет рассчитать стоимость под нужную комплектацию.",
+  description = "",
   moreHref,
   moreLabel = "Смотреть больше",
   filterWidth,
@@ -284,17 +394,26 @@ export default function ProjectCatalog({
   const [projects, setProjects] = useState<Project[]>([]);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState<Filters>(initialFilters);
-  const [previewCount, setPreviewCount] = useState<number | null>(null);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [facets, setFacets] = useState<CatalogFacets | null>(null);
+  const [isFacetsLoading, setIsFacetsLoading] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [ordering, setOrdering] = useState<Ordering>("default");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProjects, setTotalProjects] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [restoreScrollY, setRestoreScrollY] = useState<number | null>(null);
   const { peek, bindCard } = useCardPeek();
 
+  const scrollYRef = useRef(0);
+  const viewRef = useRef<{ key: string; view: CatalogView } | null>(null);
+
   const usesPagination = !maxItems;
+
+  function persistView() {
+    const entry = viewRef.current;
+    if (entry) writeViewSnapshot(entry.key, entry.view, scrollYRef.current);
+  }
 
   function applyProjectsResponse(data: Project[] | PaginatedProjects) {
     if (Array.isArray(data)) {
@@ -393,6 +512,15 @@ export default function ProjectCatalog({
     }));
   }
 
+  function updateRange(field: RangeFilterKey, min: string, max: string) {
+    setFilters((current) => {
+      const next = { ...current };
+      next[`${field}_min` as const] = min;
+      next[`${field}_max` as const] = max;
+      return next;
+    });
+  }
+
   function toggleListFilter(
     field: "construction_types" | "floors_list" | "materials",
     value: string,
@@ -452,6 +580,86 @@ export default function ProjectCatalog({
     loadProjects(filters, nextPage);
     document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" });
   }
+
+  // Возврат по истории: сразу показываем прошлый список (до отрисовки, чтобы
+  // не мелькало «Загружаем проекты…») и встаём на прошлое место прокрутки.
+  useLayoutEffect(() => {
+    const firstMount = isFirstCatalogMount;
+    isFirstCatalogMount = false;
+
+    const navigation = window.performance?.getEntriesByType?.("navigation")[0] as
+      | PerformanceNavigationTiming
+      | undefined;
+    const returnedByHistory =
+      Date.now() - lastPopStateAt < HISTORY_RETURN_WINDOW_MS ||
+      (firstMount &&
+        (navigation?.type === "back_forward" || navigation?.type === "reload"));
+    if (!returnedByHistory) return;
+
+    const snapshot = readViewSnapshot(currentViewKey());
+    if (!snapshot) return;
+
+    /* eslint-disable react-hooks/set-state-in-effect -- восстановление
+       прошлого вида должно попасть в тот же кадр, до отрисовки */
+    setProjects(snapshot.projects);
+    setTotalProjects(snapshot.totalProjects);
+    setCurrentPage(snapshot.currentPage);
+    setFilters(snapshot.filters);
+    setAppliedFilters(snapshot.filters);
+    setOrdering(snapshot.ordering);
+    setIsLoading(false);
+    setRestoreScrollY(snapshot.scrollY);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  useLayoutEffect(() => {
+    if (restoreScrollY === null) return;
+
+    scrollInstantly(restoreScrollY);
+    scrollYRef.current = restoreScrollY;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- одноразовый флаг
+    setRestoreScrollY(null);
+  }, [restoreScrollY]);
+
+  // Запоминаем показанный список — для возврата «Назад».
+  useEffect(() => {
+    if (isLoading || errorMessage) return;
+
+    viewRef.current = {
+      key: currentViewKey(),
+      view: {
+        projects: maxItems ? projects.slice(0, maxItems) : projects,
+        totalProjects,
+        currentPage,
+        filters: appliedFilters,
+        ordering,
+      },
+    };
+    persistView();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects, totalProjects, currentPage, appliedFilters, ordering, isLoading, errorMessage]);
+
+  useEffect(() => {
+    let saveTimer = 0;
+
+    function handleScroll() {
+      scrollYRef.current = window.scrollY;
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(persistView, 250);
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.clearTimeout(saveTimer);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  // Уход со страницы (например, клик по проекту): позицию сохраняем до того,
+  // как Next прокрутит новую страницу к началу.
+  useLayoutEffect(() => {
+    return () => persistView();
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -536,31 +744,26 @@ export default function ProjectCatalog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Живой счётчик "Показать N проектов" на кнопке фильтров: считает, сколько
-  // проектов подойдёт под ЕЩЁ НЕ применённые (staged) фильтры. Отдельный
-  // облегчённый запрос с page_size=1 — нужен только заголовок count из
-  // пагинации, сам список результатов не используется.
+  // Варианты фильтров и цифры напротив них для ЕЩЁ НЕ применённых (staged)
+  // фильтров: пересчитываются при каждом изменении в панели, число на кнопке
+  // «Показать N проектов» — оттуда же.
   useEffect(() => {
     if (!showFilters) return;
 
     let isCancelled = false;
     const timer = setTimeout(async () => {
-      setIsPreviewLoading(true);
+      setIsFacetsLoading(true);
       try {
-        const response = await fetch(
-          buildProjectsUrl(filters, 1, "default", true, lockedSize, 1)
-        );
+        const response = await fetch(buildFacetsUrl(filters, lockedSize));
         if (!response.ok) throw new Error();
-        const data = (await response.json()) as PaginatedProjects;
-        if (!isCancelled) {
-          setPreviewCount(typeof data.count === "number" ? data.count : null);
-        }
+        const data = (await response.json()) as CatalogFacets;
+        if (!isCancelled) setFacets(data);
       } catch {
-        if (!isCancelled) setPreviewCount(null);
+        // Панель остаётся с прошлыми цифрами — отбирать проекты это не мешает.
       } finally {
-        if (!isCancelled) setIsPreviewLoading(false);
+        if (!isCancelled) setIsFacetsLoading(false);
       }
-    }, 400);
+    }, 250);
 
     return () => {
       isCancelled = true;
@@ -581,7 +784,7 @@ export default function ProjectCatalog({
         Math.abs(pageNumber - currentPage) <= 2
     );
 
-  const activeChips = getActiveFilterChips(appliedFilters);
+  const activeChips = getActiveFilterChips(appliedFilters, facets);
 
   return (
     <section className="container section catalogSection" id="projects">
@@ -589,7 +792,7 @@ export default function ProjectCatalog({
         <div>
           <p className="eyebrow">{eyebrow}</p>
           <h2>{title}</h2>
-          <p>{description}</p>
+          {description && <p>{description}</p>}
         </div>
       </div>
 
@@ -599,11 +802,12 @@ export default function ProjectCatalog({
             categories={categories}
             showCategoryFilter={showCategoryFilter}
             filters={filters}
-            previewCount={previewCount}
-            isPreviewLoading={isPreviewLoading}
+            facets={facets}
+            isFacetsLoading={isFacetsLoading}
             isMobileOpen={isMobileFiltersOpen}
             onCloseMobile={() => setIsMobileFiltersOpen(false)}
             onUpdateFilter={updateFilter}
+            onUpdateRange={updateRange}
             onToggleListFilter={toggleListFilter}
             onSubmit={handleFilterSubmit}
             onReset={resetFilters}

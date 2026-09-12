@@ -5,12 +5,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 }
 
 .panelHeading strong {
   color: var(--sd-forest);
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .resetLink {
@@ -32,11 +32,14 @@
   display: grid;
 }
 
+.groups > * + * {
+  border-top: 1px solid var(--sd-border);
+}
+
 .plainSelect {
   display: grid;
   gap: 7px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--sd-border);
 }
 
 .plainSelect span {
@@ -47,147 +50,316 @@
 
 .plainSelect select {
   width: 100%;
-  min-height: 42px;
+  min-height: 40px;
   border: 1px solid rgba(29, 33, 27, 0.14);
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--sd-paper-soft);
   color: var(--sd-text);
   padding: 0 12px;
 }
 
+/* Группа фильтра: заголовок и варианты */
+
 .section {
-  border-bottom: 1px solid var(--sd-border);
-}
-
-.section:last-of-type {
-  border-bottom: 0;
-}
-
-.sectionHeader {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  border: 0;
-  background: none;
+  display: grid;
+  gap: 10px;
   padding: 13px 0;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
   color: var(--sd-forest);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
+}
+
+.sectionTitle small {
+  color: var(--sd-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Цифра напротив варианта: сколько проектов найдётся с ним */
+
+.count {
+  flex-shrink: 0;
+  color: var(--sd-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  transition: opacity 0.15s ease;
+}
+
+/* Пока пересчитываются цифры — приглушены, чтобы не читались как точные */
+.counting .count {
+  opacity: 0.4;
+}
+
+.optionUnavailable {
+  opacity: 0.42;
+  cursor: default !important;
+}
+
+/* Плашки (этажность) */
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid rgba(29, 33, 27, 0.16);
+  border-radius: 999px;
+  background: var(--sd-paper);
+  color: var(--sd-text);
+  padding: 0 11px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.sectionHeader svg,
-.chevron,
-.chevronOpen {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  stroke: var(--sd-muted);
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
-  transition: transform 0.16s ease;
+.pill:hover:not(.optionUnavailable) {
+  border-color: rgba(31, 51, 37, 0.5);
 }
 
-.chevronOpen {
-  transform: rotate(180deg);
+.pill:has(input:focus-visible) {
+  outline: 3px solid rgba(216, 139, 61, 0.45);
+  outline-offset: 1px;
 }
 
-.sectionBody {
-  padding-bottom: 14px;
+.pillChecked {
+  border-color: var(--sd-forest);
+  background: var(--sd-forest);
+  color: #ffffff;
 }
 
-/* Чекбоксы */
+.pillChecked .count {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.hiddenCheckbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Чекбоксы (тип, материал) */
 
 .checkboxList {
   display: grid;
-  gap: 10px;
+  gap: 1px;
 }
 
 .checkboxRow {
   display: flex;
   align-items: center;
   gap: 9px;
+  min-height: 32px;
+  margin: 0 -6px;
+  border-radius: 8px;
+  padding: 0 6px;
   cursor: pointer;
+}
+
+.checkboxRow:hover:not(.optionUnavailable) {
+  background: var(--sd-paper-soft);
 }
 
 .checkboxRow input {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  margin: 0;
   accent-color: var(--sd-forest);
-  cursor: pointer;
+  cursor: inherit;
 }
 
-.checkboxRow span {
+.optionLabel {
+  flex: 1;
+  min-width: 0;
   color: var(--sd-text);
   font-size: 13.5px;
 }
 
-/* Диапазоны (от / до) */
+/* Ползунок с двумя бегунками. Поля ввода растянуты на радиус бегунка (9px)
+   за края дорожки — тогда центр бегунка на краю шкалы совпадает с краем
+   дорожки и с процентами заливки. */
 
-.rangeRow {
+.slider {
+  position: relative;
+  height: 22px;
+  margin: 0 9px;
+}
+
+.sliderTrack {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 999px;
+  background: rgba(29, 33, 27, 0.13);
+}
+
+.sliderFill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: var(--sd-forest);
+}
+
+.sliderInput {
+  position: absolute;
+  top: 0;
+  left: -9px;
+  width: calc(100% + 18px);
+  /* Общий input { max-width: 100% } обрезал растяжку за края — правый
+     бегунок не доходил до конца дорожки. */
+  max-width: none;
+  height: 22px;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.sliderInput:focus {
+  outline: none;
+}
+
+.sliderInput::-webkit-slider-runnable-track {
+  height: 22px;
+  background: none;
+}
+
+.sliderInput::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 2px solid var(--sd-forest);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(24, 30, 23, 0.22);
+  cursor: grab;
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.sliderInput::-moz-range-track {
+  height: 22px;
+  background: none;
+}
+
+.sliderInput::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--sd-forest);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(24, 30, 23, 0.22);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.sliderInput:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.12);
+}
+
+.sliderInput:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(216, 139, 61, 0.35);
+}
+
+.sliderInput:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(216, 139, 61, 0.35);
+}
+
+/* Поля «от / до» под ползунком */
+
+.rangeInputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 
-.rangeField {
-  display: grid;
-  gap: 6px;
-}
-
-.rangeField > span {
-  color: var(--sd-muted);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.rangeInputBox {
-  display: flex;
-  align-items: center;
-  min-height: 42px;
-  border: 1px solid rgba(29, 33, 27, 0.14);
-  border-radius: 10px;
-  background: var(--sd-paper-soft);
-  padding: 0 10px;
-}
-
-.rangeInputBox:focus-within {
-  border-color: rgba(216, 139, 61, 0.72);
-  box-shadow: 0 0 0 3px rgba(216, 139, 61, 0.12);
-}
-
-.rangeInputBox input {
+.rangeInput {
   width: 100%;
   min-width: 0;
-  border: 0;
-  background: none;
-  padding: 0;
+  height: 36px;
+  border: 1px solid rgba(29, 33, 27, 0.14);
+  border-radius: 9px;
+  background: var(--sd-paper-soft);
   color: var(--sd-text);
-  font-size: 14px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rangeInput::placeholder {
+  color: #9a9b8d;
+}
+
+.rangeInput:focus {
+  border-color: rgba(216, 139, 61, 0.72);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(216, 139, 61, 0.12);
   outline: none;
-  -moz-appearance: textfield;
 }
 
-.rangeInputBox input::-webkit-outer-spin-button,
-.rangeInputBox input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+/* Заглушка, пока не пришли варианты фильтров */
+
+.skeleton {
+  display: grid;
+  gap: 12px;
+  padding: 14px 0;
 }
 
-.rangeInputBox em {
-  flex: 0 0 auto;
-  color: var(--sd-muted);
-  font-size: 12px;
-  font-style: normal;
+.skeleton span {
+  display: block;
+  height: 58px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f3efe6 0%, #faf7f1 50%, #f3efe6 100%);
+  background-size: 200% 100%;
+  animation: skeletonShine 1.2s ease-in-out infinite;
+}
+
+@keyframes skeletonShine {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
 }
 
 .submitButton {
   width: 100%;
   border: 0;
-  margin-top: 16px;
+  margin-top: 12px;
   cursor: pointer;
 }
 
@@ -270,6 +442,15 @@
   display: block;
 }
 
+/* Невысокий экран (ноутбук): панель (~780px) с кнопкой «Показать» не
+   помещается под липкой шапкой (top: 142px) — пусть прокручивается вместе со
+   страницей, иначе низ панели с кнопкой уходит за край окна. */
+@media (max-height: 940px) {
+  .desktopPanel:global(.catalogSidebar) {
+    position: static;
+  }
+}
+
 .mobileTrigger {
   display: none;
 }
@@ -339,6 +520,7 @@
 
 .mobileScroll {
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0 18px;
 }
 
@@ -399,5 +581,48 @@
   .toolbarControls .sortSelect {
     min-height: 42px;
     border-radius: 10px;
+  }
+
+  /* На телефоне палец крупнее — бегунки и плашки чуть больше */
+  .slider {
+    height: 28px;
+    margin: 0 12px;
+  }
+
+  .sliderInput {
+    left: -12px;
+    width: calc(100% + 24px);
+    height: 28px;
+  }
+
+  .sliderInput::-webkit-slider-runnable-track {
+    height: 28px;
+  }
+
+  .sliderInput::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+    margin-top: 2px;
+  }
+
+  .sliderInput::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  .pill {
+    min-height: 38px;
+    padding: 0 13px;
+  }
+
+  .rangeInput {
+    height: 40px;
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton span {
+    animation: none;
   }
 }
