@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "api-proxy",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["scripts/dev_api_proxy.py"],
+      "port": 8000
     }
   ]
 }
