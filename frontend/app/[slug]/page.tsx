@@ -283,10 +283,6 @@ export default async function LandingPageRoute({ params }: PageProps) {
   // страниц-хабов вроде "Дома из бруса".
   const filterWidth = page.filter_width ? Number(page.filter_width) : undefined;
   const filterLength = page.filter_length ? Number(page.filter_length) : undefined;
-  const catalogDescription =
-    filterWidth && filterLength
-      ? `Показаны проекты размером ${filterWidth}×${filterLength} м. Уточните дополнительные параметры: тип строительства и ориентировочную стоимость.`
-      : "Выберите подходящий проект и уточните параметры: площадь, тип строительства и ориентировочную стоимость.";
 
   return (
     <main>
@@ -339,7 +335,6 @@ export default async function LandingPageRoute({ params }: PageProps) {
           filterLength={filterLength}
           eyebrow="Каталог"
           title={`Проекты: ${page.h1}`}
-          description={catalogDescription}
         />
       )}
 

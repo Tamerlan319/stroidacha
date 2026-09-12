@@ -144,10 +144,6 @@ export default async function PortfolioPage() {
           <div>
             <p className="eyebrow">Наши работы</p>
             <h2>Реализованные объекты</h2>
-            <p>
-              Объекты добавляются через Django-админку. Нажмите на стрелку под
-              объектом, чтобы открыть фотографии.
-            </p>
           </div>
         </div>
 

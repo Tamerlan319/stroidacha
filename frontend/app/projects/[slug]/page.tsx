@@ -495,9 +495,6 @@ export default async function ProjectPage({ params }: PageProps) {
           <div className="sectionHeader sectionHeaderCompact">
             <p className="eyebrow">Планировки</p>
             <h2>Планы этажей</h2>
-            <p>
-              Нажмите на планировку, чтобы открыть её крупно и рассмотреть детали.
-            </p>
           </div>
           <ImageLightbox
             images={planImages}
@@ -545,7 +542,6 @@ export default async function ProjectPage({ params }: PageProps) {
             <div className="sectionHeader projectSectionIntro">
               <p className="eyebrow">Конструктивные решения</p>
               <h2>Фундамент и чистовая кровля</h2>
-              <p>Выберите подходящий вариант — стоимость рассчитана именно для этого проекта.</p>
             </div>
             <div className="projectOptionGroups">
               {Object.entries(illustratedOptionGroups).map(([groupTitle, items]) => (
