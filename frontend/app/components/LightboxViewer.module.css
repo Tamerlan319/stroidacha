@@ -327,6 +327,13 @@
   }
 }
 
+/*
+ * Телефон боком: высоты мало, картинка занимает её почти целиком, поэтому все
+ * кнопки живут в боковых полях (72px). Раньше масштаб стоял по центру сверху,
+ * а счётчик с подписью — по центру снизу, прямо поверх картинки, и закрывали
+ * заголовок планировки. Слева: счётчик сверху, «назад» посередине. Справа:
+ * крестик сверху, «вперёд» посередине, масштаб столбиком снизу.
+ */
 @media (max-height: 520px) and (orientation: landscape) {
   .overlay {
     padding:
@@ -344,12 +351,32 @@
   }
 
   .zoomControls {
-    top: calc(8px + env(safe-area-inset-top));
-    bottom: auto;
+    top: auto;
+    right: calc(8px + env(safe-area-inset-right));
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    left: auto;
+    grid-template-columns: 44px;
+    gap: 4px;
+    transform: none;
   }
 
   .zoomControls button {
     height: 40px;
+  }
+
+  .zoomControls .zoomValue {
+    padding: 0;
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+
+  /* В столбике «+» сверху, «−» снизу — как у привычных кнопок масштаба. */
+  .zoomControls button:first-child {
+    order: 1;
+  }
+
+  .zoomControls button:last-child {
+    order: -1;
   }
 
   .arrowButton {
@@ -365,13 +392,21 @@
   }
 
   .bottomBar {
-    top: auto;
-    right: 50%;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    left: auto;
+    top: calc(8px + env(safe-area-inset-top));
+    right: auto;
+    bottom: auto;
+    left: calc(8px + env(safe-area-inset-left));
     min-height: 34px;
-    padding: 4px 12px;
-    transform: translateX(50%);
+    padding: 4px 8px;
+    transform: none;
+  }
+
+  .caption {
+    display: none;
+  }
+
+  .counter {
+    letter-spacing: 0;
   }
 }
 
