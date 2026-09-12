@@ -52,8 +52,7 @@ function ArrowRightIcon() {
 function ExpandIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
-      <path d="m3 8 6-6M21 8l-6-6M3 16l6 6M21 16l-6 6" />
+      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
     </svg>
   );
 }
@@ -155,6 +154,17 @@ export default function ProjectGalleryWithPrices({
     }));
   }
 
+  // Пропорции уже загруженных снимков — по ним решаем, как вписать кадр.
+  const [imageRatios, setImageRatios] = useState<Record<string, number>>({});
+  const activeRatio = activeImage ? imageRatios[activeImage.src] : undefined;
+  // Снимок, близкий по пропорциям к сцене (рендеры 4:3–16:9, чертежи
+  // фасадов), заполняет её целиком — без полос по краям: края чуть
+  // обрезаются, а целиком кадр открывается по нажатию. Сильно вытянутый или
+  // высокий кадр так обрезать нельзя — его показываем целиком на размытом
+  // фоне из него же.
+  const showWholeImage =
+    activeRatio !== undefined && (activeRatio < 1.2 || activeRatio > 1.9);
+
   if (!hasGallery && !hasPrices) return null;
 
   return (
@@ -181,6 +191,18 @@ export default function ProjectGalleryWithPrices({
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
               >
+                {/* Вытянутый кадр показывается целиком, поля вокруг него
+                    заполняет его же размытая копия — ей хватает крошечной
+                    версии картинки. */}
+                {showWholeImage && (
+                  <Image
+                    className={styles.stageBackdrop}
+                    src={activeImage.src}
+                    alt=""
+                    fill
+                    sizes="96px"
+                  />
+                )}
                 <button
                   className={styles.mainImageButton}
                   type="button"
@@ -194,12 +216,22 @@ export default function ProjectGalleryWithPrices({
                     alt={activeImage.alt}
                     fill
                     sizes="(max-width: 980px) 100vw, 60vw"
-                    style={{ objectFit: "contain" }}
+                    style={{ objectFit: showWholeImage ? "contain" : "cover" }}
                     priority
+                    onLoad={(event) => {
+                      const { naturalWidth, naturalHeight } = event.currentTarget;
+                      const src = activeImage.src;
+                      if (!naturalWidth || !naturalHeight) return;
+                      setImageRatios((current) =>
+                        src in current
+                          ? current
+                          : { ...current, [src]: naturalWidth / naturalHeight },
+                      );
+                    }}
                   />
-                  <span className={styles.zoomBadge}>
+                  <span className={styles.zoomBadge} aria-hidden="true">
                     <ExpandIcon />
-                    Увеличить
+                    <span className={styles.zoomLabel}>Увеличить</span>
                   </span>
                 </button>
 
