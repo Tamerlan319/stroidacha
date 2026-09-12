@@ -14,12 +14,14 @@
   (HouseCalculatorService ничего не пишет в базу и никого не уведомляет),
   без него на локальной версии не появится результат калькулятора.
   Остальные POST не пропускаются.
-- Пока боевой бэкенд не отдаёт plan_images в списке проектов, прокси
-  дописывает их из карточки каждого проекта.
+- --catalog-upstream http://127.0.0.1:8001 — список проектов, фильтры
+  (/api/projects/facets/) и категории берутся с локального бэкенда. Так
+  изменения каталога проверяются на копии данных ещё до выкладки; всё
+  остальное (страницы, отзывы, контакты) по-прежнему идёт с brusodel.ru.
 """
 
+import argparse
 import json
-import sys
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,13 +30,14 @@ from urllib.parse import urlsplit
 UPSTREAM = "https://brusodel.ru"
 HOST = "127.0.0.1"
 PORT = 8000
+CATALOG_PATHS = frozenset({"/api/projects/", "/api/projects/facets/", "/api/categories/"})
 
-plan_images_cache: dict[str, list[str]] = {}
+catalog_upstream: str | None = None
 
 
-def fetch_upstream(path):
+def fetch_upstream(path, base=UPSTREAM):
     request = urllib.request.Request(
-        UPSTREAM + path,
+        base + path,
         headers={"User-Agent": "brusodel-local-dev-proxy", "Accept": "application/json"},
     )
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -54,28 +57,6 @@ def post_upstream(path, body, content_type):
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         return response.status, response.headers.get("Content-Type", "application/json"), response.read()
-
-
-def plan_images_for(slug):
-    if slug not in plan_images_cache:
-        try:
-            _, _, body = fetch_upstream(f"/api/projects/{slug}/")
-            plans = json.loads(body).get("plans") or []
-            plan_images_cache[slug] = [plan["image"] for plan in plans if plan.get("image")]
-        except Exception as error:  # noqa: BLE001 - dev helper, keep serving
-            print(f"  ! plans for {slug}: {error}", file=sys.stderr)
-            plan_images_cache[slug] = []
-    return plan_images_cache[slug]
-
-
-def add_plan_images(body):
-    data = json.loads(body)
-    items = data.get("results") if isinstance(data, dict) else data
-    if isinstance(items, list):
-        for item in items:
-            if isinstance(item, dict) and "plan_images" not in item and item.get("slug"):
-                item["plan_images"] = plan_images_for(item["slug"])
-    return json.dumps(data, ensure_ascii=False).encode("utf-8")
 
 
 class ProxyHandler(BaseHTTPRequestHandler):
@@ -104,18 +85,15 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._respond(404, "application/json", b'{"detail": "only /api/ is proxied"}')
             return
 
+        base = catalog_upstream if catalog_upstream and path in CATALOG_PATHS else UPSTREAM
         try:
-            status, content_type, body = fetch_upstream(self.path)
+            status, content_type, body = fetch_upstream(self.path, base)
         except urllib.error.HTTPError as error:
             self._respond(error.code, error.headers.get("Content-Type", "application/json"), error.read())
             return
         except Exception as error:  # noqa: BLE001
             self._respond(502, "application/json", json.dumps({"detail": str(error)}).encode("utf-8"))
             return
-
-        if path == "/api/projects/" and status == 200:
-            body = add_plan_images(body)
-            content_type = "application/json"
 
         self._respond(status, content_type, body)
 
@@ -147,5 +125,16 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Local read-only API proxy for the frontend dev server.")
+    parser.add_argument(
+        "--catalog-upstream",
+        metavar="URL",
+        help="serve project list, facets and categories from this backend (e.g. http://127.0.0.1:8001)",
+    )
+    args = parser.parse_args()
+    catalog_upstream = args.catalog_upstream.rstrip("/") if args.catalog_upstream else None
+
     print(f"Dev API proxy: http://{HOST}:{PORT}/api/ -> {UPSTREAM}/api/ (POST /api/leads/ is mocked)")
+    if catalog_upstream:
+        print(f"Catalog endpoints -> {catalog_upstream}")
     ThreadingHTTPServer((HOST, PORT), ProxyHandler).serve_forever()
