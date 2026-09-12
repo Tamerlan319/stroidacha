@@ -311,26 +311,30 @@
   object-fit: cover;
 }
 
+/* Блок цен. Раскрыта одна группа за раз (ProjectGalleryWithPrices.tsx) —
+   поэтому весь блок помещается рядом с галереей без прокрутки. */
+
 .pricePanel {
-  padding: 14px;
+  padding: 12px;
 }
 
 .priceList {
   display: grid;
-  /* max-content: в списке фиксированной высоты группы не сжимаются (у них
-     overflow: hidden — иначе строки цен обрезались), а список прокручивается. */
+  /* max-content: группы не сжимаются по высоте (у них overflow: hidden —
+     иначе строки цен обрезались бы). */
   grid-auto-rows: max-content;
   align-content: start;
-  gap: 12px;
+  gap: 8px;
 }
 
-/* Компьютер, две колонки: блок цен ровно по высоте галереи. Раскрытие групп
-   не сдвигает страницу вниз — лишнее прокручивается внутри списка, кнопка
-   расчёта всегда внизу блока. contain: size — чтобы высоту строки задавала
-   галерея, а не длина списка цен. */
+/* Компьютер, две колонки: колонка цен ровно по высоте галереи (contain: size —
+   высоту строки задаёт галерея), поэтому раскрытие групп не сдвигает
+   страницу. Сама плашка цен — по своему содержимому, без пустоты внутри.
+   Прокрутка списка — только запасной вариант для очень длинного прайса,
+   который не поместился бы в колонку. */
 @media (min-width: 981px) {
   .layout:not(.singleColumn) {
-    grid-auto-rows: minmax(640px, auto);
+    grid-auto-rows: minmax(560px, auto);
   }
 
   .layout:not(.singleColumn) .priceColumn {
@@ -343,17 +347,18 @@
   .layout:not(.singleColumn) .pricePanel {
     display: flex;
     min-height: 0;
-    flex: 1;
+    flex: 0 1 auto;
     flex-direction: column;
   }
 
   .layout:not(.singleColumn) .priceList {
     min-height: 0;
-    flex: 1;
     overflow-y: auto;
     overscroll-behavior: contain;
-    margin-right: -6px;
-    padding-right: 6px;
+  }
+
+  .layout:not(.singleColumn) .priceFooter {
+    flex-shrink: 0;
   }
 }
 
@@ -380,17 +385,17 @@
 .priceCard {
   overflow: hidden;
   border: 1px solid rgba(23, 41, 29, 0.08);
-  border-radius: 20px;
+  border-radius: 16px;
   background: #fbfaf6;
 }
 
 .priceCardHeader {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 26px;
-  gap: 12px;
+  grid-template-columns: 34px minmax(0, 1fr) 24px;
+  gap: 11px;
   align-items: center;
   width: 100%;
-  padding: 14px 15px 12px;
+  padding: 11px 13px;
   border: 0;
   background: transparent;
   text-align: left;
@@ -399,7 +404,11 @@
 
 .priceCardHeader strong {
   color: #142016;
-  font-size: 16px;
+  font-size: 15.5px;
+}
+
+.priceCardHeader svg {
+  transition: transform 200ms ease;
 }
 
 .chevronOpen {
@@ -408,10 +417,10 @@
 
 .materialIcon {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 11px;
   background: rgba(218, 183, 118, 0.18);
 }
 
@@ -449,7 +458,7 @@
 }
 
 .priceRows {
-  padding: 0 15px 8px;
+  padding: 0 13px 4px;
 }
 
 .priceRow {
@@ -457,13 +466,13 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
-  padding: 13px 0;
+  padding: 10px 0;
   border-top: 1px solid rgba(28, 46, 34, 0.09);
 }
 
 .priceRow span {
   color: #62685f;
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.4;
 }
 
@@ -474,10 +483,10 @@
 }
 
 .priceFooter {
-  margin-top: 14px;
-  padding: 15px;
+  margin-top: 10px;
+  padding: 12px 14px 14px;
   border: 1px solid rgba(25, 74, 45, 0.1);
-  border-radius: 18px;
+  border-radius: 16px;
   background: linear-gradient(145deg, #f5f4ea, #f0efe3);
 }
 
@@ -486,7 +495,7 @@
   grid-template-columns: 22px minmax(0, 1fr);
   gap: 9px;
   align-items: start;
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   color: #6a7068;
   font-size: 12px;
   line-height: 1.5;
@@ -509,8 +518,8 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  min-height: 50px;
-  padding: 12px 17px;
+  min-height: 48px;
+  padding: 11px 17px;
   border-radius: 12px;
   color: #fff;
   background: #163e29;
@@ -799,10 +808,6 @@
   .priceColumn {
     position: static;
   }
-
-  .pricePanel {
-    padding: 12px;
-  }
 }
 
 @media (max-width: 620px) {
@@ -873,9 +878,15 @@
     gap: 6px;
   }
 
+  .pricePanel {
+    padding: 10px;
+    border-radius: 20px;
+  }
+
   .priceCardHeader {
-    grid-template-columns: 34px minmax(0, 1fr) 24px;
-    padding: 13px 12px 11px;
+    grid-template-columns: 32px minmax(0, 1fr) 22px;
+    gap: 10px;
+    padding: 10px 11px;
   }
 
   .priceCardHeader strong {
@@ -888,20 +899,20 @@
   }
 
   .priceRows {
-    padding: 0 12px 6px;
+    padding: 0 11px 4px;
   }
 
   .priceRow {
     gap: 9px;
-    padding: 11px 0;
+    padding: 10px 0;
   }
 
   .priceRow span {
-    font-size: 12px;
+    font-size: 12.5px;
   }
 
   .priceRow strong {
-    font-size: 13px;
+    font-size: 13.5px;
   }
 
   .lightboxOverlay {
@@ -999,6 +1010,7 @@
   .zoomLabel,
   .stageArrow,
   .thumbnailImage,
+  .priceCardHeader svg,
   .calculateButton,
   .lightbox,
   .lightboxOverlay,

@@ -84,16 +84,14 @@ export default function ProjectGalleryWithPrices({
 }: ProjectGalleryWithPricesProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  // Сразу раскрыта только первая группа цен — остальные по нажатию.
-  const [openPriceGroups, setOpenPriceGroups] = useState<Record<string, boolean>>(
-    () =>
-      Object.fromEntries(
-        priceGroups.map((group, index) => [group.title, index === 0]),
-      ),
+  // Раскрыта одна группа цен за раз (сначала первая): так блок цен всегда
+  // помещается рядом с галереей целиком — без прокрутки внутри и без того,
+  // чтобы раскрытие группы сдвигало страницу вниз.
+  const [openPriceGroup, setOpenPriceGroup] = useState<string | null>(
+    () => priceGroups[0]?.title ?? null,
   );
 
   const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const priceListRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
 
   const safeIndex = images.length
@@ -152,32 +150,8 @@ export default function ProjectGalleryWithPrices({
     else showNext();
   }
 
-  function togglePriceGroup(title: string, card: HTMLElement | null) {
-    const opening = !openPriceGroups[title];
-    setOpenPriceGroups((current) => ({
-      ...current,
-      [title]: !current[title],
-    }));
-    if (!opening || !card) return;
-
-    // На компьютере блок цен фиксированной высоты и список прокручивается
-    // внутри (см. CSS): раскрытую группу докручиваем, чтобы её цены не
-    // остались за нижним краем. Прокручивается только список, не страница.
-    // Таймер — уже после того, как React отрисовал раскрытую группу.
-    window.setTimeout(() => {
-      const list = priceListRef.current;
-      if (!list || list.scrollHeight <= list.clientHeight) return;
-
-      const listBounds = list.getBoundingClientRect();
-      const cardBounds = card.getBoundingClientRect();
-      const hiddenBelow = cardBounds.bottom - listBounds.bottom;
-      if (hiddenBelow <= 0) return;
-
-      list.scrollBy({
-        top: Math.min(hiddenBelow + 8, cardBounds.top - listBounds.top),
-        behavior: "smooth",
-      });
-    });
+  function togglePriceGroup(title: string) {
+    setOpenPriceGroup((current) => (current === title ? null : title));
   }
 
   // Пропорции уже загруженных снимков — по ним решаем, как вписать кадр.
@@ -330,9 +304,9 @@ export default function ProjectGalleryWithPrices({
             </header>
 
             <div className={styles.pricePanel}>
-              <div className={styles.priceList} ref={priceListRef}>
+              <div className={styles.priceList}>
                 {priceGroups.map((group, groupIndex) => {
-                  const isOpen = openPriceGroups[group.title] ?? false;
+                  const isOpen = openPriceGroup === group.title;
                   const contentId = `project-price-group-${groupIndex}`;
 
                   return (
@@ -340,12 +314,7 @@ export default function ProjectGalleryWithPrices({
                       <button
                         className={styles.priceCardHeader}
                         type="button"
-                        onClick={(event) =>
-                          togglePriceGroup(
-                            group.title,
-                            event.currentTarget.closest("section"),
-                          )
-                        }
+                        onClick={() => togglePriceGroup(group.title)}
                         aria-expanded={isOpen}
                         aria-controls={contentId}
                       >
