@@ -47,7 +47,7 @@ class ProjectListAPIView(ListAPIView):
         queryset = (
             Project.objects.filter(is_active=True)
             .select_related("category")
-            .prefetch_related("images", Prefetch("offers", queryset=OFFER_LIST_QS))
+            .prefetch_related("images", "plans", Prefetch("offers", queryset=OFFER_LIST_QS))
             .order_by("sort_order", "-created_at")
         )
 

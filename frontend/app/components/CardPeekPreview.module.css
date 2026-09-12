@@ -1,0 +1,90 @@
+/* Поверх шапки (10000) и формы заявки (10010), под окном «Заявка
+   отправлена» (10050). */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 16, 12, 0.72);
+  padding: 16px;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: cardPeekFade 0.16s ease-out;
+}
+
+.frame {
+  width: min(92vw, 960px);
+  margin: 0;
+  animation: cardPeekPop 0.2s ease-out;
+}
+
+.imageBox {
+  position: relative;
+  width: 100%;
+  height: min(72vh, 640px);
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: #1a221c;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+
+/* Планировка — чертёж на белом. */
+.imageBoxPlan {
+  background-color: #ffffff;
+}
+
+.frame figcaption {
+  margin-top: 12px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Карточка, которую можно зажать: без системного превью ссылки на iOS, а на
+   сенсорных экранах — без выделения текста долгим нажатием. */
+.peekable {
+  -webkit-touch-callout: none;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .peekable {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+@keyframes cardPeekFade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cardPeekPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .frame {
+    animation: none;
+  }
+}

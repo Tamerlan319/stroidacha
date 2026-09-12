@@ -79,13 +79,24 @@ class LandingPageDetailSerializer(serializers.ModelSerializer):
         )
 
     def get_related_projects(self, obj):
-        projects = obj.related_projects.filter(is_active=True).select_related("category")
+        # images/plans прогреваем: ProjectListSerializer берёт из них обложку
+        # и превью планировок — без prefetch это запросы на каждый проект.
+        projects = (
+            obj.related_projects.filter(is_active=True)
+            .select_related("category")
+            .prefetch_related("images", "plans")
+        )
 
         if not projects.exists() and obj.category:
-            projects = Project.objects.filter(
-                is_active=True,
-                category=obj.category,
-            ).select_related("category").order_by("sort_order", "-created_at")[:12]
+            projects = (
+                Project.objects.filter(
+                    is_active=True,
+                    category=obj.category,
+                )
+                .select_related("category")
+                .prefetch_related("images", "plans")
+                .order_by("sort_order", "-created_at")[:12]
+            )
 
         serializer = ProjectListSerializer(
             projects,

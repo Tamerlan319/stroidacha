@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import Breadcrumbs, { BreadcrumbItem } from "../components/Breadcrumbs";
 import LeadForm from "../components/LeadForm";
+import LeadFormButton from "../components/LeadFormButton";
 import ProjectCatalog from "../components/ProjectCatalog";
 import RichText from "../components/RichText";
 
@@ -307,16 +308,22 @@ export default async function LandingPageRoute({ params }: PageProps) {
                   Смотреть проекты
                 </a>
               )}
-              <a href="#lead-form" className="buttonSecondary">
+              <LeadFormButton
+                className="buttonSecondary"
+                source="contact_form"
+                title="Получить расчёт"
+              >
                 Получить расчёт
-              </a>
+              </LeadFormButton>
             </div>
           </div>
 
           <div className="landingHeroPanel">
             <strong>Бесплатный расчёт</strong>
             <p>Подберём проект, комплектацию, фундамент и доставку.</p>
-            <a href="#lead-form">Оставить заявку →</a>
+            <LeadFormButton source="contact_form" title="Бесплатный расчёт">
+              Оставить заявку →
+            </LeadFormButton>
           </div>
         </div>
       </section>

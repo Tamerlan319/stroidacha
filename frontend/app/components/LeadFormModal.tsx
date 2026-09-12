@@ -115,7 +115,14 @@ export default function LeadFormModal({
           </svg>
         </button>
 
-        <LeadForm title={title} source={source} projectSlug={projectSlug} />
+        {/* «Хорошо» в окне «Заявка отправлена» закрывает и эту форму —
+            чтобы человек не остался перед пустыми полями. */}
+        <LeadForm
+          title={title}
+          source={source}
+          projectSlug={projectSlug}
+          onSuccessClose={onClose}
+        />
       </div>
     </div>,
     document.body

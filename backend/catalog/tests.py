@@ -1,6 +1,8 @@
+import tempfile
 from decimal import Decimal
 
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from .models import (
@@ -14,11 +16,66 @@ from .models import (
     ProjectCategory,
     ProjectFoundation,
     ProjectOffer,
+    ProjectPlan,
     ProjectRoofCovering,
     ProjectTechnicalData,
     RoofCovering,
 )
 from .pricing import PricingService
+
+
+class ProjectListPlanImagesTests(TestCase):
+    """plan_images в списке проектов — превью планировок в карточках каталога."""
+
+    def setUp(self):
+        media_directory = tempfile.TemporaryDirectory()
+        settings_override = override_settings(MEDIA_ROOT=media_directory.name)
+        settings_override.enable()
+        self.addCleanup(media_directory.cleanup)
+        self.addCleanup(settings_override.disable)
+
+        self.category = ProjectCategory.objects.create(
+            title="Бани", slug="baths-plan-preview-test"
+        )
+        self.project = Project.objects.create(
+            external_id="BB-PLAN-PREVIEW-TEST",
+            title="Баня Plan Preview Test",
+            slug="banya-plan-preview-test",
+            category=self.category,
+            area=20,
+            floors=Decimal("1"),
+            width=6,
+            length=4,
+        )
+
+    def _plan(self, file_name, *, floor, sort_order):
+        return ProjectPlan.objects.create(
+            project=self.project,
+            image=SimpleUploadedFile(file_name, b"plan", content_type="image/jpeg"),
+            floor=floor,
+            sort_order=sort_order,
+        )
+
+    def _list_item(self):
+        response = self.client.get(
+            "/api/projects/", {"category": self.category.slug}
+        )
+        self.assertEqual(response.status_code, 200)
+        [item] = response.json()
+        return item
+
+    def test_plan_images_follow_plan_display_order(self):
+        second = self._plan("preview-floor-2.jpg", floor=2, sort_order=1)
+        first = self._plan("preview-floor-1.jpg", floor=1, sort_order=0)
+
+        plan_images = self._list_item()["plan_images"]
+
+        self.assertEqual(len(plan_images), 2)
+        self.assertTrue(plan_images[0].endswith(first.image.name))
+        self.assertTrue(plan_images[1].endswith(second.image.name))
+
+    def test_project_without_plans_has_empty_plan_images(self):
+        self.assertEqual(self._list_item()["plan_images"], [])
 
 
 class CatalogV4PricingTests(TestCase):

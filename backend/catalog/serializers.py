@@ -149,6 +149,7 @@ class ConstructionStepSerializer(serializers.ModelSerializer):
 class ProjectListSerializer(PricingSerializerMixin, AbsoluteImageUrlMixin, serializers.ModelSerializer):
     category = ProjectCategorySerializer(read_only=True)
     main_image = serializers.SerializerMethodField()
+    plan_images = serializers.SerializerMethodField()
     price_from = serializers.SerializerMethodField()
     base_price_from = serializers.SerializerMethodField()
     floor_label = serializers.SerializerMethodField()
@@ -180,6 +181,7 @@ class ProjectListSerializer(PricingSerializerMixin, AbsoluteImageUrlMixin, seria
             "build_days_to",
             "short_description",
             "main_image",
+            "plan_images",
             "is_featured",
             "sort_order",
             "updated_at",
@@ -200,6 +202,15 @@ class ProjectListSerializer(PricingSerializerMixin, AbsoluteImageUrlMixin, seria
             return self.absolute_file_url(images[0].image)
         # Только безопасный fallback до cleanup legacy-поля.
         return self.absolute_file_url(obj.main_image)
+
+    def get_plan_images(self, obj):
+        # Планировки для превью в карточке каталога (смена кадров при
+        # наведении, свайп на телефоне — ProjectCardMedia на фронте). Только
+        # адреса: планы с подписями и этажами отдаёт ProjectDetailSerializer.
+        # Во всех выборках под этот сериализатор plans прогрет через
+        # prefetch_related — иначе это запрос к базе на каждый проект.
+        urls = (self.absolute_file_url(plan.image) for plan in obj.plans.all())
+        return [url for url in urls if url]
 
     def get_price_from(self, obj):
         return self.get_pricing_service().get_project_price_from(obj)
@@ -264,7 +275,7 @@ class ProjectDetailSerializer(ProjectListSerializer):
     def get_similar_projects(self, obj):
         # Другие проекты той же категории (дома к домам, бани к баням) —
         # ближе по площади и этажности к текущему, а не просто последние
-        # добавленные. offers/images прогреты отдельно: это новая, не
+        # добавленные. offers/images/plans прогреты отдельно: это новая, не
         # связанная с queryset обзора выборка, prefetch представления на
         # неё не распространяется.
         offers_qs = ProjectOffer.objects.select_related("material", "build_package")
@@ -272,7 +283,7 @@ class ProjectDetailSerializer(ProjectListSerializer):
             Project.objects.filter(is_active=True, category_id=obj.category_id)
             .exclude(pk=obj.pk)
             .select_related("category")
-            .prefetch_related("images", Prefetch("offers", queryset=offers_qs))
+            .prefetch_related("images", "plans", Prefetch("offers", queryset=offers_qs))
         )
 
         if obj.area:

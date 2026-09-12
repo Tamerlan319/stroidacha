@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { reachGoal } from "../lib/metrika";
 import { SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
+import LeadFormButton from "./LeadFormButton";
 
 type MaterialOption = {
   code: string;
@@ -711,9 +712,14 @@ export default function HouseCalculator() {
             ) : null}
 
             <div className="calculatorResultActions">
-              <a className="buttonPrimary" href="#calculator-lead">
+              <LeadFormButton
+                className="buttonPrimary"
+                fallbackHref="#calculator-lead"
+                source="calculator"
+                title="Получить точную смету"
+              >
                 Получить точную смету
-              </a>
+              </LeadFormButton>
               <button className="buttonGhost" type="button" onClick={() => setResult(null)}>
                 Изменить параметры
               </button>

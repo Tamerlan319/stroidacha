@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from "react";
 
+import LeadFormButton from "./LeadFormButton";
 import LightboxViewer from "./LightboxViewer";
 import styles from "./ProjectGalleryWithPrices.module.css";
 
@@ -28,6 +29,8 @@ export type ProjectPriceGroup = {
 type ProjectGalleryWithPricesProps = {
   images: ProjectMediaItem[];
   priceGroups: ProjectPriceGroup[];
+  // Заявка из «Получить точный расчёт» привязывается к этому проекту.
+  projectSlug?: string;
 };
 
 function ArrowLeftIcon() {
@@ -78,6 +81,7 @@ function PhoneIcon() {
 export default function ProjectGalleryWithPrices({
   images,
   priceGroups,
+  projectSlug,
 }: ProjectGalleryWithPricesProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -298,10 +302,15 @@ export default function ProjectGalleryWithPrices({
                   Стоимость указана за комплект материалов. Итог зависит от
                   комплектации, фундамента, кровли и доставки.
                 </p>
-                <a className={styles.calculateButton} href="#lead-form">
+                <LeadFormButton
+                  className={styles.calculateButton}
+                  source="project_order"
+                  projectSlug={projectSlug}
+                  title="Получить точный расчёт"
+                >
                   <PhoneIcon />
                   Получить точный расчёт
-                </a>
+                </LeadFormButton>
               </div>
             </div>
           </aside>

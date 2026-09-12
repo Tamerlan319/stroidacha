@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -13,7 +12,11 @@ import CatalogFilterPanel, {
   getActiveFilterChips,
 } from "./CatalogFilterPanel";
 import filterPanelStyles from "./CatalogFilterPanel.module.css";
+import { useCardPeek } from "../lib/useCardPeek";
+import CardPeekPreview from "./CardPeekPreview";
+import peekStyles from "./CardPeekPreview.module.css";
 import CustomProjectCard from "./CustomProjectCard";
+import ProjectCardMedia from "./ProjectCardMedia";
 
 type Project = {
   id: number;
@@ -27,6 +30,9 @@ type Project = {
   price_from: string | number | null;
   short_description: string;
   main_image: string | null;
+  // Необязательное: старый бэкенд поле не отдаёт — тогда в карточке просто
+  // одна обложка, как раньше.
+  plan_images?: string[];
 };
 
 type Ordering =
@@ -286,6 +292,7 @@ export default function ProjectCatalog({
   const [totalProjects, setTotalProjects] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const { peek, bindCard } = useCardPeek();
 
   const usesPagination = !maxItems;
 
@@ -649,8 +656,9 @@ export default function ProjectCatalog({
                   )}
 
                   <label>
-                    <span>Сортировка</span>
+                    <span className={filterPanelStyles.sortCaption}>Сортировка</span>
                     <select
+                      className={filterPanelStyles.sortSelect}
                       aria-label="Сортировка проектов"
                       value={ordering}
                       onChange={(event) =>
@@ -687,22 +695,19 @@ export default function ProjectCatalog({
                 <CustomProjectCard />
               )}
               {visibleProjects.map((project) => (
-                <article className="projectCard" key={project.id}>
-                  <Link className="projectImage" href={`/projects/${project.slug}`}>
-                    {project.main_image ? (
-                      <Image
-                        src={project.main_image}
-                        alt={project.title}
-                        fill
-                        sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
-                        style={{ objectFit: "cover" }}
-                      />
-                    ) : (
-                      <div className="imagePlaceholder">Фото проекта</div>
-                    )}
-
-                    <span className="projectBadge">{project.category.title}</span>
-                  </Link>
+                <article
+                  className={`projectCard ${peekStyles.peekable}`}
+                  key={project.id}
+                  {...bindCard(project.title)}
+                >
+                  <ProjectCardMedia
+                    href={`/projects/${project.slug}`}
+                    title={project.title}
+                    badge={project.category.title}
+                    mainImage={project.main_image}
+                    planImages={project.plan_images}
+                    sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                  />
 
                   <div className="projectBody">
                     <div className="projectTop">
@@ -724,7 +729,9 @@ export default function ProjectCatalog({
 
                     <div className="projectFooter">
                       <strong>{formatPrice(project.price_from)}</strong>
-                      <Link href={`/projects/${project.slug}`}>Подробнее</Link>
+                      <Link href={`/projects/${project.slug}`} draggable={false}>
+                        Подробнее
+                      </Link>
                     </div>
                   </div>
                 </article>
@@ -781,6 +788,7 @@ export default function ProjectCatalog({
             </Link>
         </div>
         )}
+      <CardPeekPreview peek={peek} />
     </section>
   );
 }

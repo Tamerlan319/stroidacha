@@ -1004,7 +1004,9 @@ h1 {
   transition: transform 0.4s ease;
 }
 
-.projectCard:hover .projectImage img {
+/* У карточек каталога вместо приближения при наведении — смена кадров
+   обложка ↔ планировки (ProjectCardMedia). */
+.projectCard:hover .projectImage:not(.projectImageSlides) img {
   transform: scale(1.04);
 }
 
@@ -5905,6 +5907,29 @@ main {
 @media (max-width: 960px) {
   body {
     padding-top: 72px;
+  }
+
+  /* Отступ body выше рассчитан на закреплённую шапку, а закреплялась она
+     только до 700px (блоки @media (max-width: 700px)). На 701–960px —
+     планшеты, телефон горизонтально, узкое окно браузера — шапка оставалась
+     в потоке: над ней висела пустая тёмная полоса 72px, а при прокрутке
+     шапка уезжала вместе со страницей. */
+  .sdHeader,
+  .siteHeader {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 10000;
+  }
+
+  .sdMobileMenu {
+    position: fixed;
+    right: 0;
+    left: 0;
+    z-index: 9999;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .sdHeaderMain {

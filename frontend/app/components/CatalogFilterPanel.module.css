@@ -381,4 +381,23 @@
     stroke-linecap: round;
     fill: none;
   }
+
+  /* Подпись «Сортировка» над списком делала блок сортировки выше кнопки
+     «Фильтры», и кнопка, выровненная по его центру, стояла на 14px выше
+     списка. На узких экранах подпись скрыта визуально (у select есть
+     aria-label), а высота списка равна высоте кнопки. */
+  .toolbarControls .sortCaption {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .toolbarControls .sortSelect {
+    min-height: 42px;
+    border-radius: 10px;
+  }
 }

@@ -4,6 +4,7 @@ import { FormEvent, useRef, useState } from "react";
 
 import { legalConfig } from "../lib/legalConfig";
 import styles from "./HeaderQuickCallback.module.css";
+import LeadSuccessDialog from "./LeadSuccessDialog";
 
 type Props = {
   source?: string;
@@ -68,6 +69,7 @@ export default function HeaderQuickCallback({
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const phoneInputRef = useRef<HTMLInputElement>(null);
 
@@ -124,6 +126,7 @@ export default function HeaderQuickCallback({
 
       setPhone("");
       setStatus("success");
+      setIsSuccessDialogOpen(true);
     } catch (submitError) {
       setStatus("error");
       // TypeError — сбой самого fetch (нет сети): браузерный текст
@@ -166,11 +169,13 @@ export default function HeaderQuickCallback({
       </button>
 
       {error && <div className={styles.error}>{error}</div>}
-      {status === "success" && (
-        <div className={styles.success}>
-          Заявка отправлена, скоро перезвоним.
-        </div>
-      )}
+      <LeadSuccessDialog
+        open={isSuccessDialogOpen}
+        onClose={() => {
+          setIsSuccessDialogOpen(false);
+          setStatus("idle");
+        }}
+      />
     </form>
   );
 }

@@ -7,6 +7,7 @@ import Link from "next/link";
 import Breadcrumbs, { BreadcrumbItem } from "../../components/Breadcrumbs";
 import JsonLd from "../../components/JsonLd";
 import LeadForm from "../../components/LeadForm";
+import LeadFormButton from "../../components/LeadFormButton";
 import ImageLightbox from "../../components/ImageLightbox";
 import ProjectGalleryWithPrices from "../../components/ProjectGalleryWithPrices";
 import SiteIcon from "../../components/SiteIcon";
@@ -452,9 +453,14 @@ export default async function ProjectPage({ params }: PageProps) {
               <a href="#prices" className="buttonPrimary">
                 Смотреть цены
               </a>
-              <a href="#lead-form" className="buttonSecondary">
+              <LeadFormButton
+                className="buttonSecondary"
+                source="project_order"
+                projectSlug={project.slug}
+                title="Заказать проект"
+              >
                 Заказать проект
-              </a>
+              </LeadFormButton>
             </div>
           </div>
           <aside className="projectQuoteCard">
@@ -465,9 +471,14 @@ export default async function ProjectPage({ params }: PageProps) {
               <li>подберём материал</li>
               <li>рассчитаем доставку</li>
             </ul>
-            <a href="#lead-form" className="buttonPrimary">
+            <LeadFormButton
+              className="buttonPrimary"
+              source="project_order"
+              projectSlug={project.slug}
+              title="Получить расчёт"
+            >
               Рассчитать проект
-            </a>
+            </LeadFormButton>
           </aside>
         </div>
       </section>
@@ -476,6 +487,7 @@ export default async function ProjectPage({ params }: PageProps) {
         <ProjectGalleryWithPrices
           images={projectMedia}
           priceGroups={priceSections}
+          projectSlug={project.slug}
         />
       )}
       {planImages.length > 0 && (
@@ -712,7 +724,13 @@ export default async function ProjectPage({ params }: PageProps) {
                   <div>
                     <h3>{promotion.title}</h3>
                     {promotion.description && <p>{promotion.description}</p>}
-                    <a href="#lead-form">{promotion.button_label || "Узнать подробнее"} →</a>
+                    <LeadFormButton
+                      source="project_order"
+                      projectSlug={project.slug}
+                      title={promotion.title}
+                    >
+                      {promotion.button_label || "Узнать подробнее"} →
+                    </LeadFormButton>
                   </div>
                 </article>
               ))}

@@ -15,6 +15,7 @@ import {
 import { legalConfig } from "../lib/legalConfig";
 import { reachGoal } from "../lib/metrika";
 import { getUtmValue } from "../lib/utm";
+import LeadSuccessDialog from "./LeadSuccessDialog";
 import SocialLinks from "./SocialLinks";
 import styles from "./LeadForm.module.css";
 
@@ -48,6 +49,9 @@ type LeadFormProps = {
   source?: string;
   projectSlug?: string;
   title?: string;
+  // Вызывается, когда человек закрыл окно «Заявка отправлена». Нужно форме
+  // во всплывающем окне, чтобы закрыться вместе с ним.
+  onSuccessClose?: () => void;
 };
 
 type FormState = {
@@ -244,6 +248,7 @@ export default function LeadForm({
   source = "home_phone_consultation",
   projectSlug = "",
   title = "Записаться на консультацию и расчёт",
+  onSuccessClose,
 }: LeadFormProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -252,6 +257,7 @@ export default function LeadForm({
   );
   const [errors, setErrors] = useState<FieldErrors>({});
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [generalError, setGeneralError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -533,6 +539,7 @@ export default function LeadForm({
       setTouched({});
       setErrors({});
       setStatus("success");
+      setIsSuccessDialogOpen(true);
       reachGoal("lead_submit", { source });
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -831,15 +838,14 @@ export default function LeadForm({
         </div>
       </div>
 
-      {status === "success" && (
-        <div className={styles.successMessage} aria-live="polite">
-          <span aria-hidden="true">✓</span>
-          <div>
-            <strong>Заявка отправлена</strong>
-            <p>Менеджер свяжется с вами в ближайшее рабочее время.</p>
-          </div>
-        </div>
-      )}
+      <LeadSuccessDialog
+        open={isSuccessDialogOpen}
+        onClose={() => {
+          setIsSuccessDialogOpen(false);
+          setStatus("idle");
+          onSuccessClose?.();
+        }}
+      />
 
       {status === "error" && generalError && (
         <div className={styles.generalError} role="alert" aria-live="assertive">

@@ -6,6 +6,7 @@ import HeroLeadCard from "./components/HeroLeadCard";
 import HomePortfolioShowcase from "./components/HomePortfolioShowcase";
 import JsonLd from "./components/JsonLd";
 import LeadForm from "./components/LeadForm";
+import LeadFormButton from "./components/LeadFormButton";
 import ProjectCatalog from "./components/ProjectCatalog";
 import SiteIcon from "./components/SiteIcon";
 import { CATALOG_LINKS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
@@ -323,7 +324,14 @@ export default async function HomePage() {
           <p className="homeLabel">Логистика</p>
           <h2>Бесплатная доставка материала по согласованным направлениям</h2>
           <p>Для каждого проекта заранее считаем объём материалов, транспорт и условия разгрузки. Маршрут и стоимость доставки фиксируем до начала строительства.</p>
-          <a className="buttonOutline" href="#consultation-form">Узнать стоимость доставки</a>
+          <LeadFormButton
+            className="buttonOutline"
+            fallbackHref="#consultation-form"
+            source="home_phone_consultation"
+            title="Узнать стоимость доставки"
+          >
+            Узнать стоимость доставки
+          </LeadFormButton>
         </div>
       </section>
 
