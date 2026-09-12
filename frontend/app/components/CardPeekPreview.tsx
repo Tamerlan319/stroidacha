@@ -12,7 +12,8 @@ type CardPeekPreviewProps = {
 
 // Окно предпросмотра по долгому нажатию на карточку (lib/useCardPeek.ts).
 // Не интерактивное — pointer-events: none: отпускание пальца или кнопки мыши
-// должно дойти до страницы под окном и закрыть его.
+// должно дойти до страницы под окном и закрыть его. Щипок вторым пальцем
+// ловит сам useCardPeek (слушатели на window) и двигает слой zoomLayer.
 export default function CardPeekPreview({ peek }: CardPeekPreviewProps) {
   if (!peek || typeof document === "undefined") return null;
 
@@ -21,20 +22,25 @@ export default function CardPeekPreview({ peek }: CardPeekPreviewProps) {
       <figure className={styles.frame}>
         <div
           className={`${styles.imageBox} ${peek.isPlan ? styles.imageBoxPlan : ""}`}
-          style={
-            peek.placeholderSrc
-              ? { backgroundImage: `url("${peek.placeholderSrc}")` }
-              : undefined
-          }
         >
-          <Image
-            src={peek.src}
-            alt={peek.alt}
-            fill
-            sizes="(max-width: 700px) 92vw, 960px"
-            draggable={false}
-            style={{ objectFit: "contain" }}
-          />
+          <div
+            data-card-peek-zoom=""
+            className={styles.zoomLayer}
+            style={
+              peek.placeholderSrc
+                ? { backgroundImage: `url("${peek.placeholderSrc}")` }
+                : undefined
+            }
+          >
+            <Image
+              src={peek.src}
+              alt={peek.alt}
+              fill
+              sizes="(max-width: 700px) 92vw, 960px"
+              draggable={false}
+              style={{ objectFit: "contain" }}
+            />
+          </div>
         </div>
         <figcaption>{peek.caption}</figcaption>
       </figure>

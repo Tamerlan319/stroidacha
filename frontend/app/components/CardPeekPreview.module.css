@@ -27,15 +27,24 @@
   overflow: hidden;
   border-radius: 16px;
   background-color: #1a221c;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
 }
 
 /* Планировка — чертёж на белом. */
 .imageBoxPlan {
   background-color: #ffffff;
+}
+
+/* Слой с картинкой и заглушкой: его увеличивает щипок (transform пишет
+   useCardPeek), рамка .imageBox обрезает всё, что вышло за край. */
+.zoomLayer {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
 
 .frame figcaption {

@@ -189,7 +189,10 @@ export default function ProjectCardMedia({
   }
 
   function handlePointerDown(event: ReactPointerEvent<HTMLAnchorElement>) {
-    if (event.pointerType === "mouse" || slideCount < 2) return;
+    // Второй палец (щипок в предпросмотре карточки) свайп не начинает.
+    if (event.pointerType === "mouse" || !event.isPrimary || slideCount < 2) {
+      return;
+    }
 
     setPlansRequested(true);
     swipeRef.current = {
@@ -206,6 +209,14 @@ export default function ProjectCardMedia({
   function handlePointerMove(event: ReactPointerEvent<HTMLAnchorElement>) {
     const swipe = swipeRef.current;
     if (!swipe || event.pointerId !== swipe.pointerId) return;
+
+    // Долгое нажатие открыло предпросмотр (lib/useCardPeek.ts) — дальше пальцы
+    // управляют окном, а не кадрами карточки под ним.
+    if (linkRef.current?.closest("[data-peek-open]")) {
+      swipeRef.current = null;
+      setDragOffset(0, false);
+      return;
+    }
 
     const deltaX = event.clientX - swipe.startX;
     const deltaY = event.clientY - swipe.startY;
