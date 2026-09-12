@@ -242,8 +242,13 @@ export default async function RootLayout({
   ]);
   const siteJsonLd = buildSiteJsonLd(reviews);
 
+  // data-scroll-behavior="smooth": у html в globals.css стоит плавная прокрутка
+  // для якорей. С Next 16 она без этого атрибута действовала и на переходы
+  // между страницами — открытый проект «доматывался» до места, а «Назад»
+  // прокручивал страницу снизу вверх. С атрибутом Next на время перехода
+  // включает мгновенную прокрутку.
   return (
-    <html lang="ru">
+    <html lang="ru" data-scroll-behavior="smooth">
       <body>
         <SocialLinksProvider links={socialLinks}>
           <JsonLd data={siteJsonLd} />

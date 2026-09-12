@@ -81,7 +81,12 @@ export default function LeadFormModal({
       body.style.width = previousBodyStyles.width;
       body.style.overflow = previousBodyStyles.overflow;
       html.style.overflow = previousHtmlOverflow;
+      // Возврат на место — мгновенно: с плавной прокруткой у html (globals.css)
+      // после закрытия формы страница «отматывалась» от самого верха.
+      const previousScrollBehavior = html.style.scrollBehavior;
+      html.style.scrollBehavior = "auto";
       window.scrollTo(0, scrollY);
+      html.style.scrollBehavior = previousScrollBehavior;
       previouslyFocusedElement?.focus({ preventScroll: true });
     };
   }, [open, onClose]);

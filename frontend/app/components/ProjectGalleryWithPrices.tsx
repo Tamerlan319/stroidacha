@@ -112,11 +112,23 @@ export default function ProjectGalleryWithPrices({
     setSelectedIndex((current) => (current + 1) % images.length);
   }, [images.length]);
 
+  // Активную миниатюру подкручиваем к центру полосы превью — прокручивается
+  // только сама полоса. scrollIntoView двигал ещё и окно: на телефоне
+  // страница проекта сразу после открытия съезжала вниз, к миниатюрам и ценам.
   useEffect(() => {
-    thumbnailRefs.current[safeIndex]?.scrollIntoView({
+    const thumbnail = thumbnailRefs.current[safeIndex];
+    const track = thumbnail?.parentElement;
+    if (!thumbnail || !track) return;
+
+    const trackBounds = track.getBoundingClientRect();
+    const thumbnailBounds = thumbnail.getBoundingClientRect();
+    track.scrollTo({
+      left:
+        track.scrollLeft +
+        thumbnailBounds.left -
+        trackBounds.left -
+        (track.clientWidth - thumbnailBounds.width) / 2,
       behavior: "smooth",
-      block: "nearest",
-      inline: "center",
     });
   }, [safeIndex]);
 
