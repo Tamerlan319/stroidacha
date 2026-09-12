@@ -182,8 +182,7 @@
 .lightboxArrow svg,
 .lightboxClose svg,
 .lightboxZoomButton svg,
-.calculateButton svg,
-.priceCardHeader svg {
+.calculateButton svg {
   width: 20px;
   height: 20px;
   fill: none;
@@ -311,27 +310,24 @@
   object-fit: cover;
 }
 
-/* Блок цен. Раскрыта одна группа за раз (ProjectGalleryWithPrices.tsx) —
-   поэтому весь блок помещается рядом с галереей без прокрутки. */
+/* Блок цен — компактная таблица: заголовок материала и строки сечений под
+   ним. Все группы сразу раскрыты и помещаются рядом с галереей целиком. */
 
 .pricePanel {
-  padding: 12px;
+  padding: 4px 14px 14px;
 }
 
 .priceList {
   display: grid;
-  /* max-content: группы не сжимаются по высоте (у них overflow: hidden —
-     иначе строки цен обрезались бы). */
+  /* max-content: группы не сжимаются по высоте, если места всё же мало. */
   grid-auto-rows: max-content;
   align-content: start;
-  gap: 8px;
 }
 
 /* Компьютер, две колонки: колонка цен ровно по высоте галереи (contain: size —
-   высоту строки задаёт галерея), поэтому раскрытие групп не сдвигает
-   страницу. Сама плашка цен — по своему содержимому, без пустоты внутри.
-   Прокрутка списка — только запасной вариант для очень длинного прайса,
-   который не поместился бы в колонку. */
+   высоту строки задаёт галерея), поэтому сворачивание и раскрытие групп не
+   сдвигает страницу. Сама плашка цен — по своему содержимому. Прокрутка
+   списка — только запасной вариант для очень длинного прайса. */
 @media (min-width: 981px) {
   .layout:not(.singleColumn) {
     grid-auto-rows: minmax(560px, auto);
@@ -382,33 +378,42 @@
   background: transparent;
 }
 
-.priceCard {
-  overflow: hidden;
-  border: 1px solid rgba(23, 41, 29, 0.08);
-  border-radius: 16px;
-  background: #fbfaf6;
+.priceCard + .priceCard {
+  border-top: 1px solid rgba(28, 46, 34, 0.1);
 }
 
 .priceCardHeader {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 24px;
-  gap: 11px;
+  grid-template-columns: 26px minmax(0, 1fr) 18px;
+  gap: 10px;
   align-items: center;
   width: 100%;
-  padding: 11px 13px;
+  padding: 9px 0 5px;
   border: 0;
   background: transparent;
+  color: #142016;
   text-align: left;
   cursor: pointer;
 }
 
 .priceCardHeader strong {
-  color: #142016;
-  font-size: 15.5px;
+  font-size: 15px;
 }
 
 .priceCardHeader svg {
+  width: 18px;
+  height: 18px;
+  color: #6a7068;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   transition: transform 200ms ease;
+}
+
+.priceCardHeader:hover svg {
+  color: #142016;
 }
 
 .chevronOpen {
@@ -417,23 +422,23 @@
 
 .materialIcon {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
   place-items: center;
-  border-radius: 11px;
-  background: rgba(218, 183, 118, 0.18);
+  border-radius: 8px;
+  background: rgba(218, 183, 118, 0.2);
 }
 
 .materialIcon span {
   position: relative;
   display: block;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.5), transparent 45%),
     #dfb56e;
-  box-shadow: inset -3px -3px 0 rgba(133, 87, 33, 0.12);
+  box-shadow: inset -2px -2px 0 rgba(133, 87, 33, 0.12);
 }
 
 .materialIcon span::before,
@@ -444,72 +449,76 @@
 }
 
 .materialIcon span::before {
-  inset: 4px 3px auto;
+  inset: 3px 2px auto;
   height: 1px;
-  box-shadow: 0 5px 0 rgba(137, 91, 37, 0.2), 0 10px 0 rgba(137, 91, 37, 0.18);
+  box-shadow: 0 4px 0 rgba(137, 91, 37, 0.2), 0 8px 0 rgba(137, 91, 37, 0.18);
 }
 
 .materialIcon span::after {
   top: 2px;
-  right: 4px;
+  right: 3px;
   width: 1px;
-  height: 16px;
+  height: 11px;
   transform: rotate(24deg);
 }
 
+/* Строки выровнены по тексту заголовка группы: 26px иконки + 10px отступа. */
 .priceRows {
-  padding: 0 13px 4px;
+  padding: 0 0 4px 36px;
 }
 
 .priceRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid rgba(28, 46, 34, 0.09);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.priceRow + .priceRow {
+  border-top: 1px solid rgba(28, 46, 34, 0.07);
 }
 
 .priceRow span {
   color: #62685f;
   font-size: 13.5px;
-  line-height: 1.4;
 }
 
 .priceRow strong {
   color: #111a13;
-  font-size: 15px;
+  font-size: 14.5px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .priceFooter {
-  margin-top: 10px;
-  padding: 12px 14px 14px;
+  margin-top: 8px;
+  padding: 10px 12px 12px;
   border: 1px solid rgba(25, 74, 45, 0.1);
-  border-radius: 16px;
+  border-radius: 14px;
   background: linear-gradient(145deg, #f5f4ea, #f0efe3);
 }
 
 .priceFooter p {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  gap: 9px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
   align-items: start;
-  margin: 0 0 10px;
+  margin: 0 0 9px;
   color: #6a7068;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .priceFooter p > span {
   display: grid;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   place-items: center;
   border: 1px solid #4d8b60;
   border-radius: 50%;
   color: #2c7044;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
 }
 
@@ -518,12 +527,12 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  min-height: 48px;
-  padding: 11px 17px;
-  border-radius: 12px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 11px;
   color: #fff;
   background: #163e29;
-  box-shadow: 0 12px 24px rgba(17, 57, 36, 0.18);
+  box-shadow: 0 10px 22px rgba(17, 57, 36, 0.18);
   font-size: 14px;
   font-weight: 800;
   text-decoration: none;
@@ -879,40 +888,16 @@
   }
 
   .pricePanel {
-    padding: 10px;
+    padding: 2px 12px 12px;
     border-radius: 20px;
   }
 
-  .priceCardHeader {
-    grid-template-columns: 32px minmax(0, 1fr) 22px;
-    gap: 10px;
-    padding: 10px 11px;
-  }
-
-  .priceCardHeader strong {
-    font-size: 15px;
-  }
-
-  .materialIcon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .priceRows {
-    padding: 0 11px 4px;
-  }
-
-  .priceRow {
-    gap: 9px;
-    padding: 10px 0;
-  }
-
   .priceRow span {
-    font-size: 12.5px;
+    font-size: 13px;
   }
 
   .priceRow strong {
-    font-size: 13.5px;
+    font-size: 14px;
   }
 
   .lightboxOverlay {

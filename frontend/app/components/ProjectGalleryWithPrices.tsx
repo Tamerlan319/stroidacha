@@ -77,6 +77,17 @@ function PhoneIcon() {
   );
 }
 
+// Строка цены под заголовком материала: «Обычный брус 150х150» под «Обычный
+// брус» → «150×150 мм». Название материала уже есть в заголовке группы.
+function priceItemLabel(itemTitle: string, groupTitle: string) {
+  const rest = itemTitle.startsWith(groupTitle)
+    ? itemTitle.slice(groupTitle.length).trim()
+    : itemTitle;
+  const section = rest.match(/^(\d+)\s*[xXхХ×]\s*(\d+)$/);
+  if (section) return `${section[1]}×${section[2]} мм`;
+  return rest || itemTitle;
+}
+
 export default function ProjectGalleryWithPrices({
   images,
   priceGroups,
@@ -84,11 +95,8 @@ export default function ProjectGalleryWithPrices({
 }: ProjectGalleryWithPricesProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  // Раскрыта одна группа цен за раз (сначала первая): так блок цен всегда
-  // помещается рядом с галереей целиком — без прокрутки внутри и без того,
-  // чтобы раскрытие группы сдвигало страницу вниз.
-  const [openPriceGroup, setOpenPriceGroup] = useState<string | null>(
-    () => priceGroups[0]?.title ?? null,
+  const [openPriceGroups, setOpenPriceGroups] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(priceGroups.map((group) => [group.title, true])),
   );
 
   const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -151,7 +159,10 @@ export default function ProjectGalleryWithPrices({
   }
 
   function togglePriceGroup(title: string) {
-    setOpenPriceGroup((current) => (current === title ? null : title));
+    setOpenPriceGroups((current) => ({
+      ...current,
+      [title]: !current[title],
+    }));
   }
 
   // Пропорции уже загруженных снимков — по ним решаем, как вписать кадр.
@@ -306,7 +317,7 @@ export default function ProjectGalleryWithPrices({
             <div className={styles.pricePanel}>
               <div className={styles.priceList}>
                 {priceGroups.map((group, groupIndex) => {
-                  const isOpen = openPriceGroup === group.title;
+                  const isOpen = openPriceGroups[group.title] ?? true;
                   const contentId = `project-price-group-${groupIndex}`;
 
                   return (
@@ -329,7 +340,7 @@ export default function ProjectGalleryWithPrices({
                         <div className={styles.priceRows} id={contentId}>
                           {group.items.map((item) => (
                             <div className={styles.priceRow} key={item.id}>
-                              <span>{item.title}</span>
+                              <span>{priceItemLabel(item.title, group.title)}</span>
                               <strong>{item.price}</strong>
                             </div>
                           ))}
@@ -344,7 +355,7 @@ export default function ProjectGalleryWithPrices({
                 <p>
                   <span aria-hidden="true">i</span>
                   Стоимость указана за комплект материалов. Итог зависит от
-                  комплектации, фундамента, кровли и доставки.
+                  комплектации, фундамента и кровли.
                 </p>
                 <LeadFormButton
                   className={styles.calculateButton}
