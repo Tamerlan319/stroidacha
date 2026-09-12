@@ -317,7 +317,64 @@
 
 .priceList {
   display: grid;
+  /* max-content: в списке фиксированной высоты группы не сжимаются (у них
+     overflow: hidden — иначе строки цен обрезались), а список прокручивается. */
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: 12px;
+}
+
+/* Компьютер, две колонки: блок цен ровно по высоте галереи. Раскрытие групп
+   не сдвигает страницу вниз — лишнее прокручивается внутри списка, кнопка
+   расчёта всегда внизу блока. contain: size — чтобы высоту строки задавала
+   галерея, а не длина списка цен. */
+@media (min-width: 981px) {
+  .layout:not(.singleColumn) {
+    grid-auto-rows: minmax(640px, auto);
+  }
+
+  .layout:not(.singleColumn) .priceColumn {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    contain: size;
+  }
+
+  .layout:not(.singleColumn) .pricePanel {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .layout:not(.singleColumn) .priceList {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-right: -6px;
+    padding-right: 6px;
+  }
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .priceList {
+    scrollbar-color: rgba(29, 33, 27, 0.22) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+.priceList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.priceList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(29, 33, 27, 0.2);
+}
+
+.priceList::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .priceCard {
