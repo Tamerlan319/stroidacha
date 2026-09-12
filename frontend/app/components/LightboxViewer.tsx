@@ -403,11 +403,12 @@ export default function LightboxViewer({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [applyZoom, close, panBy, resetZoom, showNext, showPrevious]);
 
-  // Колесо: у увеличенной картинки — прокрутка (двумя пальцами по тачпаду
-  // тоже), Ctrl/⌘ + колесо и щипок на тачпаде — масштаб. Раньше колесо
-  // всегда меняло масштаб, и увеличенную картинку нельзя было «прокрутить».
+  // Колесо мыши (и щипок на тачпаде — для браузера это Ctrl + колесо) меняет
+  // масштаб вокруг курсора; увеличенную картинку двигают, зажав кнопку мыши
+  // (handlePointerMove), а горизонтальная прокрутка тачпадом сдвигает её вбок.
   // Слушатель нативный и не пассивный: React вешает onWheel пассивным, а без
-  // preventDefault Ctrl+колесо масштабирует всю страницу браузера.
+  // preventDefault колесо прокручивало бы страницу под окном, а Ctrl+колесо
+  // масштабировало бы весь браузер.
   useEffect(() => {
     const overlay = overlayRef.current;
     if (!overlay) return;
@@ -421,16 +422,18 @@ export default function LightboxViewer({
           : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
             ? window.innerHeight
             : 1;
+      const deltaX = event.deltaX * unit;
+      const deltaY = event.deltaY * unit;
 
-      if (event.ctrlKey || event.metaKey) {
-        applyZoom(
-          scaleRef.current * Math.exp(-event.deltaY * unit * WHEEL_ZOOM_SPEED),
-          { x: event.clientX, y: event.clientY },
-        );
+      if (!event.ctrlKey && !event.metaKey && Math.abs(deltaX) > Math.abs(deltaY)) {
+        panBy(-deltaX, 0);
         return;
       }
 
-      panBy(-event.deltaX * unit, -event.deltaY * unit);
+      applyZoom(scaleRef.current * Math.exp(-deltaY * WHEEL_ZOOM_SPEED), {
+        x: event.clientX,
+        y: event.clientY,
+      });
     }
 
     overlay.addEventListener("wheel", handleWheel, { passive: false });
