@@ -1,7 +1,10 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import Script from "next/script";
+import { useEffect, useRef } from "react";
 
+import { trackPageview } from "../lib/metrika";
 import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 
 // Метрика грузится у всех посетителей сразу: cookie-баннера и согласия на
@@ -13,6 +16,25 @@ import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 // исправлялось — см. историю этого файла и lib/metrika.ts).
 export default function YandexMetrika() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const pathname = usePathname();
+  const lastUrlRef = useRef<string | null>(null);
+
+  // Переходы внутри сайта — отдельные просмотры в Метрике (см. trackPageview).
+  // Фильтры каталога меняют только ?query, а не путь, и просмотрами не
+  // считаются — иначе каждый клик по фильтру выглядел бы новой страницей.
+  useEffect(() => {
+    const url = window.location.href;
+    const previousUrl = lastUrlRef.current;
+    lastUrlRef.current = url;
+
+    // Первый просмотр отправляет сам счётчик при init.
+    if (previousUrl === null || previousUrl === url) return;
+
+    // Заголовок новой страницы Next проставляет чуть позже смены адреса.
+    window.setTimeout(() => {
+      trackPageview(url, previousUrl, document.title);
+    }, 0);
+  }, [pathname]);
 
   const isLocalSite =
     siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1");
