@@ -328,7 +328,7 @@ export default function ProjectGalleryWithPrices({
             <header className={styles.heading}>
               {startingPrice ? (
                 <>
-                  <p>Примерно, с фундаментом и кровлей</p>
+                  <p>С фундаментом и кровлей</p>
                   <h2>от {startingPrice.total}</h2>
                   {/* ₽ — только в конце: так расшифровка помещается в одну
                       строку и на узком экране компьютера. */}
