@@ -8,6 +8,7 @@ import SiteFooter from "./components/SiteFooter";
 import SiteHeader from "./components/SiteHeader";
 import { SocialLinkData, SocialLinksProvider } from "./components/SocialLinksProvider";
 import UtmCapture from "./components/UtmCapture";
+import MobileContactBar from "./components/MobileContactBar";
 import YandexMetrika from "./components/YandexMetrika";
 import {
   SITE_DESCRIPTION,
@@ -259,6 +260,7 @@ export default async function RootLayout({
           {children}
 
           <SiteFooter />
+          <MobileContactBar />
           <YandexMetrika />
         </SocialLinksProvider>
       </body>

@@ -895,10 +895,10 @@ export default function ProjectCatalog({
             (visibleProjects.length > 0 ||
               (showCustomProjectCard && currentPage === 1)) && (
             <div className="projectGrid">
-              {showCustomProjectCard && currentPage === 1 && (
-                <CustomProjectCard />
-              )}
-              {visibleProjects.map((project) => (
+              {showCustomProjectCard &&
+                currentPage === 1 &&
+                visibleProjects.length === 0 && <CustomProjectCard />}
+              {visibleProjects.flatMap((project, index) => [
                 <article
                   className={`projectCard ${peekStyles.peekable}`}
                   key={project.id}
@@ -945,8 +945,16 @@ export default function ProjectCatalog({
                       </Link>
                     </div>
                   </div>
-                </article>
-              ))}
+                </article>,
+                // «Свой проект» — после первых трёх проектов: первой в ленте
+                // стояла карточка без фото, и настоящие дома и бани на
+                // телефоне начинались только со второго экрана.
+                ...(showCustomProjectCard &&
+                currentPage === 1 &&
+                index === Math.min(3, visibleProjects.length) - 1
+                  ? [<CustomProjectCard key="custom-project" />]
+                  : []),
+              ])}
             </div>
           )}
 

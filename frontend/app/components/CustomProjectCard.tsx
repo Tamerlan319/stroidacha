@@ -6,7 +6,8 @@ import LeadFormModal from "./LeadFormModal";
 import SiteIcon from "./SiteIcon";
 import styles from "./CustomProjectCard.module.css";
 
-// Первая карточка любого каталога проектов — предложение прислать свой
+// Карточка в каталоге проектов (после первых трёх, см. ProjectCatalog) —
+// предложение прислать свой
 // эскиз/фото и получить расчёт индивидуального проекта. Переиспользует
 // глобальные классы .projectCard/.projectImage/.projectBody/.projectFooter,
 // поэтому автоматически выглядит как остальные карточки каталога (в том

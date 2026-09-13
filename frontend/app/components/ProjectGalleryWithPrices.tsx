@@ -354,17 +354,17 @@ export default function ProjectGalleryWithPrices({
               <div className={styles.priceFooter}>
                 <p>
                   <span aria-hidden="true">i</span>
-                  Стоимость указана за комплект материалов. Итог зависит от
-                  комплектации, фундамента и кровли.
+                  Цена — за комплект материалов. Стоимость под ключ с
+                  фундаментом, кровлей и сборкой рассчитаем бесплатно.
                 </p>
                 <LeadFormButton
                   className={styles.calculateButton}
                   source="project_order"
                   projectSlug={projectSlug}
-                  title="Получить точный расчёт"
+                  title="Узнать цену под ключ"
                 >
                   <PhoneIcon />
-                  Получить точный расчёт
+                  Узнать цену под ключ
                 </LeadFormButton>
               </div>
             </div>

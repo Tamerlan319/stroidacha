@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import Breadcrumbs, { BreadcrumbItem } from "../components/Breadcrumbs";
+import LandingHeroFacts from "../components/LandingHeroFacts";
 import LeadForm from "../components/LeadForm";
 import LeadFormButton from "../components/LeadFormButton";
 import ProjectCatalog from "../components/ProjectCatalog";
@@ -66,6 +67,10 @@ type SiblingPage = {
   slug: string;
   page_type: string;
   h1: string;
+};
+
+type CatalogPrice = {
+  price_from: string | number | null;
 };
 
 type PageProps = {
@@ -138,6 +143,34 @@ async function getSiblingPages(
     return pages.filter((page) => page.slug !== currentSlug).slice(0, 12);
   } catch {
     return [];
+  }
+}
+
+// Самая низкая цена в каталоге раздела — для строки фактов в первом экране
+// (LandingHeroFacts). Не загрузилась — страница просто без цены.
+async function getCategoryMinPrice(categorySlug: string): Promise<number | null> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  try {
+    const response = await fetch(
+      `${apiUrl}/projects/?category=${encodeURIComponent(categorySlug)}`,
+      { cache: "no-store" },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data: CatalogPrice[] | { results: CatalogPrice[] } =
+      await response.json();
+    const projects = Array.isArray(data) ? data : data.results;
+    const prices = projects
+      .map((project) => Number(project.price_from))
+      .filter((price) => Number.isFinite(price) && price > 0);
+
+    return prices.length > 0 ? Math.min(...prices) : null;
+  } catch {
+    return null;
   }
 }
 
@@ -273,16 +306,23 @@ export default async function LandingPageRoute({ params }: PageProps) {
   const catalogCategory = landingCategoryBySlug[slug] || page.category;
   const jsonLd = buildLandingPageJsonLd(page);
 
-  const siblingPages = catalogCategory
-    ? await getSiblingPages(catalogCategory.slug, page.slug)
-    : [];
-
   // Размерные страницы (например, "Дома из бруса 6х6") задают точный
   // footprint через filter_width/filter_length в админке. Если поля не
   // заполнены, каталог показывает всю категорию — это ожидаемо для
   // страниц-хабов вроде "Дома из бруса".
   const filterWidth = page.filter_width ? Number(page.filter_width) : undefined;
   const filterLength = page.filter_length ? Number(page.filter_length) : undefined;
+
+  // Цена «от» — только для всего раздела: на странице одного размера самая
+  // дешёвая баня раздела ввела бы в заблуждение.
+  const [siblingPages, minPrice] = await Promise.all([
+    catalogCategory
+      ? getSiblingPages(catalogCategory.slug, page.slug)
+      : Promise.resolve<SiblingPage[]>([]),
+    catalogCategory && !filterWidth && !filterLength
+      ? getCategoryMinPrice(catalogCategory.slug)
+      : Promise.resolve(null),
+  ]);
 
   return (
     <main>
@@ -297,6 +337,8 @@ export default async function LandingPageRoute({ params }: PageProps) {
             <h1>{page.h1}</h1>
 
             {page.intro_text && <p className="heroText">{page.intro_text}</p>}
+
+            {catalogCategory && <LandingHeroFacts minPrice={minPrice} />}
 
             <div className="heroActions">
               {catalogCategory && (
