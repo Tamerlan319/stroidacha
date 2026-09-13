@@ -40,11 +40,11 @@ export default async function ReviewsPage() {
           <h1>Отзывы о построенных домах и банях</h1>
           <p>
             Собрали впечатления владельцев после проектирования, строительства
-            и переезда. Все тексты доступны для редактирования в Django Admin.
+            и переезда.
           </p>
           <div className="reviewsHeroFacts">
             <span><strong>{reviews.length}</strong> опубликованных отзывов</span>
-            <span><strong>С 1999 года</strong> строим из бруса</span>
+            <span><strong>С 2009 года</strong> строим из бруса</span>
           </div>
         </div>
       </section>

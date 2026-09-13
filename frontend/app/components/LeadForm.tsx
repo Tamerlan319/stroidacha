@@ -269,6 +269,13 @@ export default function LeadForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const captchaContainerRef = useRef<HTMLDivElement>(null);
   const captchaWidgetIdRef = useRef<number | null>(null);
+  // С какого момента форма на странице — по времени до отправки сервер
+  // отличает человека от скрипта (backend/leads/fraud.py).
+  const formShownAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    formShownAtRef.current = performance.now();
+  }, []);
 
   useEffect(() => {
     if (
@@ -515,6 +522,12 @@ export default function LeadForm({
       body.append("utm_content", getUtmValue("utm_content"));
       body.append("utm_term", getUtmValue("utm_term"));
       body.append("smartcaptcha_token", captchaToken);
+      if (formShownAtRef.current !== null) {
+        body.append(
+          "form_elapsed_ms",
+          String(Math.round(performance.now() - formShownAtRef.current))
+        );
+      }
 
       attachments.forEach((file) => body.append("attachments", file));
 
@@ -534,13 +547,23 @@ export default function LeadForm({
         throw new Error(apiErrors.general);
       }
 
+      const result = (await response.json().catch(() => null)) as {
+        count_goal?: unknown;
+      } | null;
+
       setForm(EMPTY_FORM);
       setAttachments([]);
       setTouched({});
       setErrors({});
       setStatus("success");
       setIsSuccessDialogOpen(true);
-      reachGoal("lead_submit", { source });
+      // Заявку с признаками накрутки сервер сохранил и переслал менеджерам,
+      // но цель в Метрику по ней не шлём — чтобы Директ не учился на ботах.
+      // Непонятный ответ — считаем заявку обычной.
+      if (result?.count_goal !== false) {
+        reachGoal("lead_submit", { source });
+      }
+      formShownAtRef.current = performance.now();
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }

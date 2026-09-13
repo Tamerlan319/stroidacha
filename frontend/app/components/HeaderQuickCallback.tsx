@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { legalConfig } from "../lib/legalConfig";
 import styles from "./HeaderQuickCallback.module.css";
@@ -72,6 +72,13 @@ export default function HeaderQuickCallback({
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const phoneInputRef = useRef<HTMLInputElement>(null);
+  // С какого момента форма на странице — по времени до отправки сервер
+  // отличает человека от скрипта (backend/leads/fraud.py).
+  const formShownAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    formShownAtRef.current = performance.now();
+  }, []);
 
   function validatePhone(value: string) {
     const digits = getPhoneDigits(value);
@@ -114,6 +121,12 @@ export default function HeaderQuickCallback({
       body.append("source", source);
       body.append("consent_accepted", "true");
       body.append("consent_version", legalConfig.consentVersion);
+      if (formShownAtRef.current !== null) {
+        body.append(
+          "form_elapsed_ms",
+          String(Math.round(performance.now() - formShownAtRef.current))
+        );
+      }
 
       const response = await fetch(`${apiUrl}/leads/`, {
         method: "POST",
@@ -127,6 +140,7 @@ export default function HeaderQuickCallback({
       setPhone("");
       setStatus("success");
       setIsSuccessDialogOpen(true);
+      formShownAtRef.current = performance.now();
     } catch (submitError) {
       setStatus("error");
       // TypeError — сбой самого fetch (нет сети): браузерный текст

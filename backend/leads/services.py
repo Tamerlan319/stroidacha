@@ -14,10 +14,19 @@ def notify_managers_about_lead(lead):
     attachments = list(lead.attachments.all())
 
     subject = f"Новая заявка: {lead.get_source_display()}"
+    if lead.is_suspicious:
+        subject += " — проверьте"
+
+    suspicion_note = (
+        f"\nПроверьте заявку: {lead.suspicion_reasons}.\n"
+        "Цель «Заявка отправлена» в Метрику по ней не отправлялась.\n\n"
+        if lead.is_suspicious
+        else ""
+    )
 
     message = f"""
 Новая заявка с сайта
-Источник: {lead.get_source_display()}
+{suspicion_note}Источник: {lead.get_source_display()}
 Телефон: {lead.phone}
 Проект: {project_title}
 Прикреплено файлов: {len(attachments)}

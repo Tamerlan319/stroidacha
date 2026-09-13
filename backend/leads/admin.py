@@ -90,12 +90,14 @@ class LeadAdmin(admin.ModelAdmin):
         "project",
         "attachment_count",
         "consent_version",
+        "is_suspicious",
         "is_processed",
         "created_at",
         "anonymized_at",
     )
     list_filter = (
         "source",
+        "is_suspicious",
         "is_processed",
         "created_at",
         "utm_source",
@@ -124,6 +126,8 @@ class LeadAdmin(admin.ModelAdmin):
         "consent_version",
         "consent_given_at",
         "anonymized_at",
+        "is_suspicious",
+        "suspicion_reasons",
     )
     inlines = (LeadAttachmentInline,)
 
@@ -136,6 +140,15 @@ class LeadAdmin(admin.ModelAdmin):
                     "project",
                     "phone",
                     "message",
+                )
+            },
+        ),
+        (
+            "Проверка на накрутку",
+            {
+                "fields": (
+                    "is_suspicious",
+                    "suspicion_reasons",
                 )
             },
         ),

@@ -9,6 +9,7 @@ from rest_framework import serializers
 from catalog.models import Project
 
 from .captcha import verify_smartcaptcha
+from .fraud import assess_lead
 from .models import Lead, LeadAttachment
 
 
@@ -78,6 +79,30 @@ class LeadMetadataField(serializers.CharField):
         return super().to_internal_value(data)[: self.limit]
 
 
+class FormElapsedField(serializers.Field):
+    """Сколько миллисекунд форма была на странице до отправки (leads/fraud.py).
+
+    По той же причине, что и LeadMetadataField, кривое значение заявку не
+    отклоняет — считается, что времени просто нет.
+    """
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("required", False)
+        kwargs.setdefault("allow_null", True)
+        kwargs.setdefault("write_only", True)
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        try:
+            value = int(float(data))
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return value if value >= 0 else None
+
+    def to_representation(self, value):
+        return value
+
+
 class LeadCreateSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(trim_whitespace=True, max_length=50)
     page_url = LeadMetadataField("page_url")
@@ -129,6 +154,10 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         required=False,
         allow_empty=True,
     )
+    form_elapsed_ms = FormElapsedField()
+    # Отправлять ли по заявке цель в Метрику: false у заявок с признаками
+    # накрутки. Какими именно — наружу не отдаём, это видно только в админке.
+    count_goal = serializers.SerializerMethodField()
 
     class Meta:
         model = Lead
@@ -148,7 +177,12 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "consent_accepted",
             "consent_version",
             "attachments",
+            "form_elapsed_ms",
+            "count_goal",
         )
+
+    def get_count_goal(self, lead):
+        return not lead.is_suspicious
 
     def validate_phone(self, value):
         return normalize_russian_phone(value)
@@ -232,6 +266,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         project_slug = validated_data.pop("project_slug", "")
         attachments = validated_data.pop("attachments", [])
+        form_elapsed_ms = validated_data.pop("form_elapsed_ms", None)
         validated_data.pop("consent_accepted", None)
         consent_version = (
             validated_data.pop("consent_version", "")
@@ -255,9 +290,18 @@ class LeadCreateSerializer(serializers.ModelSerializer):
                 "",
             )
 
+        suspicion_reasons = assess_lead(
+            phone=validated_data.get("phone", ""),
+            ip_address=validated_data.get("ip_address"),
+            user_agent=validated_data.get("user_agent", ""),
+            form_elapsed_ms=form_elapsed_ms,
+        )
+
         lead = Lead.objects.create(
             consent_version=consent_version,
             consent_given_at=timezone.now(),
+            is_suspicious=bool(suspicion_reasons),
+            suspicion_reasons=suspicion_reasons,
             **validated_data,
         )
 

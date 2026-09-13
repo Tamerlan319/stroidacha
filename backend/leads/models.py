@@ -72,6 +72,15 @@ class Lead(models.Model):
         blank=True,
     )
 
+    # Признаки накрутки (см. leads/fraud.py). Заявка всё равно доходит до
+    # менеджеров, но цель в Метрику по ней не отправляется.
+    is_suspicious = models.BooleanField("Подозрительная", default=False)
+    suspicion_reasons = models.CharField(
+        "Почему подозрительная",
+        max_length=255,
+        blank=True,
+    )
+
     is_processed = models.BooleanField("Обработана", default=False)
     manager_comment = models.TextField("Комментарий менеджера", blank=True)
 
