@@ -910,7 +910,14 @@ export default function ProjectCatalog({
                     badge={project.category.title}
                     mainImage={project.main_image}
                     planImages={project.plan_images}
-                    sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                    // Ширина карточки ограничена контейнером (1160px): «33vw»
+                    // на широком экране вдвое завышало её, и браузер брал фото
+                    // 1920px вместо ~1080.
+                    sizes={
+                      showFilters
+                        ? "(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 300px"
+                        : "(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 380px"
+                    }
                   />
 
                   <div className="projectBody">

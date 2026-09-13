@@ -9,6 +9,7 @@ import LeadForm from "./components/LeadForm";
 import LeadFormButton from "./components/LeadFormButton";
 import ProjectCatalog from "./components/ProjectCatalog";
 import SiteIcon from "./components/SiteIcon";
+import DeliveryMap from "./components/DeliveryMap";
 import { CATALOG_LINKS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
 
 const HOME_TITLE = "Дома и бани из бруса под ключ — Брусодел";
@@ -238,7 +239,7 @@ export default async function HomePage() {
           {productionSteps.map((step) => (
             <article className="productionStepCard" key={step.number}>
               <div className="productionStepImage">
-                <Image src={step.image} alt={step.alt} fill sizes="(max-width: 680px) 100vw, 33vw" />
+                <Image src={step.image} alt={step.alt} fill sizes="(max-width: 680px) 100vw, 380px" />
               </div>
               <div><h3>{step.number}. {step.title}</h3><p>{step.text}</p></div>
             </article>
@@ -312,14 +313,11 @@ export default async function HomePage() {
       </section>
 
       <section className="container homeSection homeDelivery">
-        <div className="homeDeliveryMap deliveryMapReal">
-          <iframe
-            src="https://yandex.ru/map-widget/v1/?um=constructor%3Af2357c7eef2c0a4200a5244d74da6f5e737586274d8529dba014874e07929877&source=constructor"
-            title="Карта доставки Брусодел"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </div>
+        <DeliveryMap
+          className="homeDeliveryMap deliveryMapReal"
+          src="https://yandex.ru/map-widget/v1/?um=constructor%3Af2357c7eef2c0a4200a5244d74da6f5e737586274d8529dba014874e07929877&source=constructor"
+          title="Карта доставки Брусодел"
+        />
         <div className="homeDeliveryCopy">
           <p className="homeLabel">Логистика</p>
           <h2>Бесплатная доставка материала по согласованным направлениям</h2>

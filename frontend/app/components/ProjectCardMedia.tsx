@@ -95,8 +95,19 @@ export default function ProjectCardMedia({
     if (plansRequested || slideCount < 2) return;
 
     const link = linkRef.current;
+    // На медленной сети или с экономией трафика планировки заранее не тянем:
+    // загрузятся по первому касанию карточки.
+    const connection = (
+      navigator as Navigator & {
+        connection?: { saveData?: boolean; effectiveType?: string };
+      }
+    ).connection;
+    const slowNetwork =
+      connection?.saveData ||
+      ["slow-2g", "2g", "3g"].includes(connection?.effectiveType ?? "");
     if (
       !link ||
+      slowNetwork ||
       !("IntersectionObserver" in window) ||
       !window.matchMedia(TOUCH_MEDIA_QUERY).matches
     ) {

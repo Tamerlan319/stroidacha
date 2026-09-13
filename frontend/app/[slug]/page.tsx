@@ -403,6 +403,8 @@ export default async function LandingPageRoute({ params }: PageProps) {
                   <img
                     alt={item.alt_text || item.caption || page.h1}
                     src={item.image || ""}
+                    loading="lazy"
+                    decoding="async"
                   />
                   {item.caption && <span>{item.caption}</span>}
                 </a>

@@ -226,7 +226,7 @@ export default function ProjectGalleryWithPrices({
                     src={activeImage.src}
                     alt={activeImage.alt}
                     fill
-                    sizes="(max-width: 980px) 100vw, 60vw"
+                    sizes="(max-width: 980px) 100vw, 720px"
                     style={{ objectFit: showWholeImage ? "contain" : "cover" }}
                     priority
                     onLoad={(event) => {

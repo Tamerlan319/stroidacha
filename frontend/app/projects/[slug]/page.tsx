@@ -12,6 +12,7 @@ import ImageLightbox from "../../components/ImageLightbox";
 import ProjectGalleryWithPrices from "../../components/ProjectGalleryWithPrices";
 import SiteIcon from "../../components/SiteIcon";
 import { SITE_NAME, SITE_URL } from "../../lib/site";
+import { heroBackgroundStyle, optimizedImageUrl } from "../../lib/imageUrl";
 import detailsStyles from "./ProjectDetails.module.css";
 
 type ProjectCategory = {
@@ -429,11 +430,7 @@ export default async function ProjectPage({ params }: PageProps) {
       <JsonLd data={jsonLd} />
       <section
         className="projectHero projectHeroCover"
-        style={
-          project.main_image
-            ? { backgroundImage: `linear-gradient(90deg, rgba(16, 24, 18, 0.88), rgba(16, 24, 18, 0.48)), url(${project.main_image})` }
-            : undefined
-        }
+        style={heroBackgroundStyle(project.main_image)}
       >
         <div className="container projectHeroGrid">
           <div className="projectHeroContent">
@@ -559,7 +556,12 @@ export default async function ProjectPage({ params }: PageProps) {
                         <div className="projectOptionImage">
                           {item.image ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={item.image} alt={item.title} />
+                            <img
+                              src={optimizedImageUrl(item.image, 640)}
+                              alt={item.title}
+                              loading="lazy"
+                              decoding="async"
+                            />
                           ) : (
                             <SiteIcon name={groupTitle.includes("Фундамент") ? "foundation" : "house"} />
                           )}
@@ -596,7 +598,7 @@ export default async function ProjectPage({ params }: PageProps) {
                       src={similar.main_image}
                       alt={similar.title}
                       fill
-                      sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                      sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 380px"
                       style={{ objectFit: "cover" }}
                     />
                   ) : (

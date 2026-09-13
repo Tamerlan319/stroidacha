@@ -19,6 +19,23 @@
   --sd-radius-lg: 28px;
 }
 
+/* Баннеры из public/images/banners — через оптимизатор next/image
+   (/_next/image): браузер получает WebP нужной ширины вместо исходных JPG на
+   660 и 590 КБ, которые раньше грузились целиком на любой странице с первым
+   экраном (на 3G — больше минуты). w — из стандартных deviceSizes Next,
+   q=75 — единственное разрешённое по умолчанию качество в Next 16. */
+:root {
+  --banner-hero: url("/_next/image?url=%2Fimages%2Fbanners%2Fhome-hero.jpg&w=1920&q=75");
+  --banner-second: url("/_next/image?url=%2Fimages%2Fbanners%2Fhome-hero1.jpg&w=1080&q=75");
+}
+
+@media (max-width: 700px) {
+  :root {
+    --banner-hero: url("/_next/image?url=%2Fimages%2Fbanners%2Fhome-hero.jpg&w=1080&q=75");
+    --banner-second: url("/_next/image?url=%2Fimages%2Fbanners%2Fhome-hero1.jpg&w=828&q=75");
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -533,7 +550,7 @@ h1 {
 .homeHero {
   background-image:
     linear-gradient(90deg, rgba(16, 24, 18, 0.92), rgba(16, 24, 18, 0.45)),
-    url("/images/banners/home-hero.jpg");
+    var(--banner-hero);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -1288,7 +1305,7 @@ h1 {
   color: #ffffff;
   background-image:
     linear-gradient(90deg, rgba(16, 24, 18, 0.9), rgba(16, 24, 18, 0.45)),
-    url("/images/banners/home-hero.jpg");
+    var(--banner-hero);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -1786,7 +1803,7 @@ h1 {
   position: relative;
   background-image:
     linear-gradient(90deg, rgba(247, 248, 241, 0.98) 0%, rgba(247, 248, 241, 0.88) 32%, rgba(247, 248, 241, 0.3) 54%, rgba(27, 44, 31, 0.08) 100%),
-    url("/images/banners/home-hero.jpg");
+    var(--banner-hero);
   background-position: center 53%;
   background-size: cover;
 }
@@ -2201,13 +2218,13 @@ h1 {
 .packageShrink {
   background-image:
     linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.91) 49%, rgba(255,255,255,0.08) 75%),
-    url("/images/banners/home-hero.jpg");
+    var(--banner-hero);
 }
 
 .packageTurnkey {
   background-image:
     linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.91) 49%, rgba(255,255,255,0.08) 75%),
-    url("/images/banners/home-hero1.jpg");
+    var(--banner-second);
 }
 
 .packageCard > div {
@@ -2421,7 +2438,7 @@ h1 {
   .homeEditorial .homeHero {
     background-image:
       linear-gradient(180deg, rgba(248,248,243,0.98) 0%, rgba(248,248,243,0.86) 52%, rgba(248,248,243,0.04) 78%),
-      url("/images/banners/home-hero.jpg");
+      var(--banner-hero);
     background-position: 64% center;
   }
 
@@ -3466,7 +3483,7 @@ main {
   color: #fff7e8;
   background:
     linear-gradient(90deg, rgba(16, 24, 18, 0.92), rgba(16, 24, 18, 0.52)),
-    url("/images/banners/home-hero.jpg");
+    var(--banner-hero);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -3661,7 +3678,7 @@ main {
   color: #fff7e8;
   background:
     linear-gradient(90deg, rgba(16, 24, 18, 0.94), rgba(16, 24, 18, 0.58)),
-    url("/images/banners/home-hero.jpg");
+    var(--banner-hero);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -4721,7 +4738,7 @@ main {
   position: relative;
   background-image:
     linear-gradient(90deg, rgba(248, 248, 243, 0.97) 0%, rgba(248, 248, 243, 0.9) 34%, rgba(248, 248, 243, 0.18) 64%, rgba(16, 24, 18, 0.15) 100%),
-    url("/images/banners/home-hero.jpg");
+    var(--banner-hero);
   background-position: center;
 }
 
@@ -4827,11 +4844,11 @@ main {
 }
 
 .homeDirectionHouse .directionImage {
-  background-image: url("/images/banners/home-hero.jpg");
+  background-image: var(--banner-hero);
 }
 
 .homeDirectionBath .directionImage {
-  background-image: url("/images/banners/home-hero1.jpg");
+  background-image: var(--banner-second);
 }
 
 .homeDirectionCard > div {
@@ -5292,7 +5309,7 @@ main {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(28, 31, 21, 0.72), rgba(28, 31, 21, 0.48)),
-    url("/images/banners/home-hero1.jpg") center / cover;
+    var(--banner-second) center / cover;
   padding: 28px;
 }
 
@@ -5319,7 +5336,7 @@ main {
   .homePage .homeHero {
     background-image:
       linear-gradient(90deg, rgba(248, 248, 243, 0.96), rgba(248, 248, 243, 0.64)),
-      url("/images/banners/home-hero.jpg");
+      var(--banner-hero);
   }
 
   .homePage .heroLeadCard { max-width: 520px; }
@@ -6258,7 +6275,7 @@ main {
     min-height: 560px;
     background-image:
       linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.94) 56%, rgba(255,255,255,0.05) 80%),
-      url("/images/banners/home-hero1.jpg");
+      var(--banner-second);
     background-position: 60% bottom;
   }
 
@@ -6766,6 +6783,11 @@ main {
   display: flex;
   min-height: 500px;
   align-items: center;
+  /* Фото проекта — через оптимизатор картинок: переменные задаёт
+     heroBackgroundStyle (app/lib/imageUrl.ts), а не исходный файл из /media. */
+  background-image:
+    linear-gradient(90deg, rgba(16, 24, 18, 0.88), rgba(16, 24, 18, 0.48)),
+    var(--hero-image, none);
   background-position: center 45%;
   background-repeat: no-repeat;
   background-size: cover;
@@ -6896,7 +6918,7 @@ main {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(15, 45, 29, 0.98), rgba(22, 65, 42, 0.9)),
-    url("/images/banners/home-hero.jpg") center 58% / cover no-repeat;
+    var(--banner-hero) center 58% / cover no-repeat;
   color: #fff;
   padding: 92px 0 86px;
 }
@@ -7107,6 +7129,9 @@ main {
 @media (max-width: 680px) {
   .projectHeroCover {
     min-height: 560px;
+    background-image:
+      linear-gradient(90deg, rgba(16, 24, 18, 0.88), rgba(16, 24, 18, 0.48)),
+      var(--hero-image-mobile, var(--hero-image, none));
     background-position: 58% center;
   }
 

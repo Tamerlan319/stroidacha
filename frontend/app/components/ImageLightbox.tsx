@@ -1,5 +1,6 @@
 "use client";
 
+import { optimizedImageUrl } from "../lib/imageUrl";
 import { useState } from "react";
 
 import LightboxViewer, { type LightboxImage } from "./LightboxViewer";
@@ -42,8 +43,16 @@ export default function ImageLightbox({
               type="button"
               onClick={() => setActiveIndex(index)}
             >
+              {/* Превью — через оптимизатор и по мере прокрутки: иначе React
+                  сразу предзагружал все исходники планировок (по 100–300 КБ).
+                  Во весь экран (LightboxViewer) открывается полный файл. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.src} alt={image.alt} />
+              <img
+                src={optimizedImageUrl(image.src, 1080)}
+                alt={image.alt}
+                loading="lazy"
+                decoding="async"
+              />
               {image.caption && <span>{image.caption}</span>}
 
               {isLastPreview && (
