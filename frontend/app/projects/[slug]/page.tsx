@@ -420,8 +420,42 @@ export default async function ProjectPage({ params }: PageProps) {
     })),
   }));
 
+  // Примерная цена «всё вместе» в блоке цен: самый доступный комплект
+  // материалов + фундамент + чистовая кровля этого проекта — те же цены, что
+  // в таблице и в блоке «Фундамент и чистовая кровля» ниже. Строки собираем
+  // здесь, на сервере, чтобы разделители разрядов совпали при гидратации.
+  const lowestPrice = (prices: (string | number | null)[]) => {
+    const values = prices
+      .map(normalizePrice)
+      .filter((price): price is number => price !== null && price > 0);
+    return values.length > 0 ? Math.min(...values) : null;
+  };
+  const illustratedOptions = project.illustrated_options || [];
+  const materialsFrom = lowestPrice(
+    (project.price_options || []).map((item) => item.price),
+  );
+  const foundationFrom = lowestPrice(
+    illustratedOptions
+      .filter((option) => /фундамент/i.test(option.group_title))
+      .map((option) => option.price),
+  );
+  const roofFrom = lowestPrice(
+    illustratedOptions
+      .filter((option) => /кровл/i.test(option.group_title))
+      .map((option) => option.price),
+  );
+  const startingPrice =
+    materialsFrom && foundationFrom && roofFrom
+      ? {
+          total: formatPrice(materialsFrom + foundationFrom + roofFrom),
+          materials: formatPrice(materialsFrom),
+          foundation: formatPrice(foundationFrom),
+          roof: formatPrice(roofFrom),
+        }
+      : null;
+
   const contentSections = project.content_sections || [];
-  const illustratedOptionGroups = groupByTitle(project.illustrated_options || []);
+  const illustratedOptionGroups = groupByTitle(illustratedOptions);
   const promotions = project.promotions || [];
   const workSteps = project.work_steps || [];
   const similarProjects = project.similar_projects || [];
@@ -485,6 +519,7 @@ export default async function ProjectPage({ params }: PageProps) {
           images={projectMedia}
           priceGroups={priceSections}
           projectSlug={project.slug}
+          startingPrice={startingPrice}
         />
       )}
       {planImages.length > 0 && (

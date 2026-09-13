@@ -522,6 +522,30 @@
   font-weight: 800;
 }
 
+/* Расшифровка примерной цены под заголовком колонки цен. Короткая строка:
+   на компьютере колонка цен фиксированной высоты, лишние строки дали бы
+   прокрутку внутри прайса. */
+.headingNote {
+  display: block;
+  margin-top: 7px;
+  color: #6a7068;
+  font-size: 12px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Узкий компьютер (две колонки, но колонка цен ~360px): чуть мельче
+   расшифровка и меньше отступ под заголовком — иначе прайс не помещается. */
+@media (min-width: 981px) and (max-width: 1180px) {
+  .headingNote {
+    font-size: 11.5px;
+  }
+
+  .layout:not(.singleColumn) .priceColumn .heading {
+    margin-bottom: 10px;
+  }
+}
+
 .calculateButton {
   display: flex;
   align-items: center;

@@ -26,11 +26,21 @@ export type ProjectPriceGroup = {
   items: ProjectPriceItem[];
 };
 
+// Примерная цена «всё вместе»: самый доступный комплект материалов, фундамент
+// и кровля проекта. Строки уже отформатированы на сервере (projects/[slug]).
+export type ProjectStartingPrice = {
+  total: string;
+  materials: string;
+  foundation: string;
+  roof: string;
+};
+
 type ProjectGalleryWithPricesProps = {
   images: ProjectMediaItem[];
   priceGroups: ProjectPriceGroup[];
   // Заявка из «Получить точный расчёт» привязывается к этому проекту.
   projectSlug?: string;
+  startingPrice?: ProjectStartingPrice | null;
 };
 
 function ArrowLeftIcon() {
@@ -92,6 +102,7 @@ export default function ProjectGalleryWithPrices({
   images,
   priceGroups,
   projectSlug,
+  startingPrice,
 }: ProjectGalleryWithPricesProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -309,9 +320,30 @@ export default function ProjectGalleryWithPrices({
 
         {hasPrices && (
           <aside className={styles.priceColumn}>
+            {/* Примерная цена «всё вместе» — заголовком колонки цен: на
+                телефоне это сразу под фото, на компьютере — сбоку от галереи.
+                Отдельной плашкой её не ставим: колонка цен на компьютере
+                фиксированной высоты, и лишний блок дал бы прокрутку внутри
+                прайса. */}
             <header className={styles.heading}>
-              <p>Стоимость</p>
-              <h2>Цены по материалам</h2>
+              {startingPrice ? (
+                <>
+                  <p>Примерно, с фундаментом и кровлей</p>
+                  <h2>от {startingPrice.total}</h2>
+                  {/* ₽ — только в конце: так расшифровка помещается в одну
+                      строку и на узком экране компьютера. */}
+                  <span className={styles.headingNote}>
+                    материалы {startingPrice.materials.replace(/\s*₽$/, "")} +
+                    фундамент {startingPrice.foundation.replace(/\s*₽$/, "")} +
+                    кровля {startingPrice.roof}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <p>Стоимость</p>
+                  <h2>Цены по материалам</h2>
+                </>
+              )}
             </header>
 
             <div className={styles.pricePanel}>
@@ -354,8 +386,8 @@ export default function ProjectGalleryWithPrices({
               <div className={styles.priceFooter}>
                 <p>
                   <span aria-hidden="true">i</span>
-                  Цена — за комплект материалов. Стоимость под ключ с
-                  фундаментом, кровлей и сборкой рассчитаем бесплатно.
+                  Цены в таблице — за комплект материалов. Стоимость под
+                  ключ со сборкой и доставкой рассчитаем бесплатно.
                 </p>
                 <LeadFormButton
                   className={styles.calculateButton}
