@@ -761,7 +761,7 @@ export default function HouseCalculator() {
                   телефону{" "}
                   <a
                     href={`tel:${SITE_PHONE_HREF}`}
-                    onClick={() => reachGoal("phone_click", { location: "calculator_result" })}
+                    data-goal-location="calculator_result"
                   >
                     {SITE_PHONE}
                   </a>

@@ -1,8 +1,17 @@
-from django.contrib import admin
+import csv
+
+from django.contrib import admin, messages
+from django.http import HttpResponse
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.html import format_html
 
 from .models import Lead, LeadAttachment
+
+
+# Идентификатор цели «Целевое событие» в Метрике, в которую загружаются
+# реальные заявки. Цель с этим идентификатором создаётся в Метрике один раз.
+QUALIFIED_LEAD_TARGET = "qualified_lead"
 
 
 def attachment_file_link(attachment):
@@ -90,12 +99,17 @@ class LeadAdmin(admin.ModelAdmin):
         "project",
         "attachment_count",
         "consent_version",
+        "quality",
         "is_suspicious",
         "is_processed",
         "created_at",
         "anonymized_at",
     )
+    # Качество — прямо в списке: после звонка отметить заявку можно не
+    # открывая её.
+    list_editable = ("quality",)
     list_filter = (
+        "quality",
         "source",
         "is_suspicious",
         "is_processed",
@@ -128,8 +142,10 @@ class LeadAdmin(admin.ModelAdmin):
         "anonymized_at",
         "is_suspicious",
         "suspicion_reasons",
+        "yclid",
     )
     inlines = (LeadAttachmentInline,)
+    actions = ("mark_real", "mark_fake", "export_offline_conversions")
 
     fieldsets = (
         (
@@ -141,6 +157,21 @@ class LeadAdmin(admin.ModelAdmin):
                     "phone",
                     "message",
                 )
+            },
+        ),
+        (
+            "Качество и Метрика",
+            {
+                "description": (
+                    "Реальные заявки с ClientID выгружаются в Метрику "
+                    "офлайн-конверсиями: список заявок → выбрать → действие "
+                    "«Выгрузить для Метрики»."
+                ),
+                "fields": (
+                    "quality",
+                    "metrika_client_id",
+                    "yclid",
+                ),
             },
         ),
         (
@@ -215,6 +246,65 @@ class LeadAdmin(admin.ModelAdmin):
         if not image_attachment:
             return "—"
         return attachment_image_preview(image_attachment)
+
+    @admin.action(description="Отметить: реальная заявка")
+    def mark_real(self, request, queryset):
+        updated = queryset.update(quality=Lead.Quality.REAL)
+        self.message_user(request, f"Отмечено реальными: {updated}.")
+
+    @admin.action(description="Отметить: фейк")
+    def mark_fake(self, request, queryset):
+        updated = queryset.update(quality=Lead.Quality.FAKE)
+        self.message_user(request, f"Отмечено фейками: {updated}.")
+
+    @admin.action(description="Выгрузить для Метрики (офлайн-конверсии, CSV)")
+    def export_offline_conversions(self, request, queryset):
+        """CSV для Метрики: Цели → «Загрузка офлайн-конверсий», тип — ClientID.
+
+        В файл попадают только заявки, отмеченные реальными и с ClientID.
+        DateTime — время заявки: Метрика привязывает конверсию к ближайшему
+        визиту этого посетителя (не старше 21 дня).
+        """
+        leads = list(
+            queryset.filter(quality=Lead.Quality.REAL)
+            .exclude(metrika_client_id="")
+            .order_by("created_at")
+        )
+        skipped = queryset.count() - len(leads)
+
+        if not leads:
+            self.message_user(
+                request,
+                "Среди выбранных нет реальных заявок с ClientID Метрики. "
+                "Отметьте заявку реальной и, если ClientID пуст, впишите его "
+                "из Вебвизора Метрики.",
+                messages.WARNING,
+            )
+            return None
+
+        if skipped:
+            self.message_user(
+                request,
+                f"Не попали в файл: {skipped} — не отмечены реальными или без ClientID.",
+                messages.INFO,
+            )
+
+        filename = f"metrika-offline-conversions-{timezone.localdate():%Y-%m-%d}.csv"
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+        writer = csv.writer(response)
+        writer.writerow(["ClientId", "Target", "DateTime"])
+        for lead in leads:
+            writer.writerow(
+                [
+                    lead.metrika_client_id,
+                    QUALIFIED_LEAD_TARGET,
+                    int(lead.created_at.timestamp()),
+                ]
+            )
+
+        return response
 
 
 @admin.register(LeadAttachment)

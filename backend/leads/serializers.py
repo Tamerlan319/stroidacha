@@ -111,6 +111,10 @@ class LeadCreateSerializer(serializers.ModelSerializer):
     utm_campaign = LeadMetadataField("utm_campaign")
     utm_content = LeadMetadataField("utm_content")
     utm_term = LeadMetadataField("utm_term")
+    # Для офлайн-конверсий Метрики (leads/admin.py). Нестрогие, как и метки:
+    # кривое значение заявку не отклоняет, а просто не сохраняется.
+    metrika_client_id = LeadMetadataField("metrika_client_id", write_only=True)
+    yclid = LeadMetadataField("yclid", write_only=True)
     # Та же логика, что у LeadMetadataField: неизвестный источник (новая форма
     # на фронте раньше, чем бэкенд узнал о её source) не должен терять заявку.
     source = serializers.CharField(required=False, allow_blank=True)
@@ -172,6 +176,8 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "utm_campaign",
             "utm_content",
             "utm_term",
+            "metrika_client_id",
+            "yclid",
             "website",
             "smartcaptcha_token",
             "consent_accepted",
@@ -193,6 +199,13 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         if value and not value.lower().startswith(("https://", "http://")):
             return ""
         return value
+
+    def validate_metrika_client_id(self, value):
+        # ClientID Метрики — только цифры.
+        return value if value.isdigit() else ""
+
+    def validate_yclid(self, value):
+        return value if re.fullmatch(r"[\w-]+", value) else ""
 
     def validate_source(self, value):
         if value in Lead.Source.values:

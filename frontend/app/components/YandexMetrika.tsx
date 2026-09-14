@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef } from "react";
 
-import { trackPageview } from "../lib/metrika";
+import { messengerPlatform, reachGoal, trackPageview } from "../lib/metrika";
 import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 
 // Метрика грузится у всех посетителей сразу: cookie-баннера и согласия на
@@ -35,6 +35,40 @@ export default function YandexMetrika() {
       trackPageview(url, previousUrl, document.title);
     }, 0);
   }, [pathname]);
+
+  // Цели «Клик по телефону» и «Клик по мессенджеру» — одним обработчиком на
+  // весь сайт: любая ссылка tel: или ссылка мессенджера, где бы она ни стояла
+  // (шапка, подвал, контакты, калькулятор, тексты из админки). Раньше цель
+  // висела на каждой кнопке отдельно, и часть мест её не отправляла —
+  // например, страница контактов. Место клика — data-goal-location у ссылки
+  // или ближайшего родителя, иначе адрес страницы.
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      const target = event.target;
+      const link = target instanceof Element ? target.closest("a[href]") : null;
+      if (!link) return;
+
+      const href = link.getAttribute("href") || "";
+      const location =
+        link.closest("[data-goal-location]")?.getAttribute("data-goal-location") ||
+        window.location.pathname;
+
+      if (href.startsWith("tel:")) {
+        reachGoal("phone_click", { location });
+        return;
+      }
+
+      const platform = messengerPlatform(href);
+      if (platform) {
+        reachGoal("messenger_click", { platform, location });
+      }
+    }
+
+    // Фаза перехвата: цель уходит раньше, чем меню успеет закрыться, а
+    // ссылка — открыть звонилку или мессенджер.
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, []);
 
   const isLocalSite =
     siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1");

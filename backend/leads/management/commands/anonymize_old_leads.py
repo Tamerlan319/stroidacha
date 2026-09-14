@@ -107,6 +107,8 @@ class Command(BaseCommand):
                 lead.ip_address = None
                 lead.user_agent = ""
                 lead.page_url = ""
+                lead.metrika_client_id = ""
+                lead.yclid = ""
                 lead.anonymized_at = now
                 lead.save(
                     update_fields=[
@@ -117,6 +119,8 @@ class Command(BaseCommand):
                         "ip_address",
                         "user_agent",
                         "page_url",
+                        "metrika_client_id",
+                        "yclid",
                         "anonymized_at",
                     ]
                 )

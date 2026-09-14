@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import LeadFormModal from "./LeadFormModal";
 import SocialLinks from "./SocialLinks";
-import { reachGoal } from "../lib/metrika";
 import { SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
 import styles from "./HeroLeadCard.module.css";
 
@@ -47,12 +46,12 @@ export default function HeroLeadCard() {
       <a
         className={styles.phone}
         href={`tel:${SITE_PHONE_HREF}`}
-        onClick={() => reachGoal("phone_click", { location: "hero_card" })}
+        data-goal-location="hero_card"
       >
         Или позвоните: {SITE_PHONE}
       </a>
 
-      <SocialLinks className={styles.social} />
+      <SocialLinks className={styles.social} location="hero_card" />
 
       <LeadFormModal
         open={isOpen}

@@ -13,7 +13,7 @@ import {
 } from "react";
 
 import { legalConfig } from "../lib/legalConfig";
-import { reachGoal } from "../lib/metrika";
+import { getMetrikaClientId, reachGoal } from "../lib/metrika";
 import { getUtmValue } from "../lib/utm";
 import LeadSuccessDialog from "./LeadSuccessDialog";
 import SocialLinks from "./SocialLinks";
@@ -528,6 +528,10 @@ export default function LeadForm({
           String(Math.round(performance.now() - formShownAtRef.current))
         );
       }
+      // Для офлайн-конверсий: реальную заявку потом загружают в Метрику по
+      // ClientID (или yclid клика из Директа), см. backend/leads/admin.py.
+      body.append("metrika_client_id", await getMetrikaClientId());
+      body.append("yclid", getUtmValue("yclid"));
 
       attachments.forEach((file) => body.append("attachments", file));
 

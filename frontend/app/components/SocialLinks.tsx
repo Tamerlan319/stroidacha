@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 
-import { reachGoal } from "../lib/metrika";
 import { useSocialLinks } from "./SocialLinksProvider";
 
 const PLATFORM_META: Record<string, { title: string; iconSrc: string }> = {
@@ -24,9 +23,12 @@ const FALLBACK_LINKS = [
 
 type SocialLinksProps = {
   className?: string;
+  // Место на сайте для цели «Клик по мессенджеру». Саму цель отправляет общий
+  // обработчик ссылок в YandexMetrika.tsx.
+  location?: string;
 };
 
-export default function SocialLinks({ className = "" }: SocialLinksProps) {
+export default function SocialLinks({ className = "", location }: SocialLinksProps) {
   const contextLinks = useSocialLinks();
   const links = contextLinks.length > 0 ? contextLinks : FALLBACK_LINKS;
 
@@ -34,6 +36,7 @@ export default function SocialLinks({ className = "" }: SocialLinksProps) {
     <div
       className={`sdSocialLinks ${className}`}
       aria-label="Связаться в мессенджерах"
+      data-goal-location={location}
     >
       {links.map((item) => {
         const meta = PLATFORM_META[item.platform];
@@ -47,7 +50,6 @@ export default function SocialLinks({ className = "" }: SocialLinksProps) {
             rel="noopener noreferrer"
             target="_blank"
             title={meta.title}
-            onClick={() => reachGoal("messenger_click", { platform: item.platform })}
           >
             <Image
               alt=""

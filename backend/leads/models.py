@@ -81,6 +81,33 @@ class Lead(models.Model):
         blank=True,
     )
 
+    # Качество отмечает менеджер после разговора. Реальные заявки выгружаются
+    # в Метрику офлайн-конверсиями (admin → «Выгрузить для Метрики»), чтобы
+    # Директ учился на настоящих клиентах, а не на фейках.
+    class Quality(models.TextChoices):
+        UNCHECKED = "unchecked", "Не проверена"
+        REAL = "real", "Реальная"
+        FAKE = "fake", "Фейк"
+
+    quality = models.CharField(
+        "Качество заявки",
+        max_length=16,
+        choices=Quality.choices,
+        default=Quality.UNCHECKED,
+    )
+    # Идентификаторы для офлайн-конверсий: по ним Метрика привязывает
+    # загруженную конверсию к визиту (и к рекламному клику).
+    metrika_client_id = models.CharField(
+        "ClientID Метрики",
+        max_length=32,
+        blank=True,
+        help_text=(
+            "Приходит с формой. Если пусто — можно вписать из Вебвизора "
+            "Метрики (карточка посетителя → ClientID)."
+        ),
+    )
+    yclid = models.CharField("yclid (клик Директа)", max_length=100, blank=True)
+
     is_processed = models.BooleanField("Обработана", default=False)
     manager_comment = models.TextField("Комментарий менеджера", blank=True)
 
