@@ -48,6 +48,20 @@
   text-decoration: underline;
 }
 
+/* Пояснение про прежний домен: человек, который раньше заказывал на
+   stroydacha.online, должен видеть, что это та же компания. */
+.sites {
+  margin: 16px 0 0;
+  border-top: 1px dashed rgba(31, 42, 34, 0.14);
+  padding-top: 12px;
+  max-width: 900px;
+}
+
+.sites b {
+  color: #1f2a22;
+  font-weight: 800;
+}
+
 @media (max-width: 900px) {
   .grid {
     grid-template-columns: 1fr;

@@ -38,6 +38,12 @@ export default function FooterLegalBlock() {
           <Link href="/requisites">Реквизиты компании</Link>
         </div>
       </div>
+
+      <p className={styles.sites}>
+        <b>brusodel.ru</b> — основной сайт компании: здесь актуальные проекты,
+        цены и приём заявок. <b>stroydacha.online</b> — наш прежний сайт: та же
+        компания, те же телефон, реквизиты и договор.
+      </p>
     </section>
   );
 }
