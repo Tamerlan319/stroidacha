@@ -386,8 +386,8 @@ export default function ProjectGalleryWithPrices({
               <div className={styles.priceFooter}>
                 <p>
                   <span aria-hidden="true">i</span>
-                  Цены в таблице — за комплект материалов. Стоимость под
-                  ключ со сборкой и доставкой рассчитаем бесплатно.
+                  Точную стоимость под ключ рассчитаем бесплатно. Учтём
+                  ваши пожелания в планировке и материалах.
                 </p>
                 <LeadFormButton
                   className={styles.calculateButton}
