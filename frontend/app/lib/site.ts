@@ -10,6 +10,16 @@ export const SITE_PHONE = "+7 967 680-18-12";
 export const SITE_PHONE_HREF = "+79676801812";
 export const SITE_EMAIL = "brusodel@yandex.ru";
 
+// Страницы о компании — одинаковый список в меню шапки и в подвале.
+export const COMPANY_LINKS = [
+  { title: "О директоре", href: "/o-direktore" },
+  { title: "Выписка из ЕГРЮЛ", href: "/vypiska-iz-egryul" },
+  { title: "Производство", href: "/proizvodstvo" },
+  { title: "Доставка", href: "/dostavka" },
+  { title: "Маткапитал", href: "/materinskij-kapital" },
+  { title: "Ипотека", href: "/ipoteka" },
+];
+
 // Счётчик Яндекс.Метрики — используется и в самом теге (YandexMetrika.tsx),
 // и при отправке целей (lib/metrika.ts). Один счётчик на весь сайт, поэтому
 // константа общая, а не продублирована в обоих местах.

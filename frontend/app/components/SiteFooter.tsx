@@ -1,39 +1,14 @@
 import Link from "next/link";
 
-import { CATALOG_LINKS, SITE_EMAIL } from "../lib/site";
+import { CATALOG_LINKS, COMPANY_LINKS, SITE_EMAIL } from "../lib/site";
 import BrandMark from "./BrandMark";
 import FooterLegalBlock from "./FooterLegalBlock";
 import FooterPhoneLink from "./FooterPhoneLink";
 
-type LandingPage = {
-  id: number;
-  title: string;
-  slug: string;
-  h1: string;
-  page_type: string;
-};
-
-async function getLandingPages(): Promise<LandingPage[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-  try {
-    const response = await fetch(`${apiUrl}/landing-pages/`, {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return [];
-    }
-
-    return response.json();
-  } catch {
-    return [];
-  }
-}
-
-export default async function SiteFooter() {
-  const landingPages = await getLandingPages();
-
+// Раньше «Направления» брали первые семь SEO-страниц из API — туда попадали
+// дубли каталога и «Доставка по России» вместо страницы «Доставка». Теперь
+// в подвале те же страницы о компании, что в меню шапки (COMPANY_LINKS).
+export default function SiteFooter() {
   return (
     <footer className="siteFooter">
       <div className="container footerTop">
@@ -76,9 +51,9 @@ export default async function SiteFooter() {
             <li><Link href="/otzyvy">Отзывы</Link></li>
             <li><Link href="/faq">FAQ</Link></li>
             <li><Link href="/spravochnik">Справочник</Link></li>
-            {landingPages.slice(0, 7).map((page) => (
-              <li key={page.id}>
-                <Link href={`/${page.slug}`}>{page.h1 || page.title}</Link>
+            {COMPANY_LINKS.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href}>{item.title}</Link>
               </li>
             ))}
           </ul>

@@ -4,7 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { CATALOG_LINKS, SITE_PHONE, SITE_PHONE_HREF } from "../lib/site";
+import {
+  CATALOG_LINKS,
+  COMPANY_LINKS,
+  SITE_PHONE,
+  SITE_PHONE_HREF,
+} from "../lib/site";
 import BrandMark from "./BrandMark";
 import SiteIcon from "./SiteIcon";
 import SocialLinks from "./SocialLinks";
@@ -22,14 +27,7 @@ type LandingPageListItem = {
   sort_order: number;
 };
 
-const companyLinks: HeaderLink[] = [
-  { title: "О директоре", href: "/o-direktore" },
-  { title: "Выписка из ЕГРЮЛ", href: "/vypiska-iz-egryul" },
-  { title: "Производство", href: "/proizvodstvo" },
-  { title: "Доставка", href: "/dostavka" },
-  { title: "Маткапитал", href: "/materinskij-kapital" },
-  { title: "Ипотека", href: "/ipoteka" },
-];
+const companyLinks: HeaderLink[] = COMPANY_LINKS;
 
 export default function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
