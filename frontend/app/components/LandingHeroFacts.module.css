@@ -71,26 +71,57 @@ svg.icon {
   stroke-linejoin: round;
 }
 
-/* Телефон: плашки одной строкой с прокруткой вбок — сеткой они занимали три
-   ряда и уводили каталог за первый экран. Ипотека и надёжная сделка стоят в
-   начале строки, их видно сразу. */
+.shortTitle {
+  display: none;
+}
+
+/* Телефон: плашки сеткой в две колонки, в каждой только короткий заголовок —
+   без пояснений они помещаются в одну строку, и каталог остаётся на первом
+   экране. */
 @media (max-width: 680px) {
   .facts {
-    flex-wrap: nowrap;
-    margin: 14px -16px 0;
-    padding: 0 16px 4px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .facts::-webkit-scrollbar {
-    display: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 14px;
   }
 
   .facts li {
-    flex: none;
+    min-width: 0;
+    border-radius: 10px;
+    padding: 7px 8px;
     font-size: 12.5px;
-    white-space: nowrap;
+  }
+
+  /* Нечётное число плашек — последняя на всю ширину, без дырки в сетке. */
+  .facts li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .facts .linkFact {
+    padding: 0;
+  }
+
+  .linkFact a {
+    width: 100%;
+    height: 100%;
+    padding: 7px 8px;
+  }
+
+  .label {
+    min-width: 0;
+    line-height: 1.2;
+  }
+
+  /* Ссылки и так выделены оранжевой рамкой — стрелка на узкой плашке
+     только выталкивала текст за край. */
+  .detail,
+  .fullTitle,
+  .arrow {
+    display: none;
+  }
+
+  .shortTitle {
+    display: inline;
   }
 }

@@ -11,6 +11,8 @@ type LandingHeroFactsProps = {
 type Fact = {
   icon: string;
   title: string;
+  // Короткая подпись для телефона: там плашки в две колонки без пояснений.
+  shortTitle?: string;
   text: string;
   href?: string;
 };
@@ -40,14 +42,19 @@ export default function LandingHeroFacts({ minPrice }: LandingHeroFactsProps) {
           },
         ]
       : []),
-    { icon: "check", title: "Строительство в ипотеку", text: "", href: "/ipoteka" },
+    {
+      icon: "check",
+      title: "Строительство в ипотеку",
+      shortTitle: "Можно в ипотеку",
+      text: "",
+      href: "/ipoteka",
+    },
     {
       icon: "contract",
       title: "Надёжная сделка",
       text: "о компании",
       href: "/vypiska-iz-egryul",
     },
-    { icon: "house", title: "С 2009 года", text: "строим из бруса" },
     { icon: "factory", title: "Своё производство", text: "в Чухломе" },
     { icon: "shield", title: "Гарантия 3 года", text: "на работы" },
   ];
@@ -62,10 +69,17 @@ export default function LandingHeroFacts({ minPrice }: LandingHeroFactsProps) {
             ) : (
               <SiteIcon name={fact.icon} className={styles.icon} />
             )}
-            <span>
-              <strong>{fact.title}</strong>
-              {fact.text && ` ${fact.text}`}
-              {fact.href && <span aria-hidden="true"> →</span>}
+            <span className={styles.label}>
+              {fact.shortTitle ? (
+                <>
+                  <strong className={styles.fullTitle}>{fact.title}</strong>
+                  <strong className={styles.shortTitle}>{fact.shortTitle}</strong>
+                </>
+              ) : (
+                <strong>{fact.title}</strong>
+              )}
+              {fact.text && <span className={styles.detail}> {fact.text}</span>}
+              {fact.href && <span className={styles.arrow} aria-hidden="true"> →</span>}
             </span>
           </>
         );
