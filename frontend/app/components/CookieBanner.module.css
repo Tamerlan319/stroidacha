@@ -1,5 +1,49 @@
-/* Над нижней панелью связи на телефоне (MobileContactBar, 900), под окнами
-   заявки и просмотра фото (10000+). */
+/* Окно выбора поверх сайта: над шапкой (10000) и формой заявки
+   (LeadFormModal, 10010), под подтверждением заявки (10050) и просмотром
+   фото. Внизу экрана — первый экран страницы остаётся виден под затемнением. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10030;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  background: rgba(15, 22, 16, 0.5);
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+  animation: cookieFade 0.18s ease-out;
+}
+
+.dialog {
+  display: grid;
+  gap: 16px;
+  width: min(100%, 560px);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  padding: 22px 22px 20px;
+  animation: cookieRise 0.22s ease-out;
+}
+
+.dialog:focus {
+  outline: none;
+}
+
+.dialog .content strong {
+  font-size: 18px;
+}
+
+.dialog .content p {
+  font-size: 14px;
+}
+
+.dialog .actions button {
+  min-height: 48px;
+  font-size: 15px;
+}
+
+/* Документы (политика, cookie): плашка в углу, над нижней панелью связи на
+   телефоне (MobileContactBar, 900), чтобы текст можно было прочитать до
+   выбора. */
 .banner {
   position: fixed;
   right: 20px;
@@ -70,6 +114,14 @@
 }
 
 @media (max-width: 900px) {
+  .overlay {
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .dialog {
+    padding: 18px 16px 16px;
+  }
+
   .banner {
     right: 10px;
     bottom: calc(76px + env(safe-area-inset-bottom));
@@ -81,5 +133,34 @@
 @media (max-width: 360px) {
   .actions {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes cookieFade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cookieRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .dialog {
+    animation: none;
   }
 }
