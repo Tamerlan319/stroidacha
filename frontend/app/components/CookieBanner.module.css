@@ -36,9 +36,18 @@
   font-size: 14px;
 }
 
+.dialog .actions {
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+}
+
 .dialog .actions button {
-  min-height: 48px;
+  min-height: 50px;
   font-size: 15px;
+}
+
+.dialog .actions .accept {
+  font-size: 16px;
+  animation: cookieAcceptPulse 1.6s ease-out 0.5s 2;
 }
 
 /* Документы (политика, cookie): плашка в углу, над нижней панелью связи на
@@ -103,13 +112,50 @@
   cursor: pointer;
 }
 
+/* Яркая тёплая кнопка с тёмным текстом — как главные кнопки Яндекса, её
+   узнают и нажимают не задумываясь. Контраст текста около 7:1. */
 .actions .accept {
-  background: #1f5a38;
-  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-color: #e8913a;
+  background: linear-gradient(180deg, #f7b25e 0%, #ef9a42 100%);
+  box-shadow: 0 8px 20px rgba(216, 139, 61, 0.38);
+  color: #1d211b;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.actions .accept svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.actions .accept:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 10px 24px rgba(216, 139, 61, 0.48);
+  transform: translateY(-1px);
+}
+
+.actions .necessary {
+  border-color: rgba(31, 42, 34, 0.22);
+  color: #3d463f;
+  font-weight: 700;
+}
+
+.actions .necessary:hover {
+  border-color: rgba(31, 42, 34, 0.4);
+  background: #f6f7f4;
 }
 
 .actions button:focus-visible {
-  outline: 3px solid rgba(31, 90, 56, 0.3);
+  outline: 3px solid rgba(216, 139, 61, 0.55);
   outline-offset: 2px;
 }
 
@@ -131,8 +177,24 @@
 }
 
 @media (max-width: 360px) {
-  .actions {
+  .actions,
+  .dialog .actions {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Два мягких «вздоха» кнопки после появления окна — взгляд идёт к ней. */
+@keyframes cookieAcceptPulse {
+  0% {
+    box-shadow: 0 8px 20px rgba(216, 139, 61, 0.38), 0 0 0 0 rgba(239, 154, 66, 0.55);
+  }
+
+  70% {
+    box-shadow: 0 8px 20px rgba(216, 139, 61, 0.38), 0 0 0 10px rgba(239, 154, 66, 0);
+  }
+
+  100% {
+    box-shadow: 0 8px 20px rgba(216, 139, 61, 0.38), 0 0 0 0 rgba(239, 154, 66, 0);
   }
 }
 
@@ -160,7 +222,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .overlay,
-  .dialog {
+  .dialog,
+  .dialog .actions .accept {
     animation: none;
   }
 }

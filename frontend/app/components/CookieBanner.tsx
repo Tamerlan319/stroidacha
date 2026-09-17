@@ -157,16 +157,26 @@ export default function CookieBanner() {
         )}
       </div>
 
+      {/* «Принять все» — первой и крупнее: на неё смотрят сначала. Отказ
+          остаётся обычной кнопкой той же высоты с читаемым текстом —
+          согласие должно быть добровольным, прятать отказ нельзя. */}
       <div className={styles.actions}>
-        <button type="button" onClick={() => choose("necessary")}>
-          Только необходимые
-        </button>
         <button
           type="button"
           className={styles.accept}
           onClick={() => choose("all")}
         >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m5 12.5 4.5 4.5L19 7.5" />
+          </svg>
           Принять все
+        </button>
+        <button
+          type="button"
+          className={styles.necessary}
+          onClick={() => choose("necessary")}
+        >
+          Только необходимые
         </button>
       </div>
     </div>
