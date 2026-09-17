@@ -1,23 +1,27 @@
 .facts {
   display: flex;
-  max-width: 780px;
+  max-width: 820px;
   flex-wrap: wrap;
-  gap: 8px 10px;
-  margin: 20px 0 4px;
+  gap: 7px;
+  margin: 16px 0 2px;
   padding: 0;
   list-style: none;
 }
 
-.facts li {
+.facts li,
+.linkFact a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.facts li {
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
   background: rgba(16, 24, 18, 0.46);
   color: rgba(255, 255, 255, 0.84);
-  padding: 8px 14px 8px 10px;
-  font-size: 14px;
+  padding: 6px 11px 6px 8px;
+  font-size: 13px;
   line-height: 1.25;
   backdrop-filter: blur(6px);
 }
@@ -27,34 +31,66 @@
   font-weight: 800;
 }
 
+/* Плашки-ссылки (ипотека, надёжная сделка): светлее фон и стрелка. */
+.facts .linkFact {
+  border-color: rgba(242, 166, 90, 0.55);
+  background: rgba(242, 166, 90, 0.16);
+  padding: 0;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.linkFact a {
+  color: inherit;
+  padding: 6px 11px 6px 8px;
+  text-decoration: none;
+}
+
+.facts .linkFact:hover {
+  border-color: rgba(242, 166, 90, 0.85);
+  background: rgba(242, 166, 90, 0.28);
+}
+
+.linkFact a:focus-visible {
+  border-radius: 999px;
+  outline: 2px solid #f2a65a;
+  outline-offset: 2px;
+}
+
 .icon {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   flex: none;
   color: #f2a65a;
 }
 
+svg.icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Телефон: плашки одной строкой с прокруткой вбок — сеткой они занимали три
+   ряда и уводили каталог за первый экран. Ипотека и надёжная сделка стоят в
+   начале строки, их видно сразу. */
 @media (max-width: 680px) {
   .facts {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    margin-top: 16px;
+    flex-wrap: nowrap;
+    margin: 14px -16px 0;
+    padding: 0 16px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .facts::-webkit-scrollbar {
+    display: none;
   }
 
   .facts li {
-    align-items: flex-start;
-    border-radius: 14px;
-    padding: 9px 10px;
-    font-size: 13px;
-  }
-
-  .facts strong {
-    display: block;
-    margin-bottom: 2px;
-  }
-
-  .icon {
-    margin-top: 1px;
+    flex: none;
+    font-size: 12.5px;
+    white-space: nowrap;
   }
 }

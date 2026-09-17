@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import styles from "./LandingHeroFacts.module.css";
 import SiteIcon from "./SiteIcon";
 
@@ -6,13 +8,29 @@ type LandingHeroFactsProps = {
   minPrice: number | null;
 };
 
+type Fact = {
+  icon: string;
+  title: string;
+  text: string;
+  href?: string;
+};
+
+function CheckIcon() {
+  return (
+    <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
 // Короткие факты под заголовком страницы каталога. Человек с рекламы по
 // запросу «баня из бруса под ключ цена» раньше не видел на первом экране ни
 // цены, ни того, почему компании можно доверять — только общий текст. Факты
 // те же, что в блоке доверия на главной (app/page.tsx); цена — за комплект
-// материалов, как в карточках каталога.
+// материалов, как в карточках каталога. Ипотека и надёжная сделка — ссылки
+// на подробности: страницу об ипотеке и сведения о компании из ЕГРЮЛ.
 export default function LandingHeroFacts({ minPrice }: LandingHeroFactsProps) {
-  const facts = [
+  const facts: Fact[] = [
     ...(minPrice
       ? [
           {
@@ -22,21 +40,42 @@ export default function LandingHeroFacts({ minPrice }: LandingHeroFactsProps) {
           },
         ]
       : []),
+    { icon: "check", title: "Строительство в ипотеку", text: "", href: "/ipoteka" },
+    {
+      icon: "contract",
+      title: "Надёжная сделка",
+      text: "о компании",
+      href: "/vypiska-iz-egryul",
+    },
     { icon: "house", title: "С 2009 года", text: "строим из бруса" },
     { icon: "factory", title: "Своё производство", text: "в Чухломе" },
-    { icon: "shield", title: "Гарантия 3 года", text: "на работы и конструкцию" },
+    { icon: "shield", title: "Гарантия 3 года", text: "на работы" },
   ];
 
   return (
     <ul className={styles.facts}>
-      {facts.map((fact) => (
-        <li key={fact.title}>
-          <SiteIcon name={fact.icon} className={styles.icon} />
-          <span>
-            <strong>{fact.title}</strong> {fact.text}
-          </span>
-        </li>
-      ))}
+      {facts.map((fact) => {
+        const content = (
+          <>
+            {fact.icon === "check" ? (
+              <CheckIcon />
+            ) : (
+              <SiteIcon name={fact.icon} className={styles.icon} />
+            )}
+            <span>
+              <strong>{fact.title}</strong>
+              {fact.text && ` ${fact.text}`}
+              {fact.href && <span aria-hidden="true"> →</span>}
+            </span>
+          </>
+        );
+
+        return (
+          <li key={fact.title} className={fact.href ? styles.linkFact : undefined}>
+            {fact.href ? <Link href={fact.href}>{content}</Link> : content}
+          </li>
+        );
+      })}
     </ul>
   );
 }
