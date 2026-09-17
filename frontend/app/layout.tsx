@@ -7,7 +7,7 @@ import MobileHorizontalLock from "./components/MobileScrollFix";
 import SiteFooter from "./components/SiteFooter";
 import SiteHeader from "./components/SiteHeader";
 import { SocialLinkData, SocialLinksProvider } from "./components/SocialLinksProvider";
-import UtmCapture from "./components/UtmCapture";
+import CookieBanner from "./components/CookieBanner";
 import MobileContactBar from "./components/MobileContactBar";
 import YandexMetrika from "./components/YandexMetrika";
 import {
@@ -254,7 +254,6 @@ export default async function RootLayout({
         <SocialLinksProvider links={socialLinks}>
           <JsonLd data={siteJsonLd} />
           <MobileHorizontalLock />
-          <UtmCapture />
           <SiteHeader />
 
           {children}
@@ -262,6 +261,7 @@ export default async function RootLayout({
           <SiteFooter />
           <MobileContactBar />
           <YandexMetrika />
+          <CookieBanner />
         </SocialLinksProvider>
       </body>
     </html>

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useCookieConsent } from "../lib/cookieConsent";
+import YandexMapConsent from "./YandexMapConsent";
+
 type DeliveryMapProps = {
   src: string;
   title: string;
@@ -12,9 +15,15 @@ type DeliveryMapProps = {
 // loading="lazy" у iframe мало: на медленной сети браузер начинает грузить его
 // за несколько экранов, и на 3G главная сразу тянула скрипт, стили, шрифты и
 // десятки плиток карты (несколько МБ), хотя карта стоит в самом низу.
+//
+// Виджет ставит cookie Яндекса, поэтому без согласия на cookie вместо него
+// заглушка: карта загрузится по нажатию.
 export default function DeliveryMap({ src, title, className }: DeliveryMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isNearViewport, setIsNearViewport] = useState(false);
+  const [shownOnRequest, setShownOnRequest] = useState(false);
+  const consent = useCookieConsent();
+  const isAllowed = consent === "all" || shownOnRequest;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -40,13 +49,17 @@ export default function DeliveryMap({ src, title, className }: DeliveryMapProps)
 
   return (
     <div ref={containerRef} className={className}>
-      {isNearViewport && (
-        <iframe
-          src={src}
-          title={title}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
+      {!isAllowed ? (
+        <YandexMapConsent onShow={() => setShownOnRequest(true)} />
+      ) : (
+        isNearViewport && (
+          <iframe
+            src={src}
+            title={title}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        )
       )}
     </div>
   );

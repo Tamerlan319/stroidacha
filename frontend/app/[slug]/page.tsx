@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import Breadcrumbs, { BreadcrumbItem } from "../components/Breadcrumbs";
+import EgrulExtract from "../components/EgrulExtract";
 import LandingHeroFacts from "../components/LandingHeroFacts";
 import LeadForm from "../components/LeadForm";
 import LeadFormButton from "../components/LeadFormButton";
@@ -412,47 +413,39 @@ export default async function LandingPageRoute({ params }: PageProps) {
         </section>
       )}
 
-      {(page.images || []).length > 0 && (
-        <section className="container section landingMediaSection">
-          <div className="sectionHeader">
-            <p className="eyebrow">
-              {page.slug === "vypiska-iz-egryul" ? "Документы" : "Фотографии"}
-            </p>
-            <h2>
-              {page.slug === "vypiska-iz-egryul"
-                ? "Выписка из ЕГРЮЛ"
-                : "Материалы страницы"}
-            </h2>
-          </div>
+      {page.slug === "vypiska-iz-egryul" ? (
+        <EgrulExtract images={page.images || []} />
+      ) : (
+        (page.images || []).length > 0 && (
+          <section className="container section landingMediaSection">
+            <div className="sectionHeader">
+              <p className="eyebrow">Фотографии</p>
+              <h2>Материалы страницы</h2>
+            </div>
 
-          <div
-            className={`landingMediaGrid ${
-              page.slug === "vypiska-iz-egryul"
-                ? "landingMediaDocuments"
-                : ""
-            }`}
-          >
-            {(page.images || [])
-              .filter((item) => item.image)
-              .map((item) => (
-                <a
-                  href={item.image || "#"}
-                  key={item.id}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt={item.alt_text || item.caption || page.h1}
-                    src={item.image || ""}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  {item.caption && <span>{item.caption}</span>}
-                </a>
-              ))}
-          </div>
-        </section>
+            <div className="landingMediaGrid">
+              {(page.images || [])
+                .filter((item) => item.image)
+                .map((item) => (
+                  <a
+                    href={item.image || "#"}
+                    key={item.id}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt={item.alt_text || item.caption || page.h1}
+                      src={item.image || ""}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {item.caption && <span>{item.caption}</span>}
+                  </a>
+                ))}
+            </div>
+          </section>
+        )
       )}
 
       {page.faqs.length > 0 && (

@@ -13,8 +13,7 @@ import {
 } from "react";
 
 import { legalConfig } from "../lib/legalConfig";
-import { getMetrikaClientId, reachGoal } from "../lib/metrika";
-import { getUtmValue } from "../lib/utm";
+import { reachGoal } from "../lib/metrika";
 import LeadSuccessDialog from "./LeadSuccessDialog";
 import SocialLinks from "./SocialLinks";
 import styles from "./LeadForm.module.css";
@@ -516,11 +515,6 @@ export default function LeadForm({
       body.append("source", source);
       body.append("project_slug", projectSlug);
       body.append("page_url", window.location.href);
-      body.append("utm_source", getUtmValue("utm_source"));
-      body.append("utm_medium", getUtmValue("utm_medium"));
-      body.append("utm_campaign", getUtmValue("utm_campaign"));
-      body.append("utm_content", getUtmValue("utm_content"));
-      body.append("utm_term", getUtmValue("utm_term"));
       body.append("smartcaptcha_token", captchaToken);
       if (formShownAtRef.current !== null) {
         body.append(
@@ -528,10 +522,6 @@ export default function LeadForm({
           String(Math.round(performance.now() - formShownAtRef.current))
         );
       }
-      // Для офлайн-конверсий: реальную заявку потом загружают в Метрику по
-      // ClientID (или yclid клика из Директа), см. backend/leads/admin.py.
-      body.append("metrika_client_id", await getMetrikaClientId());
-      body.append("yclid", getUtmValue("yclid"));
 
       attachments.forEach((file) => body.append("attachments", file));
 
@@ -591,6 +581,8 @@ export default function LeadForm({
   function controlClass(field: FieldName, hasValue: boolean) {
     return [
       styles.control,
+      // Вебвизор Метрики не записывает, что человек вводит в эти поля.
+      "ym-disable-keys",
       touched[field] && errors[field] ? styles.controlInvalid : "",
       touched[field] && !errors[field] && hasValue ? styles.controlValid : "",
     ]
@@ -834,14 +826,19 @@ export default function LeadForm({
           aria-invalid={Boolean(touched.consent && errors.consent)}
           required
         />
+        {/* Галочка — только согласие, отдельным документом (152-ФЗ, ст. 9
+            ч. 1). Политика — справочная ссылка ниже, без подтверждения. */}
         <span>
           Я даю{" "}
-          <Link href="/consent-personal-data">согласие на обработку персональных данных</Link>{" "}
-          ООО «СтройДача» для ответа на обращение и ознакомлен с{" "}
-          <Link href="/privacy">Политикой обработки персональных данных</Link>
+          <Link href="/consent-personal-data">согласие на обработку персональных данных</Link>
           <b aria-hidden="true">*</b>
         </span>
       </label>
+
+      <p className={styles.policyNote}>
+        Как мы обрабатываем данные — в{" "}
+        <Link href="/privacy">политике обработки персональных данных</Link>.
+      </p>
 
       {touched.consent && errors.consent && (
         <div className={styles.fieldError} role="alert">

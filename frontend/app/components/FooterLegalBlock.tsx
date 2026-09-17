@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { legalConfig } from "../lib/legalConfig";
+import CookieSettingsButton from "./CookieSettingsButton";
 import styles from "./FooterLegalBlock.module.css";
 
 export default function FooterLegalBlock() {
@@ -35,6 +36,7 @@ export default function FooterLegalBlock() {
             Согласие на обработку персональных данных
           </Link>
           <Link href="/cookies">Политика cookie</Link>
+          <CookieSettingsButton className={styles.settingsButton} />
           <Link href="/requisites">Реквизиты компании</Link>
         </div>
       </div>

@@ -302,6 +302,18 @@
   color: #9e3b2e;
 }
 
+.policyNote {
+  margin: 6px 0 0 26px;
+  color: #687168;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.policyNote a {
+  color: #1f5a38;
+  text-decoration: underline;
+}
+
 .actionRow {
   display: flex;
   flex-direction: column;

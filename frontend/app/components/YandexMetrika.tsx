@@ -2,21 +2,34 @@
 
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
-import { messengerPlatform, reachGoal, trackPageview } from "../lib/metrika";
+import { useCookieConsent } from "../lib/cookieConsent";
+import {
+  getServerMetrikaFrameSnapshot,
+  isInsideMetrikaFrame,
+  messengerPlatform,
+  reachGoal,
+  subscribeToMetrikaFrame,
+  trackPageview,
+} from "../lib/metrika";
 import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 
-// Метрика грузится у всех посетителей сразу: cookie-баннера и согласия на
-// сайте нет по решению владельца, своё согласие он планирует сделать позже.
-// Если оно вернётся — карта кликов, аналитика форм и Вебвизор открывают сайт
-// во фрейме интерфейса Метрики, где хранилище отделено браузером от обычного
-// визита и согласия нет никогда. Там счётчик должен грузиться без него,
-// иначе Метрика пишет «Не установлен код счётчика» (так уже было и
-// исправлялось — см. историю этого файла и lib/metrika.ts).
+// Метрика грузится только после «Принять все» в баннере cookie
+// (CookieBanner.tsx): без согласия код счётчика на страницу не попадает.
+// Исключение — фрейм интерфейса Метрики (карта кликов, аналитика форм,
+// Вебвизор): там страницу смотрит владелец счётчика, хранилище фрейма
+// браузер держит отдельно и выбора в нём нет никогда, а без счётчика
+// Метрика пишет «Не установлен код счётчика» (см. lib/metrika.ts).
 export default function YandexMetrika() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
   const pathname = usePathname();
+  const consent = useCookieConsent();
+  const insideMetrikaFrame = useSyncExternalStore(
+    subscribeToMetrikaFrame,
+    isInsideMetrikaFrame,
+    getServerMetrikaFrameSnapshot
+  );
   const lastUrlRef = useRef<string | null>(null);
 
   // Переходы внутри сайта — отдельные просмотры в Метрике (см. trackPageview).
@@ -73,7 +86,7 @@ export default function YandexMetrika() {
   const isLocalSite =
     siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1");
 
-  if (isLocalSite) {
+  if (isLocalSite || !(consent === "all" || insideMetrikaFrame)) {
     return null;
   }
 

@@ -48,6 +48,23 @@
   text-decoration: underline;
 }
 
+/* «Настройки cookie» выглядит как остальные ссылки колонки «Документы». */
+.settingsButton {
+  display: block;
+  margin: 0 0 5px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #1f5a38;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settingsButton:hover {
+  text-decoration: underline;
+}
+
 /* Пояснение про прежний домен: человек, который раньше заказывал на
    stroydacha.online, должен видеть, что это та же компания. */
 .sites {
