@@ -339,7 +339,12 @@ export default async function LandingPageRoute({ params }: PageProps) {
 
             {page.intro_text && <p className="heroText">{page.intro_text}</p>}
 
-            {catalogCategory && <LandingHeroFacts minPrice={minPrice} />}
+            {catalogCategory && (
+              <LandingHeroFacts
+                minPrice={minPrice}
+                showMortgage={catalogCategory.slug === "houses"}
+              />
+            )}
 
             <div className="heroActions">
               {catalogCategory && (

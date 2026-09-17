@@ -6,6 +6,8 @@ import SiteIcon from "./SiteIcon";
 type LandingHeroFactsProps = {
   // Минимальная цена в каталоге этой категории; null — не показываем.
   minPrice: number | null;
+  // Ипотека на строительство — только для жилых домов, на банях не показываем.
+  showMortgage: boolean;
 };
 
 type Fact = {
@@ -31,7 +33,7 @@ function CheckIcon() {
 // те же, что в блоке доверия на главной (app/page.tsx); цена — за комплект
 // материалов, как в карточках каталога. Ипотека и надёжная сделка — ссылки
 // на подробности: страницу об ипотеке и сведения о компании из ЕГРЮЛ.
-export default function LandingHeroFacts({ minPrice }: LandingHeroFactsProps) {
+export default function LandingHeroFacts({ minPrice, showMortgage }: LandingHeroFactsProps) {
   const facts: Fact[] = [
     ...(minPrice
       ? [
@@ -42,13 +44,17 @@ export default function LandingHeroFacts({ minPrice }: LandingHeroFactsProps) {
           },
         ]
       : []),
-    {
-      icon: "check",
-      title: "Строительство в ипотеку",
-      shortTitle: "Можно в ипотеку",
-      text: "",
-      href: "/ipoteka",
-    },
+    ...(showMortgage
+      ? [
+          {
+            icon: "check",
+            title: "Строительство в ипотеку",
+            shortTitle: "Можно в ипотеку",
+            text: "",
+            href: "/ipoteka",
+          },
+        ]
+      : []),
     {
       icon: "contract",
       title: "Надёжная сделка",
