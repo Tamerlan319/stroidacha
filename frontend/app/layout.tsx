@@ -7,7 +7,7 @@ import MobileHorizontalLock from "./components/MobileScrollFix";
 import SiteFooter from "./components/SiteFooter";
 import SiteHeader from "./components/SiteHeader";
 import { SocialLinkData, SocialLinksProvider } from "./components/SocialLinksProvider";
-import CookieBanner from "./components/CookieBanner";
+import CookieNotice from "./components/CookieNotice";
 import MobileContactBar from "./components/MobileContactBar";
 import YandexMetrika from "./components/YandexMetrika";
 import {
@@ -261,7 +261,9 @@ export default async function RootLayout({
           <SiteFooter />
           <MobileContactBar />
           <YandexMetrika />
-          <CookieBanner />
+          {/* Окно выбора cookie (components/CookieBanner.tsx) отключено по
+              решению владельца, вместо него — уведомление в углу. */}
+          <CookieNotice />
         </SocialLinksProvider>
       </body>
     </html>

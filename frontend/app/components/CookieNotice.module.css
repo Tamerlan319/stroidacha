@@ -1,0 +1,146 @@
+/* В правом нижнем углу. Над нижней панелью связи на телефоне
+   (MobileContactBar, 900), под окнами заявки и просмотра фото (10000+). */
+.notice {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 950;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: min(460px, calc(100vw - 40px));
+  border-radius: 16px;
+  background: #1f3325;
+  box-shadow: 0 18px 42px rgba(15, 22, 16, 0.3);
+  padding: 14px 14px 14px 16px;
+  animation: cookieNoticeIn 0.25s ease-out;
+}
+
+.notice p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.notice a {
+  color: #f2c174;
+}
+
+.info {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  color: #f2c174;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.agree {
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1f3325;
+  padding: 0 18px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.agree:hover {
+  background: #f6efe4;
+}
+
+/* Крестик на углу плашки, как на привычных уведомлениях. Видимый кружок
+   небольшой, а область нажатия расширена до 42px — под палец. */
+.close {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #1f3325;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
+  color: #ffffff;
+  padding: 0;
+  cursor: pointer;
+}
+
+.close::after {
+  position: absolute;
+  inset: -8px;
+  content: "";
+}
+
+.close svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+}
+
+.agree:focus-visible,
+.close:focus-visible,
+.notice a:focus-visible {
+  outline: 3px solid rgba(242, 193, 116, 0.7);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .notice {
+    right: 10px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    left: 10px;
+    width: auto;
+    gap: 10px;
+    padding: 12px 12px 12px 14px;
+  }
+
+  .notice p {
+    font-size: 12.5px;
+  }
+
+  .close {
+    left: -6px;
+  }
+}
+
+@media (max-width: 380px) {
+  .notice {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .info {
+    display: none;
+  }
+}
+
+@keyframes cookieNoticeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice {
+    animation: none;
+  }
+}
