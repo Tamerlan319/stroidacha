@@ -174,9 +174,12 @@ Bot API Telegram с российских IP часто недоступен на
 
 ## Резервные копии
 
-`scripts/deploy.sh` дампит Postgres при каждом деплое. Дамп содержит все
-заявки целиком (телефоны, переписку, IP) — по 152-ФЗ его нужно защищать
-не хуже рабочей базы, поэтому:
+`scripts/backup-db.sh` дампит Postgres перед каждым деплоем и ежедневно в
+03:30 по cron (запись в crontab пользователя деплоя ставит сам
+`scripts/deploy.sh`). В `/opt/brusoteka-backups` всегда остаётся одна,
+самая свежая копия: предыдущая удаляется, как только новая записалась
+целиком. Дамп содержит заявки — по 152-ФЗ его нужно защищать не хуже
+рабочей базы, поэтому:
 
 **Шифрование.** Один раз сгенерируйте пару GPG-ключей — приватную часть
 не храните на этом же сервере (заберите к себе и в надёжное место):
@@ -252,14 +255,25 @@ docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
 публичной медиатеки.
 
 Заявки старше `LEAD_RETENTION_MONTHS` месяцев (по умолчанию 24, задаётся
-в `backend/.env.prod`) нужно обезличивать по расписанию — в проекте нет
-celery/beat, поэтому это обычный `cron` на сервере:
+в `backend/.env.prod`) обезличиваются ежедневно в 04:00 по cron — запись
+в crontab пользователя деплоя ставит `scripts/deploy.sh`, лог пишется в
+`~/brusoteka-anonymize-leads.log`.
+
+**Шифрование телефонов.** Номер в заявке хранится зашифрованным ключом
+`LEAD_PHONE_ENCRYPTION_KEY` из `backend/.env.prod` (любая длинная случайная
+строка). Пока ключ не задан, номера пишутся открытым текстом, а Django при
+запуске выводит предупреждение `leads.W001`. Задать ключ один раз:
 
 ```bash
-crontab -u brusoteka-deploy -e
-# добавить строку:
-0 4 1 * * /opt/brusoteka/scripts/cron-anonymize-leads.sh >> /var/log/brusoteka-anonymize-leads.log 2>&1
+cd /opt/brusoteka
+printf '\nLEAD_PHONE_ENCRYPTION_KEY=%s\n' "$(openssl rand -base64 48)" >> backend/.env.prod
+docker compose --env-file backend/.env.prod -f docker-compose.prod.yml up -d backend
+docker compose --env-file backend/.env.prod -f docker-compose.prod.yml \
+  exec backend python manage.py encrypt_lead_phones
 ```
+
+Сохраните копию ключа в надёжном месте вне сервера: без него сохранённые
+номера — и в базе, и в бэкапе — не прочитать.
 
 Проверить, что будет удалено, без реального изменения данных:
 

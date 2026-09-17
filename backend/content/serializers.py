@@ -36,7 +36,25 @@ class FAQSerializer(serializers.ModelSerializer):
         fields = ("id", "question", "answer", "sort_order")
 
 
+def public_author_name(full_name):
+    """«Андрей Кузнецов» → «Андрей К.».
+
+    Полное имя клиента хранится в админке, а на сайт и в API уходит имя с
+    инициалом: так отзыв остаётся живым, но человека по нему не узнать
+    (152-ФЗ, ст. 10.1).
+    """
+    words = full_name.split()
+    if len(words) < 2:
+        return full_name.strip()
+    return f"{words[0]} {words[1][0].upper()}."
+
+
 class ReviewSerializer(serializers.ModelSerializer):
+    author_name = serializers.SerializerMethodField()
+
+    def get_author_name(self, review):
+        return public_author_name(review.author_name)
+
     class Meta:
         model = Review
         fields = (

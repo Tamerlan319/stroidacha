@@ -3,9 +3,12 @@
 Конкуренты и боты «скручивают» рекламу: заходят с объявления и оставляют
 заявку, чтобы Директ засчитал конверсию и учился на мусорном трафике. Такую
 заявку не отклоняем — за подозрением может стоять живой клиент: она
-сохраняется и уходит менеджерам как обычно. Но в админке она помечена, а в
-ответе API count_goal=false — форма не отправляет по ней цель «Заявка
+сохраняется и уходит менеджерам как обычно, с пометкой «проверьте» в письме.
+В ответе API count_goal=false — форма не отправляет по ней цель «Заявка
 отправлена» в Метрику (см. frontend/app/components/LeadForm.tsx).
+
+Сама оценка в базе не хранится: всё, что нужно, считается в момент приёма
+заявки из данных запроса и уже сохранённых телефонов.
 """
 
 import logging
@@ -26,9 +29,6 @@ logger = logging.getLogger(__name__)
 # меньше настоящего времени заполнения.
 MIN_FORM_FILL_MS = 2000
 RECENT_WINDOW = timedelta(hours=24)
-# За одним IP мобильного оператора сидит много людей: заявки с двух разных
-# номеров за сутки ещё норма, с третьего — уже нет.
-MAX_OTHER_PHONES_PER_IP = 1
 
 BOT_USER_AGENT_RE = re.compile(
     r"bots?[/;)]|crawl|spider|headless|phantomjs|selenium|puppeteer|playwright"
@@ -46,7 +46,6 @@ REASON_LABELS = {
     "fake_phone": "номер похож на выдуманный",
     "bot_user_agent": "браузер похож на программу",
     "repeat_phone": "повторная заявка с этого номера за сутки",
-    "ip_many_phones": "с этого IP за сутки заявки с разных номеров",
 }
 
 
@@ -63,11 +62,11 @@ def looks_like_fake_phone(phone):
     )
 
 
-def detect_reasons(*, phone, ip_address, user_agent, form_elapsed_ms):
+def detect_reasons(*, phone, user_agent, form_elapsed_ms):
     reasons = []
 
     if form_elapsed_ms is None:
-        # Обе формы сайта всегда присылают время заполнения. Без него заявку
+        # Форма сайта всегда присылает время заполнения. Без него заявку
         # отправили в API напрямую, минуя страницу.
         reasons.append("no_form_timing")
     elif form_elapsed_ms < MIN_FORM_FILL_MS:
@@ -79,29 +78,22 @@ def detect_reasons(*, phone, ip_address, user_agent, form_elapsed_ms):
     if not user_agent or BOT_USER_AGENT_RE.search(user_agent):
         reasons.append("bot_user_agent")
 
-    recent = Lead.objects.filter(created_at__gte=timezone.now() - RECENT_WINDOW)
-
-    if phone and recent.filter(phone=phone).exists():
-        reasons.append("repeat_phone")
-
-    if ip_address:
-        other_phones = (
-            recent.filter(ip_address=ip_address)
+    if phone:
+        # Телефоны зашифрованы, сравнить их средствами базы нельзя — заявок
+        # за сутки единицы, сверяем расшифрованные номера здесь.
+        recent_phones = (
+            Lead.objects.filter(created_at__gte=timezone.now() - RECENT_WINDOW)
             .exclude(phone="")
-            .exclude(phone=phone)
-            .order_by()
-            .values("phone")
-            .distinct()
-            .count()
+            .values_list("phone", flat=True)
         )
-        if other_phones > MAX_OTHER_PHONES_PER_IP:
-            reasons.append("ip_many_phones")
+        if phone in recent_phones:
+            reasons.append("repeat_phone")
 
     return reasons
 
 
 def assess_lead(**signals):
-    """Причины подозревать заявку подписью для админки, пустая строка — чисто.
+    """Причины подозревать заявку одной строкой, пустая строка — чисто.
 
     Сбой самой проверки не должен стоить заявки: тогда считаем её обычной.
     """
@@ -114,4 +106,4 @@ def assess_lead(**signals):
         logger.exception("Не удалось проверить заявку на накрутку")
         return ""
 
-    return "; ".join(REASON_LABELS[reason] for reason in reasons)[:255]
+    return "; ".join(REASON_LABELS[reason] for reason in reasons)

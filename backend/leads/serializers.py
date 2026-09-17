@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 from django.conf import settings
 from django.db import transaction
@@ -60,13 +61,12 @@ def normalize_russian_phone(value):
 
 
 class LeadMetadataField(serializers.CharField):
-    """Служебное поле заявки, которого нет в форме: адрес страницы, UTM-метки.
+    """Служебное поле заявки, которого нет в форме, — адрес страницы.
 
     Слишком длинное значение обрезается до размера колонки, а не отклоняет
     заявку целиком. Иначе человек получает ошибку по полю, которое не видит
-    и не может исправить: так терялись заявки с заходов из поиска Яндекса
-    (длинный etext в адресе) и из Директа (utm_term на кириллице + yclid) —
-    адрес страницы не влезал в 200 символов, сервер отвечал 400.
+    и не может исправить: так терялись заявки с заходов из поиска Яндекса и
+    из Директа с длинными адресами.
     """
 
     def __init__(self, model_field_name, **kwargs):
@@ -104,17 +104,15 @@ class FormElapsedField(serializers.Field):
 
 
 class LeadCreateSerializer(serializers.ModelSerializer):
+    """Приём заявки с сайта.
+
+    Метки рекламы, идентификаторы Метрики и прочие поля, которые могла
+    прислать старая версия формы, в сериализаторе не объявлены и молча
+    отбрасываются — в базу уходит только минимум (см. leads/models.py).
+    """
+
     phone = serializers.CharField(trim_whitespace=True, max_length=50)
     page_url = LeadMetadataField("page_url")
-    utm_source = LeadMetadataField("utm_source")
-    utm_medium = LeadMetadataField("utm_medium")
-    utm_campaign = LeadMetadataField("utm_campaign")
-    utm_content = LeadMetadataField("utm_content")
-    utm_term = LeadMetadataField("utm_term")
-    # Для офлайн-конверсий Метрики (leads/admin.py). Нестрогие, как и метки:
-    # кривое значение заявку не отклоняет, а просто не сохраняется.
-    metrika_client_id = LeadMetadataField("metrika_client_id", write_only=True)
-    yclid = LeadMetadataField("yclid", write_only=True)
     # Та же логика, что у LeadMetadataField: неизвестный источник (новая форма
     # на фронте раньше, чем бэкенд узнал о её source) не должен терять заявку.
     source = serializers.CharField(required=False, allow_blank=True)
@@ -160,7 +158,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
     )
     form_elapsed_ms = FormElapsedField()
     # Отправлять ли по заявке цель в Метрику: false у заявок с признаками
-    # накрутки. Какими именно — наружу не отдаём, это видно только в админке.
+    # накрутки. Какими именно — наружу не отдаём.
     count_goal = serializers.SerializerMethodField()
 
     class Meta:
@@ -171,13 +169,6 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             "source",
             "project_slug",
             "page_url",
-            "utm_source",
-            "utm_medium",
-            "utm_campaign",
-            "utm_content",
-            "utm_term",
-            "metrika_client_id",
-            "yclid",
             "website",
             "smartcaptcha_token",
             "consent_accepted",
@@ -188,7 +179,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         )
 
     def get_count_goal(self, lead):
-        return not lead.is_suspicious
+        return not getattr(lead, "suspicion_note", "")
 
     def validate_phone(self, value):
         return normalize_russian_phone(value)
@@ -196,16 +187,12 @@ class LeadCreateSerializer(serializers.ModelSerializer):
     def validate_page_url(self, value):
         # Не http(s) — не отклоняем заявку, просто не сохраняем адрес: в
         # админке он выводится ссылкой, javascript:/data: там не нужны.
-        if value and not value.lower().startswith(("https://", "http://")):
+        if not value or not value.lower().startswith(("https://", "http://")):
             return ""
-        return value
-
-    def validate_metrika_client_id(self, value):
-        # ClientID Метрики — только цифры.
-        return value if value.isdigit() else ""
-
-    def validate_yclid(self, value):
-        return value if re.fullmatch(r"[\w-]+", value) else ""
+        # Только сама страница: параметры (utm, yclid, etext) и якорь — это
+        # данные о визите, а не о заявке.
+        parts = urlsplit(value)
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
     def validate_source(self, value):
         if value in Lead.Source.values:
@@ -263,6 +250,7 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         ip_address = self.get_client_ip(request) if request else None
 
+        # IP нужен только для проверки капчи в этот момент и не сохраняется.
         if not verify_smartcaptcha(token, ip_address):
             raise serializers.ValidationError(
                 {
@@ -296,27 +284,20 @@ class LeadCreateSerializer(serializers.ModelSerializer):
             ).first()
 
         request = self.context.get("request")
-        if request:
-            validated_data["ip_address"] = self.get_client_ip(request)
-            validated_data["user_agent"] = request.META.get(
-                "HTTP_USER_AGENT",
-                "",
-            )
-
-        suspicion_reasons = assess_lead(
+        suspicion_note = assess_lead(
             phone=validated_data.get("phone", ""),
-            ip_address=validated_data.get("ip_address"),
-            user_agent=validated_data.get("user_agent", ""),
+            user_agent=request.META.get("HTTP_USER_AGENT", "") if request else "",
             form_elapsed_ms=form_elapsed_ms,
         )
 
         lead = Lead.objects.create(
             consent_version=consent_version,
             consent_given_at=timezone.now(),
-            is_suspicious=bool(suspicion_reasons),
-            suspicion_reasons=suspicion_reasons,
             **validated_data,
         )
+        # Не поле модели: нужно только ответу формы (count_goal) и письму
+        # менеджерам, в базу не пишется.
+        lead.suspicion_note = suspicion_note
 
         for uploaded_file in attachments:
             LeadAttachment.objects.create(

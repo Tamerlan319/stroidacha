@@ -114,7 +114,8 @@ class LeadApiComplianceTests(APITestCase):
         response = self.client.post("/api/leads/", payload, format="multipart")
 
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(Lead.objects.get().page_url, payload["page_url"])
+        # Параметры визита не сохраняются — только сама страница.
+        self.assertEqual(Lead.objects.get().page_url, "https://brusodel.ru/bani-iz-brusa")
 
     def test_oversized_metadata_is_truncated_not_rejected(self):
         payload = self.valid_payload()
@@ -124,9 +125,7 @@ class LeadApiComplianceTests(APITestCase):
         response = self.client.post("/api/leads/", payload, format="multipart")
 
         self.assertEqual(response.status_code, 201)
-        lead = Lead.objects.get()
-        self.assertEqual(len(lead.page_url), 2000)
-        self.assertEqual(len(lead.utm_term), 255)
+        self.assertEqual(Lead.objects.get().page_url, "https://brusodel.ru/")
 
     def test_non_http_page_url_is_dropped_not_rejected(self):
         payload = self.valid_payload()

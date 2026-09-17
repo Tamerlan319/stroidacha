@@ -51,6 +51,12 @@ DATA_DIR = Path(os.environ.get("TELEGRAM_BOT_DATA_DIR", "/app/data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "relay.sqlite3"
 
+# Сколько хранится диалог после последнего сообщения в нём (152-ФЗ, ст. 5
+# ч. 7). Старше — удаляется целиком: переписка, подпись собеседника и связи
+# с пересланными админу сообщениями.
+RETENTION_DAYS = int(os.environ.get("TELEGRAM_BOT_RETENTION_DAYS", "90"))
+PURGE_INTERVAL_SECONDS = 12 * 60 * 60
+
 PAGE_SIZE = 8
 STATUS_EMOJI = {"new": "🆕", "active": "💬", "closed": "✅"}
 STATUS_LABEL = {"new": "Новые", "active": "Активные", "closed": "Закрытые", "all": "Все"}
@@ -480,12 +486,51 @@ async def setup_commands() -> None:
     )
 
 
+def purge_old_conversations() -> int:
+    """Удаляет диалоги без сообщений дольше RETENTION_DAYS. Возвращает их число."""
+    cutoff = int(time.time()) - RETENTION_DAYS * 24 * 60 * 60
+    with get_db() as conn:
+        stale = [
+            row["user_chat_id"]
+            for row in conn.execute(
+                "SELECT user_chat_id FROM conversations WHERE last_message_at < ?",
+                (cutoff,),
+            )
+        ]
+        for user_chat_id in stale:
+            conn.execute("DELETE FROM messages WHERE user_chat_id = ?", (user_chat_id,))
+            conn.execute("DELETE FROM relay WHERE user_chat_id = ?", (user_chat_id,))
+            conn.execute(
+                "UPDATE admin_focus SET user_chat_id = NULL WHERE user_chat_id = ?",
+                (user_chat_id,),
+            )
+            conn.execute("DELETE FROM conversations WHERE user_chat_id = ?", (user_chat_id,))
+        # Сообщения старше срока, оставшиеся без диалога.
+        conn.execute("DELETE FROM messages WHERE created_at < ?", (cutoff,))
+    return len(stale)
+
+
+async def purge_loop() -> None:
+    while True:
+        try:
+            removed = purge_old_conversations()
+            if removed:
+                logger.info("Удалено диалогов старше %s дн.: %s", RETENTION_DAYS, removed)
+        except Exception:
+            logger.exception("Не удалось удалить старые диалоги")
+        await asyncio.sleep(PURGE_INTERVAL_SECONDS)
+
+
 async def main() -> None:
     logger.info("Стартуем relay-бота, admin_chat_id=%s, proxy=%s", ADMIN_CHAT_ID, SOCKS_PROXY_URL)
     me = await bot.get_me()
     logger.info("Подключились к Telegram как @%s (id=%s)", me.username, me.id)
     await setup_commands()
-    await dp.start_polling(bot)
+    purge_task = asyncio.create_task(purge_loop())
+    try:
+        await dp.start_polling(bot)
+    finally:
+        purge_task.cancel()
 
 
 if __name__ == "__main__":

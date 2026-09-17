@@ -263,6 +263,11 @@ X_FRAME_OPTIONS = "DENY"
 # циклом принятия решения, а не жёсткое требование закона.
 LEAD_RETENTION_MONTHS = env.int("LEAD_RETENTION_MONTHS", default=24)
 
+# Ключ шифрования телефонов в заявках (leads/crypto.py): любая длинная
+# случайная строка. Пустой — номера сохраняются без шифрования, проверка
+# leads.W001 предупреждает об этом.
+LEAD_PHONE_ENCRYPTION_KEY = env("LEAD_PHONE_ENCRYPTION_KEY", default="")
+
 REST_FRAMEWORK = {
     # ScopedRateThrottle не ограничивает вьюхи без throttle_scope — это
     # безопасный глобальный дефолт, реальный лимит задан только для приёма

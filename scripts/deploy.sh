@@ -3,7 +3,6 @@
 set -Eeuo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKUP_DIR="/opt/brusoteka-backups"
 PRIMARY_DOMAIN="brusodel.ru"
 
 cd "$PROJECT_ROOT"
@@ -19,41 +18,9 @@ COMPOSE=(
 	-f docker-compose.prod.yml
 )
 
-mkdir -p "$BACKUP_DIR"
-
-if "${COMPOSE[@]}" ps --status running --services | grep -qx db; then
-	BACKUP_FILE="$BACKUP_DIR/postgres-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
-
-	# Дамп содержит все заявки (телефоны, переписку, IP) — по 152-ФЗ бэкап
-	# нужно защищать не хуже рабочей БД. Шифруем asymmetric-ключом GPG, если
-	# он настроен (см. DEPLOYMENT.md — "Резервные копии"), чтобы приватный
-	# ключ для расшифровки не приходилось хранить на этом же сервере.
-	if [[ -n "${BACKUP_GPG_RECIPIENT:-}" ]]; then
-		"${COMPOSE[@]}" exec -T db \
-			sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' \
-			| gzip -9 \
-			| gpg --batch --yes --trust-model always \
-				--encrypt --recipient "$BACKUP_GPG_RECIPIENT" \
-				--output "$BACKUP_FILE.gpg"
-		BACKUP_FILE="$BACKUP_FILE.gpg"
-	else
-		echo "WARNING: BACKUP_GPG_RECIPIENT is not set in backend/.env.prod — backup will be written UNENCRYPTED. See DEPLOYMENT.md > 'Резервные копии'." >&2
-		"${COMPOSE[@]}" exec -T db \
-			sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' \
-			| gzip -9 > "$BACKUP_FILE"
-	fi
-
-	# Копия за пределами этого сервера — без неё компрометация VPS означает
-	# потерю и рабочей БД, и всех свежих бэкапов разом. Настраивается через
-	# rclone (см. DEPLOYMENT.md); без настройки шаг просто пропускается.
-	if [[ -n "${BACKUP_REMOTE_RCLONE_TARGET:-}" ]]; then
-		if command -v rclone >/dev/null 2>&1; then
-			rclone copy "$BACKUP_FILE" "$BACKUP_REMOTE_RCLONE_TARGET"
-		else
-			echo "WARNING: BACKUP_REMOTE_RCLONE_TARGET is set but rclone is not installed on this host — off-site backup copy was skipped." >&2
-		fi
-	fi
-fi
+# Резервная копия БД перед обновлением. В папке бэкапов всегда остаётся одна,
+# самая свежая копия (см. scripts/backup-db.sh).
+bash "$PROJECT_ROOT/scripts/backup-db.sh"
 
 echo "Building application images..."
 "${COMPOSE[@]}" build --pull
@@ -107,11 +74,21 @@ fi
 
 echo "HTTPS is ready: https://${PRIMARY_DOMAIN}"
 
-find "$BACKUP_DIR" \
-	-type f \
-	\( -name 'postgres-*.sql.gz' -o -name 'postgres-*.sql.gz.gpg' \) \
-	-mtime +14 \
-	-delete
+# Расписание обслуживания (152-ФЗ, ст. 5 ч. 7): ежедневный бэкап с одной
+# свежей копией и обезличивание заявок старше срока хранения. Строки с
+# меткой brusoteka-managed каждый деплой переписывает заново, остальные
+# записи crontab не трогаются.
+if command -v crontab >/dev/null 2>&1; then
+	{
+		crontab -l 2>/dev/null | grep -v 'brusoteka-managed' || true
+		echo "30 3 * * * bash $PROJECT_ROOT/scripts/backup-db.sh >> \$HOME/brusoteka-backup.log 2>&1 # brusoteka-managed"
+		echo "0 4 * * * bash $PROJECT_ROOT/scripts/cron-anonymize-leads.sh >> \$HOME/brusoteka-anonymize-leads.log 2>&1 # brusoteka-managed"
+	} | crontab -
+	echo "Maintenance schedule:"
+	crontab -l | grep 'brusoteka-managed'
+else
+	echo "WARNING: crontab is not available — daily backup and lead anonymization are NOT scheduled." >&2
+fi
 
 docker image prune -f
 docker builder prune -f --filter until=168h

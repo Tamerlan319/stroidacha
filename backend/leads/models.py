@@ -1,11 +1,21 @@
 from django.db import models
 
+from .crypto import EncryptedPhoneField
 from .storage import PrivateLeadAttachmentStorage
 
 private_attachment_storage = PrivateLeadAttachmentStorage()
 
 
 class Lead(models.Model):
+    """Заявка с сайта.
+
+    Хранится только то, что нужно, чтобы связаться с человеком и сделать
+    расчёт (152-ФЗ, ст. 5 ч. 5): телефон — зашифрованным (leads/crypto.py),
+    комментарий, файлы, форма и страница отправки, версия и время согласия.
+    Метки рекламы, IP, данные браузера и идентификаторы Метрики не
+    сохраняются: откуда пришёл посетитель, видно в самой Метрике.
+    """
+
     class Source(models.TextChoices):
         CALLBACK = "callback", "Заказать звонок"
         PROJECT_ORDER = "project_order", "Заказать проект"
@@ -24,14 +34,8 @@ class Lead(models.Model):
         FAQ_PAGE = "faq_page", "Вопрос со страницы FAQ"
         REVIEWS_PAGE = "reviews_page", "Заявка со страницы отзывов"
 
-    name = models.CharField("Имя", max_length=255, blank=True)
-    phone = models.CharField("Телефон", max_length=50, blank=True)
-    email = models.EmailField("Email", blank=True)
-    region = models.CharField(
-        "Регион строительства",
-        max_length=255,
-        blank=True,
-    )
+    # 255, а не длина номера: в базе лежит шифр.
+    phone = EncryptedPhoneField("Телефон", max_length=255, blank=True)
     message = models.TextField("Комментарий", blank=True)
 
     source = models.CharField(
@@ -49,17 +53,9 @@ class Lead(models.Model):
         blank=True,
     )
 
-    # Не 200 по умолчанию: адрес захода из Директа (UTM с ключевой фразой на
-    # кириллице в %-кодировке + yclid) или из поиска Яндекса (etext) легко
-    # длиннее, и из-за этого заявки отклонялись (см. LeadMetadataField).
+    # Только адрес страницы: параметры (метки рекламы, yclid, etext)
+    # отбрасываются при приёме заявки (LeadCreateSerializer).
     page_url = models.URLField("Страница заявки", max_length=2000, blank=True)
-    utm_source = models.CharField("UTM source", max_length=255, blank=True)
-    utm_medium = models.CharField("UTM medium", max_length=255, blank=True)
-    utm_campaign = models.CharField("UTM campaign", max_length=255, blank=True)
-    utm_content = models.CharField("UTM content", max_length=255, blank=True)
-    utm_term = models.CharField("UTM term", max_length=255, blank=True)
-    ip_address = models.GenericIPAddressField("IP-адрес", null=True, blank=True)
-    user_agent = models.TextField("User agent", blank=True)
 
     consent_version = models.CharField(
         "Версия согласия",
@@ -72,42 +68,6 @@ class Lead(models.Model):
         blank=True,
     )
 
-    # Признаки накрутки (см. leads/fraud.py). Заявка всё равно доходит до
-    # менеджеров, но цель в Метрику по ней не отправляется.
-    is_suspicious = models.BooleanField("Подозрительная", default=False)
-    suspicion_reasons = models.CharField(
-        "Почему подозрительная",
-        max_length=255,
-        blank=True,
-    )
-
-    # Качество отмечает менеджер после разговора. Реальные заявки выгружаются
-    # в Метрику офлайн-конверсиями (admin → «Выгрузить для Метрики»), чтобы
-    # Директ учился на настоящих клиентах, а не на фейках.
-    class Quality(models.TextChoices):
-        UNCHECKED = "unchecked", "Не проверена"
-        REAL = "real", "Реальная"
-        FAKE = "fake", "Фейк"
-
-    quality = models.CharField(
-        "Качество заявки",
-        max_length=16,
-        choices=Quality.choices,
-        default=Quality.UNCHECKED,
-    )
-    # Идентификаторы для офлайн-конверсий: по ним Метрика привязывает
-    # загруженную конверсию к визиту (и к рекламному клику).
-    metrika_client_id = models.CharField(
-        "ClientID Метрики",
-        max_length=32,
-        blank=True,
-        help_text=(
-            "Приходит с формой. Если пусто — можно вписать из Вебвизора "
-            "Метрики (карточка посетителя → ClientID)."
-        ),
-    )
-    yclid = models.CharField("yclid (клик Директа)", max_length=100, blank=True)
-
     is_processed = models.BooleanField("Обработана", default=False)
     manager_comment = models.TextField("Комментарий менеджера", blank=True)
 
@@ -119,8 +79,8 @@ class Lead(models.Model):
         help_text=(
             "Заполняется автоматически командой anonymize_old_leads "
             "(см. LEAD_RETENTION_MONTHS). После обезличивания телефон, "
-            "комментарий, IP, user-agent и вложения удалены — запись "
-            "оставлена только для статистики по источникам обращений."
+            "комментарий, страница и вложения удалены — запись оставлена "
+            "только для статистики по формам."
         ),
     )
 
@@ -133,7 +93,9 @@ class Lead(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.get_source_display()} — {self.phone}"
+        # Без телефона: админка пишет это название в журнал изменений
+        # открытым текстом.
+        return f"Заявка №{self.pk} — {self.get_source_display()}"
 
 
 class LeadAttachment(models.Model):

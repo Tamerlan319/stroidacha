@@ -26,9 +26,9 @@ class Command(BaseCommand):
     Политика на сайте (/privacy) обещает не хранить ПДн дольше, чем нужно
     для целей обработки, но до этой команды это ничем не было обеспечено —
     заявки хранились бессрочно. Команда не удаляет саму запись Lead (она
-    остаётся полезна для статистики по источникам/UTM), но стирает всё, что
-    прямо идентифицирует человека: телефон, имя, email, комментарий, IP,
-    user-agent, страницу отправки и файлы вложений.
+    остаётся полезна для статистики по формам), но стирает всё, что
+    относится к человеку: телефон, комментарий, страницу отправки и файлы
+    вложений.
 
     Комментарий менеджера (manager_comment) намеренно не трогается
     автоматически — если там записаны личные данные клиента, почистите
@@ -40,8 +40,8 @@ class Command(BaseCommand):
 
     help = (
         "Обезличивает заявки старше LEAD_RETENTION_MONTHS месяцев: стирает "
-        "телефон, имя, email, комментарий, IP, user-agent, страницу "
-        "отправки и удаляет вложения, оставляя саму запись для статистики."
+        "телефон, комментарий, страницу отправки и удаляет вложения, "
+        "оставляя саму запись для статистики."
     )
 
     def add_arguments(self, parser):
@@ -100,27 +100,15 @@ class Command(BaseCommand):
                         attachment.file.delete(save=False)
                     attachment.delete()
 
-                lead.name = ""
                 lead.phone = ""
-                lead.email = ""
                 lead.message = ""
-                lead.ip_address = None
-                lead.user_agent = ""
                 lead.page_url = ""
-                lead.metrika_client_id = ""
-                lead.yclid = ""
                 lead.anonymized_at = now
                 lead.save(
                     update_fields=[
-                        "name",
                         "phone",
-                        "email",
                         "message",
-                        "ip_address",
-                        "user_agent",
                         "page_url",
-                        "metrika_client_id",
-                        "yclid",
                         "anonymized_at",
                     ]
                 )
