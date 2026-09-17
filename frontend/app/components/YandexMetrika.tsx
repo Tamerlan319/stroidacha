@@ -15,16 +15,32 @@ import {
 } from "../lib/metrika";
 import { YANDEX_METRIKA_ID as METRIKA_ID } from "../lib/site";
 
-// Метрика грузится только после «Принять все» в баннере cookie
-// (CookieBanner.tsx): без согласия код счётчика на страницу не попадает.
-// Исключение — фрейм интерфейса Метрики (карта кликов, аналитика форм,
-// Вебвизор): там страницу смотрит владелец счётчика, хранилище фрейма
-// браузер держит отдельно и выбора в нём нет никогда, а без счётчика
-// Метрика пишет «Не установлен код счётчика» (см. lib/metrika.ts).
+function subscribeToNothing() {
+  return () => undefined;
+}
+
+// Метрика грузится сразу при входе на сайт и не грузится только у тех, кто
+// нажал «Только необходимые» в окне cookie (CookieBanner.tsx) — об этом
+// сказано в самом окне и в политиках. Так владелец решил на время проверки
+// трафика: окно с выбором до загрузки счётчика оставляло Метрику без
+// большинства визитов из рекламы. Вернуть загрузку только после «Принять
+// все» — условие ниже на consent === "all".
+//
+// Фрейм интерфейса Метрики (карта кликов, аналитика форм, Вебвизор): там
+// страницу смотрит владелец счётчика, хранилище фрейма браузер держит
+// отдельно, а без счётчика Метрика пишет «Не установлен код счётчика» (см.
+// lib/metrika.ts).
 export default function YandexMetrika() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
   const pathname = usePathname();
   const consent = useCookieConsent();
+  // Только на клиенте, после чтения выбора: скрипт, отрисованный на сервере,
+  // Next запустил бы ещё до гидратации — в том числе у отказавшихся.
+  const isClient = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false
+  );
   const insideMetrikaFrame = useSyncExternalStore(
     subscribeToMetrikaFrame,
     isInsideMetrikaFrame,
@@ -86,7 +102,11 @@ export default function YandexMetrika() {
   const isLocalSite =
     siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1");
 
-  if (isLocalSite || !(consent === "all" || insideMetrikaFrame)) {
+  if (
+    !isClient ||
+    isLocalSite ||
+    (consent === "necessary" && !insideMetrikaFrame)
+  ) {
     return null;
   }
 
