@@ -49,11 +49,20 @@ class LeadSuspicionTests(APITestCase):
         self.assertIs(response.data["count_goal"], True)
 
     def test_too_fast_form_is_saved_without_goal(self):
-        response = self.post_lead(elapsed="800")
+        response = self.post_lead(elapsed="1500")
 
         self.assertEqual(response.status_code, 201)
         self.assertIs(response.data["count_goal"], False)
         self.assertEqual(Lead.objects.count(), 1)
+
+    def test_instant_submission_is_rejected(self):
+        # Быстрее секунды форму заполняет только скрипт: такую отправку не
+        # сохраняем вовсе, чтобы не тревожить менеджеров и владельцев чужих
+        # номеров.
+        response = self.post_lead(elapsed="200")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Lead.objects.count(), 0)
 
     def test_direct_api_call_without_timing_is_suspicious(self):
         response = self.post_lead(elapsed=None)
@@ -106,7 +115,7 @@ class LeadSuspicionTests(APITestCase):
 
     @override_settings(LEAD_NOTIFICATION_EMAILS=["manager@example.com"])
     def test_manager_email_warns_about_suspicious_lead(self):
-        self.post_lead(elapsed="300")
+        self.post_lead(elapsed="1500")
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertTrue(mail.outbox[0].subject.endswith("— проверьте"))
@@ -136,3 +145,48 @@ class FakePhoneTests(SimpleTestCase):
         ):
             with self.subTest(phone=phone):
                 self.assertTrue(looks_like_fake_phone(phone))
+
+
+@override_settings(LEAD_NOTIFICATION_EMAILS=[])
+class LeadThrottleTests(APITestCase):
+    """Лимиты на приём заявок с одного адреса (leads/throttling.py).
+
+    18.09.2026 с одного IP за 57 минут пришло восемь выдуманных заявок:
+    прежний лимит был мягче, а счётчик жил в памяти воркера, так что
+    фактический потолок удваивался.
+    """
+
+    def setUp(self):
+        cache.clear()
+
+    def post_lead(self, phone):
+        return self.client.post(
+            "/api/leads/",
+            {
+                "phone": phone,
+                "source": "home_hero_popup",
+                "page_url": "https://brusodel.ru/",
+                "consent_accepted": "true",
+                "form_elapsed_ms": "9000",
+            },
+            format="multipart",
+            HTTP_USER_AGENT=BROWSER_USER_AGENT,
+        )
+
+    def test_burst_from_one_address_is_cut_off(self):
+        codes = [self.post_lead(f"+7 (916) 482-15-{n:02d}") for n in range(40, 47)]
+        statuses = [response.status_code for response in codes]
+
+        self.assertEqual(statuses.count(201), 5)
+        self.assertEqual(statuses[-1], 429)
+        self.assertEqual(Lead.objects.count(), 5)
+
+    def test_limit_is_shared_between_workers(self):
+        # Кэш в базе (settings.CACHES) — счётчик общий для всех процессов,
+        # а не свой у каждого воркера gunicorn.
+        from django.conf import settings
+
+        self.assertEqual(
+            settings.CACHES["default"]["BACKEND"],
+            "django.core.cache.backends.db.DatabaseCache",
+        )

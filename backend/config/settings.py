@@ -270,18 +270,33 @@ LEAD_PHONE_ENCRYPTION_KEY = env("LEAD_PHONE_ENCRYPTION_KEY", default="")
 
 REST_FRAMEWORK = {
     # ScopedRateThrottle не ограничивает вьюхи без throttle_scope — это
-    # безопасный глобальный дефолт, реальный лимит задан только для приёма
-    # заявок (см. LeadCreateAPIView.throttle_scope), чтобы не мешать
-    # обычному чтению каталога.
+    # безопасный глобальный дефолт, реальные лимиты заданы только для приёма
+    # заявок (см. leads/throttling.py), чтобы не мешать обычному чтению
+    # каталога.
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "leads": env(
             "LEAD_THROTTLE_RATE",
-            default="10/hour",
+            default="5/hour",
+        ),
+        "leads_day": env(
+            "LEAD_THROTTLE_RATE_DAY",
+            default="10/day",
         ),
     },
+}
+
+# Кэш в базе, а не в памяти процесса: счётчики лимитов на заявки должны быть
+# общими для обоих воркеров gunicorn (см. leads/throttling.py). Таблицу
+# создаёт `manage.py createcachetable` — она есть в scripts/deploy.sh.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+        "TIMEOUT": 300,
+    }
 }
 
 # ---------------------------------------------------------------------------

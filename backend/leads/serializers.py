@@ -10,7 +10,7 @@ from rest_framework import serializers
 from catalog.models import Project
 
 from .captcha import verify_smartcaptcha
-from .fraud import assess_lead
+from .fraud import HARD_MIN_FORM_FILL_MS, assess_lead
 from .models import Lead, LeadAttachment
 
 
@@ -244,6 +244,13 @@ class LeadCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs.pop("website", ""):
+            raise serializers.ValidationError("Не удалось отправить заявку.")
+
+        # Мгновенная отправка — это скрипт, а не человек. Ответ такой же, как
+        # на заполненную ловушку: подсказывать боту, что именно его выдало,
+        # незачем.
+        elapsed = attrs.get("form_elapsed_ms")
+        if elapsed is not None and elapsed < HARD_MIN_FORM_FILL_MS:
             raise serializers.ValidationError("Не удалось отправить заявку.")
 
         token = attrs.pop("smartcaptcha_token", "")

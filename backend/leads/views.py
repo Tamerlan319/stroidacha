@@ -4,12 +4,12 @@ from django.http import FileResponse, Http404
 from rest_framework.generics import CreateAPIView
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAdminUser
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import Lead, LeadAttachment
 from .serializers import LeadCreateSerializer
 from .services import notify_managers_about_lead
+from .throttling import LeadBurstThrottle, LeadDailyThrottle
 
 
 logger = logging.getLogger(__name__)
@@ -28,12 +28,10 @@ class LeadCreateAPIView(CreateAPIView):
     # обязана остаться на сессии администратора).
     authentication_classes = []
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-    # Публичный AllowAny-эндпоинт без лимита раньше можно было заваливать
-    # фейковыми заявками или файлами по 20 МБ без охлаждения. Лимит — по IP
-    # (ScopedRateThrottle для анонимных запросов ключуется по адресу),
-    # настраивается через LEAD_THROTTLE_RATE (см. settings.REST_FRAMEWORK).
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "leads"
+    # Публичный AllowAny-эндпоинт без лимита можно заваливать фейковыми
+    # заявками или файлами по 20 МБ без охлаждения. Лимиты — по IP, часовой
+    # и суточный (см. leads/throttling.py).
+    throttle_classes = [LeadBurstThrottle, LeadDailyThrottle]
 
     def perform_create(self, serializer):
         lead = serializer.save()
