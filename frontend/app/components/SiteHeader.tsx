@@ -147,7 +147,11 @@ export default function SiteHeader() {
             от производителя
           </p>
 
-          <SocialLinks className="sdHeaderSocials" location="header" />
+          <SocialLinks
+            className="sdHeaderSocials"
+            location="header"
+            exclude={["vk", "max"]}
+          />
 
           {/* Цели кликов по телефону и мессенджерам отправляет общий
               обработчик в YandexMetrika.tsx, место — data-goal-location. */}
@@ -541,7 +545,10 @@ export default function SiteHeader() {
                   </a>
                   <span>Ежедневно с 9:00 до 20:00</span>
                 </div>
-                <SocialLinks location="header_mobile_menu" />
+                <SocialLinks
+                  location="header_mobile_menu"
+                  exclude={["vk", "max"]}
+                />
               </div>
             </div>
           </div>

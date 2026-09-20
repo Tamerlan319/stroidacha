@@ -26,11 +26,22 @@ type SocialLinksProps = {
   // Место на сайте для цели «Клик по мессенджеру». Саму цель отправляет общий
   // обработчик ссылок в YandexMetrika.tsx.
   location?: string;
+  // Площадки, которые здесь не показываем. В шапке оставлены только
+  // WhatsApp и Telegram — туда пишут клиенты, а ВКонтакте и MAX остаются
+  // в подвале и в форме заявки.
+  exclude?: string[];
 };
 
-export default function SocialLinks({ className = "", location }: SocialLinksProps) {
+export default function SocialLinks({
+  className = "",
+  location,
+  exclude,
+}: SocialLinksProps) {
   const contextLinks = useSocialLinks();
-  const links = contextLinks.length > 0 ? contextLinks : FALLBACK_LINKS;
+  const allLinks = contextLinks.length > 0 ? contextLinks : FALLBACK_LINKS;
+  const links = exclude
+    ? allLinks.filter((item) => !exclude.includes(item.platform))
+    : allLinks;
 
   return (
     <div
