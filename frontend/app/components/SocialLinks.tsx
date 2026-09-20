@@ -5,18 +5,19 @@ import Image from "next/image";
 import { useSocialLinks } from "./SocialLinksProvider";
 
 const PLATFORM_META: Record<string, { title: string; iconSrc: string }> = {
-  vk: { title: "ВКонтакте", iconSrc: "/social/vk.svg" },
-  max: { title: "MAX", iconSrc: "/social/max.svg" },
   whatsapp: { title: "WhatsApp", iconSrc: "/social/whatsapp.svg" },
   telegram: { title: "Telegram", iconSrc: "/social/telegram.svg" },
 };
+
+// Показываем только мессенджеры, где действительно отвечают. Ссылки
+// ВКонтакте и MAX могут оставаться в админке (модель SocialLink) — на сайт
+// они не попадут, пока платформы нет в PLATFORM_META.
+const SHOWN_PLATFORMS = Object.keys(PLATFORM_META);
 
 // Резервный список — только на случай, если запрос к API не удался при
 // самой первой загрузке layout.tsx. Реальные ссылки редактируются в Django
 // Admin (модель SocialLink), не здесь.
 const FALLBACK_LINKS = [
-  { platform: "vk", url: "https://vk.com/" },
-  { platform: "max", url: "https://max.ru/" },
   { platform: "whatsapp", url: "https://api.whatsapp.com/send?phone=79676801812" },
   { platform: "telegram", url: "https://t.me/brusodel_bot" },
 ];
@@ -26,22 +27,14 @@ type SocialLinksProps = {
   // Место на сайте для цели «Клик по мессенджеру». Саму цель отправляет общий
   // обработчик ссылок в YandexMetrika.tsx.
   location?: string;
-  // Площадки, которые здесь не показываем. В шапке оставлены только
-  // WhatsApp и Telegram — туда пишут клиенты, а ВКонтакте и MAX остаются
-  // в подвале и в форме заявки.
-  exclude?: string[];
 };
 
-export default function SocialLinks({
-  className = "",
-  location,
-  exclude,
-}: SocialLinksProps) {
+export default function SocialLinks({ className = "", location }: SocialLinksProps) {
   const contextLinks = useSocialLinks();
   const allLinks = contextLinks.length > 0 ? contextLinks : FALLBACK_LINKS;
-  const links = exclude
-    ? allLinks.filter((item) => !exclude.includes(item.platform))
-    : allLinks;
+  const links = allLinks.filter((item) =>
+    SHOWN_PLATFORMS.includes(item.platform)
+  );
 
   return (
     <div

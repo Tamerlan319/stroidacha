@@ -147,11 +147,7 @@ export default function SiteHeader() {
             от производителя
           </p>
 
-          <SocialLinks
-            className="sdHeaderSocials"
-            location="header"
-            exclude={["vk", "max"]}
-          />
+          <SocialLinks className="sdHeaderSocials" location="header" />
 
           {/* Цели кликов по телефону и мессенджерам отправляет общий
               обработчик в YandexMetrika.tsx, место — data-goal-location. */}
@@ -164,11 +160,15 @@ export default function SiteHeader() {
               >
                 {SITE_PHONE}
               </a>
-              {/* Кому неудобно звонить — пишет на почту: те же вопросы, но
-                  без разговора, и можно приложить планировку. */}
+              {/* Кому неудобно звонить — пишет на почту. Ссылка ведёт не в
+                  mailto:, а сразу в веб-интерфейс Яндекс Почты с
+                  подставленным адресом: почтовый клиент на компьютере
+                  настроен далеко не у всех. */}
               <a
                 className={headerStyles.email}
-                href={`mailto:${SITE_EMAIL}`}
+                href={`https://mail.yandex.ru/compose?mailto=${SITE_EMAIL}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 data-goal-location="header"
               >
                 {SITE_EMAIL}
@@ -545,10 +545,7 @@ export default function SiteHeader() {
                   </a>
                   <span>Ежедневно с 9:00 до 20:00</span>
                 </div>
-                <SocialLinks
-                  location="header_mobile_menu"
-                  exclude={["vk", "max"]}
-                />
+                <SocialLinks location="header_mobile_menu" />
               </div>
             </div>
           </div>

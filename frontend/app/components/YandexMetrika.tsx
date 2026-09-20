@@ -87,7 +87,12 @@ export default function YandexMetrika() {
         return;
       }
 
-      if (href.startsWith("mailto:")) {
+      // Почта на сайте ведёт в веб-интерфейс Яндекс Почты (SiteHeader.tsx),
+      // но mailto: остаётся в документах и подписи — считаем оба варианта.
+      if (
+        href.startsWith("mailto:") ||
+        /^https:\/\/mail\.yandex\.[a-z]+\/compose/.test(href)
+      ) {
         reachGoal("email_click", { location });
         return;
       }
