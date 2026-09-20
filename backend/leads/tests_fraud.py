@@ -64,6 +64,26 @@ class LeadSuspicionTests(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Lead.objects.count(), 0)
 
+    def test_reason_is_written_to_the_log(self):
+        # Причина в журнале — единственный способ потом понять, почему по
+        # заявке не засчиталась конверсия: в базе оценка не хранится.
+        with self.assertLogs("leads.serializers", level="INFO") as logs:
+            self.post_lead(user_agent="python-requests/2.31.0")
+
+        self.assertTrue(
+            any("не отправлена" in line and "программу" in line for line in logs.output),
+            logs.output,
+        )
+
+    def test_regular_lead_is_logged_too(self):
+        with self.assertLogs("leads.serializers", level="INFO") as logs:
+            self.post_lead()
+
+        self.assertTrue(
+            any("цель «Заявка отправлена» отправлена" in line for line in logs.output),
+            logs.output,
+        )
+
     def test_direct_api_call_without_timing_is_suspicious(self):
         response = self.post_lead(elapsed=None)
 

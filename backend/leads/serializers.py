@@ -1,3 +1,4 @@
+import logging
 import re
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
@@ -12,6 +13,9 @@ from catalog.models import Project
 from .captcha import verify_smartcaptcha
 from .fraud import HARD_MIN_FORM_FILL_MS, assess_lead
 from .models import Lead, LeadAttachment
+
+
+logger = logging.getLogger(__name__)
 
 
 MAX_ATTACHMENTS = 5
@@ -305,6 +309,16 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         # Не поле модели: нужно только ответу формы (count_goal) и письму
         # менеджерам, в базу не пишется.
         lead.suspicion_note = suspicion_note
+
+        # В журнал — только номер заявки и причина, без телефона и текста:
+        # иначе после каждой «потерянной» конверсии в Директе приходится
+        # гадать, отсеяла её проверка или визит просто был не с рекламы.
+        logger.info(
+            "Заявка %s: цель «Заявка отправлена» %s%s",
+            lead.pk,
+            "не отправлена" if suspicion_note else "отправлена",
+            f" ({suspicion_note})" if suspicion_note else "",
+        )
 
         for uploaded_file in attachments:
             LeadAttachment.objects.create(
