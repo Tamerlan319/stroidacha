@@ -28,6 +28,9 @@ const SMARTCAPTCHA_CLIENT_KEY =
 type SmartCaptchaRenderParams = {
   sitekey: string;
   hl?: string;
+  // Невидимая капча: кнопки «Я не робот» нет, задание видят только
+  // подозрительные запросы. Токен приходит в callback после execute().
+  invisible?: boolean;
   callback?: (token: string) => void;
 };
 
@@ -38,6 +41,7 @@ declare global {
         container: HTMLElement,
         params: SmartCaptchaRenderParams
       ) => number;
+      execute: (widgetId?: number) => void;
       reset: (widgetId?: number) => void;
       destroy: (widgetId?: number) => void;
     };
@@ -268,6 +272,11 @@ export default function LeadForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const captchaContainerRef = useRef<HTMLDivElement>(null);
   const captchaWidgetIdRef = useRef<number | null>(null);
+  // Человек нажал «Отправить», и заявка ждёт токен невидимой капчи.
+  const pendingSubmitRef = useRef(false);
+  const captchaWaitRef = useRef<number | null>(null);
+  // Отправку зовёт callback капчи, который создаётся раньше самой функции.
+  const submitLeadRef = useRef<(token: string) => void>(() => undefined);
   // С какого момента форма на странице — по времени до отправки сервер
   // отличает человека от скрипта (backend/leads/fraud.py).
   const formShownAtRef = useRef<number | null>(null);
@@ -275,6 +284,7 @@ export default function LeadForm({
   useEffect(() => {
     formShownAtRef.current = performance.now();
   }, []);
+
 
   useEffect(() => {
     if (
@@ -292,9 +302,17 @@ export default function LeadForm({
       {
         sitekey: SMARTCAPTCHA_CLIENT_KEY,
         hl: "ru",
+        invisible: true,
         callback: (token) => {
           setCaptchaToken(token);
           setErrors((current) => ({ ...current, captcha: undefined }));
+          // Человек нажал «Отправить», капча проверяла его молча — теперь
+          // есть токен и заявку можно дослать.
+          if (pendingSubmitRef.current) {
+            pendingSubmitRef.current = false;
+            window.clearTimeout(captchaWaitRef.current ?? undefined);
+            submitLeadRef.current(token);
+          }
         },
       }
     );
@@ -302,6 +320,8 @@ export default function LeadForm({
 
   useEffect(() => {
     return () => {
+      window.clearTimeout(captchaWaitRef.current ?? undefined);
+      pendingSubmitRef.current = false;
       if (captchaWidgetIdRef.current !== null) {
         window.smartCaptcha?.destroy(captchaWidgetIdRef.current);
         captchaWidgetIdRef.current = null;
@@ -483,11 +503,6 @@ export default function LeadForm({
 
     const nextErrors = validateForm();
 
-    if (SMARTCAPTCHA_CLIENT_KEY && !captchaToken) {
-      nextErrors.captcha = "Подтвердите, что вы не робот.";
-      setTouched((current) => ({ ...current, captcha: true }));
-    }
-
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       setStatus("error");
@@ -499,6 +514,36 @@ export default function LeadForm({
     setIsSubmitting(true);
     setStatus("idle");
     setGeneralError("");
+
+    // Невидимая капча проверяет человека молча и отдаёт токен в callback,
+    // который дошлёт заявку. Задание она показывает только подозрительным.
+    if (
+      SMARTCAPTCHA_CLIENT_KEY &&
+      !captchaToken &&
+      window.smartCaptcha &&
+      captchaWidgetIdRef.current !== null
+    ) {
+      pendingSubmitRef.current = true;
+      // Человек может закрыть задание капчи — тогда callback не придёт, и
+      // форма осталась бы навсегда в состоянии отправки.
+      captchaWaitRef.current = window.setTimeout(() => {
+        if (!pendingSubmitRef.current) return;
+        pendingSubmitRef.current = false;
+        setIsSubmitting(false);
+        setStatus("error");
+        setGeneralError(
+          "Не удалось пройти проверку «Я не робот». Попробуйте ещё раз."
+        );
+      }, 90000);
+      window.smartCaptcha.execute(captchaWidgetIdRef.current);
+      return;
+    }
+
+    await submitLead(captchaToken);
+  }
+
+  async function submitLead(token: string) {
+    setIsSubmitting(true);
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -515,7 +560,7 @@ export default function LeadForm({
       body.append("source", source);
       body.append("project_slug", projectSlug);
       body.append("page_url", window.location.href);
-      body.append("smartcaptcha_token", captchaToken);
+      body.append("smartcaptcha_token", token);
       if (formShownAtRef.current !== null) {
         body.append(
           "form_elapsed_ms",
@@ -577,6 +622,14 @@ export default function LeadForm({
       resetCaptcha();
     }
   }
+
+  // Свежая функция отправки для callback капчи: сам callback создаётся один
+  // раз при отрисовке виджета и иначе держал бы устаревшие поля формы.
+  useEffect(() => {
+    submitLeadRef.current = (token: string) => {
+      void submitLead(token);
+    };
+  });
 
   function controlClass(field: FieldName, hasValue: boolean) {
     return [
