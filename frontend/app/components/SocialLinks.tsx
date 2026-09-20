@@ -2,17 +2,24 @@
 
 import Image from "next/image";
 
+import { SITE_EMAIL } from "../lib/site";
 import { useSocialLinks } from "./SocialLinksProvider";
 
 const PLATFORM_META: Record<string, { title: string; iconSrc: string }> = {
   whatsapp: { title: "WhatsApp", iconSrc: "/social/whatsapp.svg" },
   telegram: { title: "Telegram", iconSrc: "/social/telegram.svg" },
+  mail: { title: "Написать на почту", iconSrc: "/social/yandex-mail.svg" },
 };
+
+// Почта стоит рядом с мессенджерами везде, где они есть, и ведёт в
+// веб-интерфейс Яндекс Почты с подставленным адресом (как ссылка в шапке).
+// В админке её нет: это не мессенджер, а постоянный адрес компании.
+const MAIL_URL = "https://mail.yandex.ru/compose?mailto=";
 
 // Показываем только мессенджеры, где действительно отвечают. Ссылки
 // ВКонтакте и MAX могут оставаться в админке (модель SocialLink) — на сайт
-// они не попадут, пока платформы нет в PLATFORM_META.
-const SHOWN_PLATFORMS = Object.keys(PLATFORM_META);
+// они не попадут, пока платформы нет в этом списке.
+const MESSENGER_PLATFORMS = ["whatsapp", "telegram"];
 
 // Резервный список — только на случай, если запрос к API не удался при
 // самой первой загрузке layout.tsx. Реальные ссылки редактируются в Django
@@ -32,9 +39,10 @@ type SocialLinksProps = {
 export default function SocialLinks({ className = "", location }: SocialLinksProps) {
   const contextLinks = useSocialLinks();
   const allLinks = contextLinks.length > 0 ? contextLinks : FALLBACK_LINKS;
-  const links = allLinks.filter((item) =>
-    SHOWN_PLATFORMS.includes(item.platform)
-  );
+  const links = [
+    ...allLinks.filter((item) => MESSENGER_PLATFORMS.includes(item.platform)),
+    { platform: "mail", url: `${MAIL_URL}${SITE_EMAIL}` },
+  ];
 
   return (
     <div

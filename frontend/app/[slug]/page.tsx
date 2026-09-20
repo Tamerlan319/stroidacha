@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import Breadcrumbs, { BreadcrumbItem } from "../components/Breadcrumbs";
 import EgrulExtract from "../components/EgrulExtract";
+import ProductionVideo from "../components/ProductionVideo";
 import LandingHeroFacts from "../components/LandingHeroFacts";
 import LeadForm from "../components/LeadForm";
 import LeadFormButton from "../components/LeadFormButton";
@@ -417,6 +418,8 @@ export default async function LandingPageRoute({ params }: PageProps) {
           </div>
         </section>
       )}
+
+      {page.slug === "proizvodstvo" && <ProductionVideo />}
 
       {page.slug === "vypiska-iz-egryul" ? (
         <EgrulExtract images={page.images || []} />
