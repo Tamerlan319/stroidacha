@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   CATALOG_LINKS,
   COMPANY_LINKS,
+  SITE_EMAIL,
   SITE_PHONE,
   SITE_PHONE_HREF,
 } from "../lib/site";
@@ -158,6 +159,15 @@ export default function SiteHeader() {
                 data-goal-location="header"
               >
                 {SITE_PHONE}
+              </a>
+              {/* Кому неудобно звонить — пишет на почту: те же вопросы, но
+                  без разговора, и можно приложить планировку. */}
+              <a
+                className={headerStyles.email}
+                href={`mailto:${SITE_EMAIL}`}
+                data-goal-location="header"
+              >
+                {SITE_EMAIL}
               </a>
               <small>Ежедневно с 9:00 до 20:00</small>
             </div>

@@ -87,6 +87,11 @@ export default function YandexMetrika() {
         return;
       }
 
+      if (href.startsWith("mailto:")) {
+        reachGoal("email_click", { location });
+        return;
+      }
+
       const platform = messengerPlatform(href);
       if (platform) {
         reachGoal("messenger_click", { platform, location });
