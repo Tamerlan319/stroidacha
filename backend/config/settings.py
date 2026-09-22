@@ -410,3 +410,22 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success",
     },
 }
+
+# Журнал приложения заявок в вывод контейнера (docker compose logs backend).
+# Без этого Django пропускает всё ниже WARNING, и строка «Заявка N: цель …
+# отправлена / не отправлена (причина)» из leads/serializers.py терялась —
+# а только по ней видно, почему конверсия не дошла до Директа. Телефонов и
+# текстов заявок в этих сообщениях нет.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "plain": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "plain"},
+    },
+    "loggers": {
+        "leads": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}
