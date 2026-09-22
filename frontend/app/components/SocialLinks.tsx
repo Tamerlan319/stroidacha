@@ -26,7 +26,7 @@ const MESSENGER_PLATFORMS = ["whatsapp", "telegram"];
 // Admin (модель SocialLink), не здесь.
 const FALLBACK_LINKS = [
   { platform: "whatsapp", url: "https://api.whatsapp.com/send?phone=79676801812" },
-  { platform: "telegram", url: "https://t.me/brusodel_bot" },
+  { platform: "telegram", url: "https://t.me/tmxdev" },
 ];
 
 type SocialLinksProps = {
